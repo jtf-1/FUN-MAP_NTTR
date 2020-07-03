@@ -2,7 +2,7 @@ env.info( '*** JTF-1 NTTR Fun Map MOOSE script ***' )
 env.info( '*** JTF-1 MOOSE MISSION SCRIPT START ***' )
 -- BEGIN ATIS SECTION
 
-atisCreech=ATIS:New(AIRBASE.Nevada.Creech_AFB, 122.500)
+atisCreech=ATIS:New(AIRBASE.Nevada.Creech_AFB, 290.450)
 :SetRadioRelayUnitName("Radio Relay Creech")
 :SetTowerFrequencies({360.6, 118.3, 38.55})
 :SetTACAN(87)
@@ -33,7 +33,7 @@ atisMcCarran=ATIS:New(AIRBASE.Nevada.McCarran_International_Airport, 132.400)
 :AddILS(110.3, "25R")
 :Start()
 
-atisNellis=ATIS:New(AIRBASE.Nevada.Nellis_AFB, 125.500)
+atisNellis=ATIS:New(AIRBASE.Nevada.Nellis_AFB, 270.100)
 :SetRadioRelayUnitName("Radio Relay Nellis")
 :SetActiveRunway("21L")
 --:SetActiveRunway("03R")
@@ -55,8 +55,6 @@ atisTonopahT=ATIS:New(AIRBASE.Nevada.Tonopah_Test_Range_Airfield, 113.000)
 :AddILS(108.3, "14")
 :AddILS(111.7, "32")
 :Start()
-
-trigger.action.outText("ATIS Loaded....", 10)
 
 -- END ATIS SECTION
 
