@@ -4,9 +4,14 @@ Please make yourself aware of the following information:
 ATIS
 ====
 
-- Nellis AFB 270.1
-- Creech AFB 290.45
+- Nellis AFB 125.5
+- Creech AFB 122.5
 - MCCarran Int 132.4
+- Groom Lake AFB 123.5
+- Henderson Executive 120.775
+- Laughlin 119.825
+- North Las Vegas 118.050
+- Tonopah Test Range 113.0 
 
 AWACS
 =====
@@ -64,7 +69,3 @@ ACM/BFM AREA
 All aircraft can activated air threats via F10 menu when entering over INDIA. All aircraft within this area must be on Blackjack 377.800.
 
 Channel: 120 MHZ
-
-
-
- Please note the Player must depart Flex turn out. 
