@@ -1,6 +1,10 @@
 Welcome to the JTF-1 NTTR Fun Map!
 Please make yourself aware of the following information:
 
+***MISSION BRIEF IS WIP***
+
+See mission kneeboard for additional info.
+
 ATIS
 ====
 
@@ -16,20 +20,29 @@ ATIS
 AWACS
 =====
 
+DARKSTAR 1-1, 344.025
 
 TANKERS
 =======
 
-- AR-635 TEXACO 1-1 [KC-135] 35Y, 317.75
-- AR-641A SHELL 1-1 [KC-135] 37Y, 276.1
-- AR-230V ARCO 1-1 [KC-130] 30Y, 276.25
-- AR-231V TEXACO 2-1 [KC-130] 13Y, 317.25 Player Activation required through F-10 menu option.
+Track R-641A
+- HI, TEXACO 1-1 [KC-135] 37Y, 317.750, FL230-250
+- LO, SHELL 1-1 [KC-135MPRS] 35Y, 276.100, FL180-210
+
+AR-635 
+- HI, TEXACO 2-1 [KC-135] 36Y, 360.800, FL230-250
+- LO, SHELL 2-1 [KC-135MPRS] 34Y, 306.200, F180-210
+
+AR-230V
+- ARCO 1-1 [KC-130] 30Y, 343.600, FL120
+AR-231V
+- ARCO 2-1 [KC-130] 13Y, 323.200, FL120 (Player Activation required through F-10 menu option)
 
 
 LIVE FIRING RANGES
 ==================
 
-Range Control common: 250.000MHz
+- Range Command and Control: BLACKJACK, 288.800MHz
 
 Range 76:  is a live fire range to be activated through F10 menu option. Air defence is SA-6 and SA-3. Notamn to be issued through ATC when in operation. 
 
