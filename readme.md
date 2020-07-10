@@ -5,9 +5,9 @@ Please make yourself aware of the following information:
 
 Radio presets are per NELLISAFBI-11-250
 
-Default waypoints for all aircraft is;
+Default waypoints for all aircraft are;
 
-JUNNO-DREAM-STUDENT GAP-BELTED PK-GARTH-FLUSH-JAYSN-STRYK-GASS PK-APEX
+JUNNO ... DREAM ... STUDENT GAP ... BELTED PK ... GARTH ... FLUSH ... JAYSN ... STRYK ... GASS PK ... APEX
 
 See mission kneeboard for comms, navigation and range info.
 
@@ -44,3 +44,19 @@ AR-230V
 
 AR-231V
 - ARCO 2-1 [KC-130] 13Y, 323.200, FL120
+
+RANGES
+======
+
+The following ranges are populated with multiple targets; 61B, 62A, 62B, 63B, 64A, 64B, 64C, 65C and 65D. Each target contains one or more DMPI. See the in-game kneeboard for target data.
+
+Ranges are script scored and have an F10 menu system you can use to manage them. A range instructor is available at each range to provide hit assessment. 
+
+Bomb targets are scored on the proximity of the last round to the target. Smoke will be used to mark the round's impact.
+
+Strafe Pits, where available (R63B, R64C), are configured with three targets per lane. Aircraft must be below 3000ft AGL and within 500ft either side of the inbound heading to the target to avoid a foul pass. Rounds fired after the foul line will not count.
+
+AI BFM/ACM
+==========
+
+On-demand single or pair adversary spawns are available via the F10 menu while aircraft are within ranges Coyote Alpha, Bravo and Charlie. Adversaries will be spawned ahead of you at the selected distance (5NM, 10NM). 

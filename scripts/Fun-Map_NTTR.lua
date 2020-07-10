@@ -1,6 +1,7 @@
 env.info( '*** JTF-1 NTTR Fun Map MOOSE script ***' )
 env.info( '*** JTF-1 MOOSE MISSION SCRIPT START ***' )
 
+
 -- BEGIN FUNCTIONS SECTION
 
 function SpawnSupport (SupportSpawn) -- spawnobject, spawnzone
@@ -112,8 +113,23 @@ for i, v in ipairs( TableSpawnSupport ) do
 	
 end
 
-
 -- END SUPPORT AIRCRAFT SECTION
+
+
+-- BEGIN MISSILE TRAINER
+local Trainer = MISSILETRAINER:New( 500, "Missile Training Script ACTIVE" )
+  :InitMessagesOnOff(true)
+  :InitAlertsToAll(true) 
+  :InitAlertsHitsOnOff(true)
+  :InitAlertsLaunchesOnOff(false) 
+  :InitBearingOnOff(false)
+  :InitRangeOnOff(false)
+  :InitTrackingOnOff(false)
+  :InitTrackingToAll(false)
+  :InitMenusOnOff(false)
+
+-- END MISSILE TRAINER
+
 
 -- BEGIN RANGE SECTION
 
@@ -210,11 +226,16 @@ local bombtarget_R62B = {
 }
 Range_R62B:AddBombingTargets( bombtarget_R62B )
 
-
 Range_R62B:SetSoundfilesPath("Range Soundfiles/")
 Range_R62B:SetRangeControl(234.250)
 
 Range_R62B:Start()
+
+-- T6208 moving strafe targets
+MenuT6208 = MENU_COALITION:New( coalition.side.BLUE, "Target 62-08" )
+MenuT6208_1 = MENU_COALITION_COMMAND:New( coalition.side.BLUE, "TGT 6208: Activate  4x4 (46 mph)", MenuT6208, function() trigger.action.setUserFlag(62081, 1) end) 
+MenuT6208_2 = MENU_COALITION_COMMAND:New( coalition.side.BLUE, "TGT 6208: Activate  Truck (23 mph)", MenuT6208, function() trigger.action.setUserFlag(62082, 1) end) 
+MenuT6208_3 = MENU_COALITION_COMMAND:New( coalition.side.BLUE, "TGT 6208: Activate  T-55 (11 mph)", MenuT6208, function() trigger.action.setUserFlag(62083, 1) end) 
 
 -- END RANGE R62B
 
@@ -386,6 +407,101 @@ Range_R65D:Start()
 -- END RANGE R65D
 
 -- END RANGE SECTION
+
+-- BEGIN ACM/BFM SECTION
+
+-- BFM/ACM Zones
+BoxZone = ZONE_POLYGON:New( "Polygon_Box", GROUP:FindByName("zone_box") )
+BfmAcmZone = ZONE_POLYGON:New( "Polygon_BFM_ACM", GROUP:FindByName("COYOTEABC") )
+
+-- Spawn Objects
+AdvA4 = SPAWN:New( "ADV_A4" )		
+Adv28 = SPAWN:New( "ADV_MiG28" )	
+Adv27 = SPAWN:New( "ADV_Su27" )
+Adv23 = SPAWN:New( "ADV_MiG23" )
+Adv16 = SPAWN:New( "ADV_F16" )
+Adv18 = SPAWN:New( "ADV_F18" )
+
+-- will need to pass function caller (from menu) to each of these spawn functions.  
+-- Then calculate spawn position/velocity relative to caller
+function SpawnAdv(adv,group,rng)
+	range = rng * 1852
+	hdg = group:GetHeading()
+	pos = group:GetPointVec2()
+	spawnPt = pos:Translate(range, hdg, true)
+	spawnVec3 = spawnPt:GetVec3()
+	if BoxZone:IsVec3InZone(spawnVec3) then
+		MESSAGE:New("Cannot spawn adversary in The Box.\nChange course or increase your range from The Box, and try again."):ToGroup(group)
+	else
+		adv:SpawnFromVec3(spawnVec3)
+		MESSAGE:New("Adversary spawned."):ToGroup(group)
+	end
+end
+
+-- CLIENTS
+BLUFOR = SET_GROUP:New():FilterCoalitions( "blue" ):FilterStart()
+
+-- SPAWN AIR MENU
+
+local SetClient = SET_CLIENT:New():FilterCoalitions("blue"):FilterStart()
+
+local function MENU()
+	SetClient:ForEachClient(function(client)
+		if (client ~= nil) and (client:IsAlive()) then 
+ 
+			local group = client:GetGroup()
+			local groupName = group:GetName()
+			if (group:IsCompletelyInZone(BfmAcmZone)) then
+				if not SpawnBfm then
+					MenuGroup = group
+					MenuGroupName = MenuGroup:GetName()
+
+					SpawnBfm = MENU_GROUP:New( MenuGroup, "AI BFM/ACM" )
+						SpawnBfmA4menu = MENU_GROUP:New( MenuGroup, "Adversary A-4", SpawnBfm)
+							SpawnA4rng5 = MENU_GROUP_COMMAND:New( MenuGroup, "5 nmi", SpawnBfmA4menu, SpawnAdv, AdvA4, MenuGroup, 5)
+							SpawnA4rng10 = MENU_GROUP_COMMAND:New( MenuGroup, "10 nmi", SpawnBfmA4menu, SpawnAdv, AdvA4, MenuGroup, 10)
+							SpawnA4rng20 = MENU_GROUP_COMMAND:New( MenuGroup, "20 nmi", SpawnBfmA4menu, SpawnAdv, AdvA4, MenuGroup, 20)
+						SpawnBfm28menu = MENU_GROUP:New( MenuGroup, "Adversary MiG-28", SpawnBfm)
+							Spawn28rng5 = MENU_GROUP_COMMAND:New( MenuGroup, "5 nmi", SpawnBfm28menu, SpawnAdv, Adv28, MenuGroup, 5)
+							Spawn28rng10 = MENU_GROUP_COMMAND:New( MenuGroup, "10 nmi", SpawnBfm28menu, SpawnAdv, Adv28, MenuGroup, 10)
+							Spawn28rng20 = MENU_GROUP_COMMAND:New( MenuGroup, "20 nmi", SpawnBfm28menu, SpawnAdv, Adv28, MenuGroup, 20)
+						SpawnBfm23menu = MENU_GROUP:New( MenuGroup, "Adversary MiG-23", SpawnBfm)
+							Spawn23rng5 = MENU_GROUP_COMMAND:New( MenuGroup, "5 nmi", SpawnBfm23menu, SpawnAdv, Adv23, MenuGroup, 5)
+							Spawn23rng10 = MENU_GROUP_COMMAND:New( MenuGroup, "10 nmi", SpawnBfm23menu, SpawnAdv, Adv23, MenuGroup, 10)
+							Spawn23rng20 = MENU_GROUP_COMMAND:New( MenuGroup, "20 nmi", SpawnBfm23menu, SpawnAdv, Adv23, MenuGroup, 20)
+						SpawnBfm27menu = MENU_GROUP:New( MenuGroup, "Adversary Su-27", SpawnBfm)
+							Spawn27rng5 = MENU_GROUP_COMMAND:New( MenuGroup, "5 nmi", SpawnBfm27menu, SpawnAdv, Adv27, MenuGroup, 5)
+							Spawn27rng10 = MENU_GROUP_COMMAND:New( MenuGroup, "10 nmi", SpawnBfm27menu, SpawnAdv, Adv27, MenuGroup, 10)
+							Spawn27rng20 = MENU_GROUP_COMMAND:New( MenuGroup, "20 nmi", SpawnBfm27menu, SpawnAdv, Adv27, MenuGroup, 20)
+						SpawnBfm16menu = MENU_GROUP:New( MenuGroup, "Adversary F-16", SpawnBfm)
+							Spawn16rng5 = MENU_GROUP_COMMAND:New( MenuGroup, "5 nmi", SpawnBfm16menu, SpawnAdv, Adv16, MenuGroup, 5)
+							Spawn16rng10 = MENU_GROUP_COMMAND:New( MenuGroup, "10 nmi", SpawnBfm16menu, SpawnAdv, Adv16, MenuGroup, 10)
+							Spawn16rng20 = MENU_GROUP_COMMAND:New( MenuGroup, "20 nmi", SpawnBfm16menu, SpawnAdv, Adv16, MenuGroup, 20)
+						SpawnBfm18menu = MENU_GROUP:New( MenuGroup, "Adversary F-18", SpawnBfm)
+							Spawn18rng5 = MENU_GROUP_COMMAND:New( MenuGroup, "5 nmi", SpawnBfm18menu, SpawnAdv, Adv18, MenuGroup, 5)
+							Spawn18rng10 = MENU_GROUP_COMMAND:New( MenuGroup, "10 nmi", SpawnBfm18menu, SpawnAdv, Adv18, MenuGroup, 10)
+							Spawn18rng20 = MENU_GROUP_COMMAND:New( MenuGroup, "20 nmi", SpawnBfm18menu, SpawnAdv, Adv18, MenuGroup, 20)
+				
+					MESSAGE:New("You have entered the BFM/ACM zone.\nUse F10 menu to spawn adversaries."):ToGroup(group)
+					env.info("BFM/ACM entry Player name: " ..client:GetPlayerName())
+					env.info("BFM/ACM entry Group Name: " ..group:GetName())
+				end
+				--SetClient:Remove(client:GetName(), true)
+			elseif SpawnBfm then
+				SpawnBfm:Remove()
+				SpawnBfm = nil
+				MESSAGE:New("You have left the ACM/BFM zone."):ToGroup(group)
+				env.info("BFM/ACM exit Group Name: " ..group:GetName())
+			end
+		end
+	end)
+timer.scheduleFunction(MENU,nil,timer.getTime() + 5)
+end
+
+MENU()
+
+-- END ACM/BFM SECTION
+
 
 
 env.info( '*** JTF-1 MOOSE MISSION SCRIPT END ***' )
