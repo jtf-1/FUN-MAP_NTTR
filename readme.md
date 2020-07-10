@@ -5,6 +5,10 @@ Please make yourself aware of the following information:
 
 Radio presets are per NELLISAFBI-11-250
 
+Default waypoints for all aircraft is;
+
+JUNNO-DREAM-STUDENT GAP-BELTED PK-GARTH-FLUSH-JAYSN-STRYK-GASS PK-APEX
+
 See mission kneeboard for comms, navigation and range info.
 
 ATIS
