@@ -452,7 +452,7 @@ local function MENU()
 			local group = client:GetGroup()
 			local groupName = group:GetName()
 			if (group:IsCompletelyInZone(BfmAcmZone)) then
-				if not SpawnBfm then
+				if SpawnBfm == nil then
 					MenuGroup = group
 					MenuGroupName = MenuGroup:GetName()
 
@@ -487,7 +487,7 @@ local function MENU()
 					env.info("BFM/ACM entry Group Name: " ..group:GetName())
 				end
 				--SetClient:Remove(client:GetName(), true)
-			elseif SpawnBfm then
+			elseif SpawnBfm ~= nil then
 				SpawnBfm:Remove()
 				SpawnBfm = nil
 				MESSAGE:New("You have left the ACM/BFM zone."):ToGroup(group)
