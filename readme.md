@@ -7,7 +7,16 @@ Radio presets are per NELLISAFBI-11-250
 
 Default waypoints for all aircraft are;
 
-JUNNO ... DREAM ... STUDENT GAP ... BELTED PK ... GARTH ... FLUSH ... JAYSN ... STRYK ... GASS PK ... APEX
+- 1 JUNNO
+- 2 DREAM
+- 3 STUDENT GAP
+- 4 BELTED PK
+- 5 GARTH
+- 6 FLUSH
+- 7 JAYSN
+- 8 STRYK
+- 9 GASS PK
+- 10 APEX
 
 See mission kneeboard for comms, navigation and range info.
 
@@ -32,11 +41,11 @@ TANKERS
 =======
 
 Track R-641A
-- HI, TEXACO 1-1 [KC-135] 37Y, 317.750, FL230-250
+- HI, TEXACO 1-1 [KC-135] 31Y, 295.400, FL230-250
 - LO, SHELL 1-1 [KC-135MPRS] 35Y, 276.100, FL180-210
 
 AR-635 
-- HI, TEXACO 2-1 [KC-135] 36Y, 360.800, FL230-250
+- HI, TEXACO 2-1 [KC-135] 52Y, 352.600, FL230-250
 - LO, SHELL 2-1 [KC-135MPRS] 34Y, 306.200, F180-210
 
 AR-230V
