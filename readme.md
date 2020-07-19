@@ -1,4 +1,6 @@
 Welcome to the JTF-1 NTTR Fun Map!
+Range template from 476th vFG
+
 Please make yourself aware of the following information:
 
 ***MISSION BRIEF IS WIP***
@@ -7,30 +9,30 @@ Radio presets are per NELLISAFBI-11-250
 
 Default waypoints for all aircraft are;
 
-- 1 JUNNO
-- 2 DREAM
-- 3 STUDENT GAP
-- 4 BELTED PK
-- 5 GARTH
-- 6 FLUSH
-- 7 JAYSN
-- 8 STRYK
-- 9 GASS PK
-- 10 APEX
+- 1: JUNNO
+- 2: DREAM
+- 3: STUDENT GAP
+- 4: BELTED PK
+- 5: GARTH
+- 6: FLUSH
+- 7: JAYSN
+- 8: STRYK
+- 9: GASS PK
+- 10: APEX
 
 See mission kneeboard for comms, navigation and range info.
 
 ATIS
 ====
 
-- Nellis AFB 270.1
-- Creech AFB 290.45
-- MCCarran Int 132.4
-- Groom Lake AFB 123.5
+- Nellis AFB 270.100
+- Creech AFB 290.450
+- MCCarran Int 132.400
+- Groom Lake AFB 123.500
 - Henderson Executive 120.775
 - Laughlin 119.825
 - North Las Vegas 118.050
-- Tonopah Test Range 113.0 
+- Tonopah Test Range 131.000 
 
 AWACS
 =====
@@ -68,4 +70,4 @@ Strafe Pits, where available (R63B, R64C), are configured with three targets per
 AI BFM/ACM
 ==========
 
-On-demand single or pair adversary spawns are available via the F10 menu while aircraft are within ranges Coyote Alpha, Bravo and Charlie. Adversaries will be spawned ahead of you at the selected distance (5NM, 10NM). 
+On-demand single or pair adversary spawns are available via the F10 menu while aircraft are within ranges Coyote Alpha, Bravo and Charlie. Adversaries will be spawned ahead of you at the selected distance (5NM, 10NM, 20NM). 

@@ -1,6 +1,7 @@
 env.info( '*** JTF-1 NTTR Fun Map MOOSE script ***' )
 env.info( '*** JTF-1 MOOSE MISSION SCRIPT START ***' )
 
+_SETTINGS:SetPlayerMenuOff()
 
 -- BEGIN FUNCTIONS SECTION
 
@@ -31,7 +32,7 @@ end -- function
 -- END FUNCTIONS SECTION
 
 -- BEGIN ATIS SECTION
-
+--[[
 atisCreech=ATIS:New(AIRBASE.Nevada.Creech_AFB, 290.450)
 :SetRadioRelayUnitName("Radio Relay Creech")
 :SetTowerFrequencies({360.6, 118.3, 38.55})
@@ -85,7 +86,7 @@ atisTonopahT=ATIS:New(AIRBASE.Nevada.Tonopah_Test_Range_Airfield, 113.000)
 :AddILS(108.3, "14")
 :AddILS(111.7, "32")
 :Start()
-
+--]]
 -- END ATIS SECTION
 
 -- BEGIN SUPPORT AIRCRAFT SECTION
@@ -422,6 +423,13 @@ Adv23 = SPAWN:New( "ADV_MiG23" )
 Adv16 = SPAWN:New( "ADV_F16" )
 Adv18 = SPAWN:New( "ADV_F18" )
 
+AdvA4Pair = SPAWN:New( "ADV_A4_P" )		
+Adv28Pair = SPAWN:New( "ADV_MiG28_P" )	
+Adv27Pair = SPAWN:New( "ADV_Su27_P" )
+Adv23Pair = SPAWN:New( "ADV_MiG23_P" )
+Adv16Pair = SPAWN:New( "ADV_F16_P" )
+Adv18Pair = SPAWN:New( "ADV_F18_P" )
+
 -- will need to pass function caller (from menu) to each of these spawn functions.  
 -- Then calculate spawn position/velocity relative to caller
 function SpawnAdv(adv,group,rng)
@@ -457,30 +465,58 @@ local function MENU()
 					MenuGroupName = MenuGroup:GetName()
 
 					SpawnBfm = MENU_GROUP:New( MenuGroup, "AI BFM/ACM" )
-						SpawnBfmA4menu = MENU_GROUP:New( MenuGroup, "Adversary A-4", SpawnBfm)
-							SpawnA4rng5 = MENU_GROUP_COMMAND:New( MenuGroup, "5 nmi", SpawnBfmA4menu, SpawnAdv, AdvA4, MenuGroup, 5)
-							SpawnA4rng10 = MENU_GROUP_COMMAND:New( MenuGroup, "10 nmi", SpawnBfmA4menu, SpawnAdv, AdvA4, MenuGroup, 10)
-							SpawnA4rng20 = MENU_GROUP_COMMAND:New( MenuGroup, "20 nmi", SpawnBfmA4menu, SpawnAdv, AdvA4, MenuGroup, 20)
-						SpawnBfm28menu = MENU_GROUP:New( MenuGroup, "Adversary MiG-28", SpawnBfm)
-							Spawn28rng5 = MENU_GROUP_COMMAND:New( MenuGroup, "5 nmi", SpawnBfm28menu, SpawnAdv, Adv28, MenuGroup, 5)
-							Spawn28rng10 = MENU_GROUP_COMMAND:New( MenuGroup, "10 nmi", SpawnBfm28menu, SpawnAdv, Adv28, MenuGroup, 10)
-							Spawn28rng20 = MENU_GROUP_COMMAND:New( MenuGroup, "20 nmi", SpawnBfm28menu, SpawnAdv, Adv28, MenuGroup, 20)
-						SpawnBfm23menu = MENU_GROUP:New( MenuGroup, "Adversary MiG-23", SpawnBfm)
-							Spawn23rng5 = MENU_GROUP_COMMAND:New( MenuGroup, "5 nmi", SpawnBfm23menu, SpawnAdv, Adv23, MenuGroup, 5)
-							Spawn23rng10 = MENU_GROUP_COMMAND:New( MenuGroup, "10 nmi", SpawnBfm23menu, SpawnAdv, Adv23, MenuGroup, 10)
-							Spawn23rng20 = MENU_GROUP_COMMAND:New( MenuGroup, "20 nmi", SpawnBfm23menu, SpawnAdv, Adv23, MenuGroup, 20)
-						SpawnBfm27menu = MENU_GROUP:New( MenuGroup, "Adversary Su-27", SpawnBfm)
-							Spawn27rng5 = MENU_GROUP_COMMAND:New( MenuGroup, "5 nmi", SpawnBfm27menu, SpawnAdv, Adv27, MenuGroup, 5)
-							Spawn27rng10 = MENU_GROUP_COMMAND:New( MenuGroup, "10 nmi", SpawnBfm27menu, SpawnAdv, Adv27, MenuGroup, 10)
-							Spawn27rng20 = MENU_GROUP_COMMAND:New( MenuGroup, "20 nmi", SpawnBfm27menu, SpawnAdv, Adv27, MenuGroup, 20)
-						SpawnBfm16menu = MENU_GROUP:New( MenuGroup, "Adversary F-16", SpawnBfm)
-							Spawn16rng5 = MENU_GROUP_COMMAND:New( MenuGroup, "5 nmi", SpawnBfm16menu, SpawnAdv, Adv16, MenuGroup, 5)
-							Spawn16rng10 = MENU_GROUP_COMMAND:New( MenuGroup, "10 nmi", SpawnBfm16menu, SpawnAdv, Adv16, MenuGroup, 10)
-							Spawn16rng20 = MENU_GROUP_COMMAND:New( MenuGroup, "20 nmi", SpawnBfm16menu, SpawnAdv, Adv16, MenuGroup, 20)
-						SpawnBfm18menu = MENU_GROUP:New( MenuGroup, "Adversary F-18", SpawnBfm)
-							Spawn18rng5 = MENU_GROUP_COMMAND:New( MenuGroup, "5 nmi", SpawnBfm18menu, SpawnAdv, Adv18, MenuGroup, 5)
-							Spawn18rng10 = MENU_GROUP_COMMAND:New( MenuGroup, "10 nmi", SpawnBfm18menu, SpawnAdv, Adv18, MenuGroup, 10)
-							Spawn18rng20 = MENU_GROUP_COMMAND:New( MenuGroup, "20 nmi", SpawnBfm18menu, SpawnAdv, Adv18, MenuGroup, 20)
+
+						SpawnBfmSingle = MENU_GROUP:New( MenuGroup, "Single", SpawnBfm)
+							SpawnBfmA4menu = MENU_GROUP:New( MenuGroup, "Adversary A-4", SpawnBfmSingle)
+								SpawnA4rng5 = MENU_GROUP_COMMAND:New( MenuGroup, "5 nmi", SpawnBfmA4menu, SpawnAdv, AdvA4, MenuGroup, 5)
+								SpawnA4rng10 = MENU_GROUP_COMMAND:New( MenuGroup, "10 nmi", SpawnBfmA4menu, SpawnAdv, AdvA4, MenuGroup, 10)
+								SpawnA4rng20 = MENU_GROUP_COMMAND:New( MenuGroup, "20 nmi", SpawnBfmA4menu, SpawnAdv, AdvA4, MenuGroup, 20)
+							SpawnBfm28menu = MENU_GROUP:New( MenuGroup, "Adversary MiG-28", SpawnBfmSingle)
+								Spawn28rng5 = MENU_GROUP_COMMAND:New( MenuGroup, "5 nmi", SpawnBfm28menu, SpawnAdv, Adv28, MenuGroup, 5)
+								Spawn28rng10 = MENU_GROUP_COMMAND:New( MenuGroup, "10 nmi", SpawnBfm28menu, SpawnAdv, Adv28, MenuGroup, 10)
+								Spawn28rng20 = MENU_GROUP_COMMAND:New( MenuGroup, "20 nmi", SpawnBfm28menu, SpawnAdv, Adv28, MenuGroup, 20)
+							SpawnBfm23menu = MENU_GROUP:New( MenuGroup, "Adversary MiG-23", SpawnBfmSingle)
+								Spawn23rng5 = MENU_GROUP_COMMAND:New( MenuGroup, "5 nmi", SpawnBfm23menu, SpawnAdv, Adv23, MenuGroup, 5)
+								Spawn23rng10 = MENU_GROUP_COMMAND:New( MenuGroup, "10 nmi", SpawnBfm23menu, SpawnAdv, Adv23, MenuGroup, 10)
+								Spawn23rng20 = MENU_GROUP_COMMAND:New( MenuGroup, "20 nmi", SpawnBfm23menu, SpawnAdv, Adv23, MenuGroup, 20)
+							SpawnBfm27menu = MENU_GROUP:New( MenuGroup, "Adversary Su-27", SpawnBfmSingle)
+								Spawn27rng5 = MENU_GROUP_COMMAND:New( MenuGroup, "5 nmi", SpawnBfm27menu, SpawnAdv, Adv27, MenuGroup, 5)
+								Spawn27rng10 = MENU_GROUP_COMMAND:New( MenuGroup, "10 nmi", SpawnBfm27menu, SpawnAdv, Adv27, MenuGroup, 10)
+								Spawn27rng20 = MENU_GROUP_COMMAND:New( MenuGroup, "20 nmi", SpawnBfm27menu, SpawnAdv, Adv27, MenuGroup, 20)
+							SpawnBfm16menu = MENU_GROUP:New( MenuGroup, "Adversary F-16", SpawnBfmSingle)
+								Spawn16rng5 = MENU_GROUP_COMMAND:New( MenuGroup, "5 nmi", SpawnBfm16menu, SpawnAdv, Adv16, MenuGroup, 5)
+								Spawn16rng10 = MENU_GROUP_COMMAND:New( MenuGroup, "10 nmi", SpawnBfm16menu, SpawnAdv, Adv16, MenuGroup, 10)
+								Spawn16rng20 = MENU_GROUP_COMMAND:New( MenuGroup, "20 nmi", SpawnBfm16menu, SpawnAdv, Adv16, MenuGroup, 20)
+							SpawnBfm18menu = MENU_GROUP:New( MenuGroup, "Adversary F-18", SpawnBfmSingle)
+								Spawn18rng5 = MENU_GROUP_COMMAND:New( MenuGroup, "5 nmi", SpawnBfm18menu, SpawnAdv, Adv18, MenuGroup, 5)
+								Spawn18rng10 = MENU_GROUP_COMMAND:New( MenuGroup, "10 nmi", SpawnBfm18menu, SpawnAdv, Adv18, MenuGroup, 10)
+								Spawn18rng20 = MENU_GROUP_COMMAND:New( MenuGroup, "20 nmi", SpawnBfm18menu, SpawnAdv, Adv18, MenuGroup, 20)
+
+						SpawnBfmPair = MENU_GROUP:New( MenuGroup, "Pair", SpawnBfm)
+							SpawnBfmA4menuPair = MENU_GROUP:New( MenuGroup, "Adversary A-4", SpawnBfmPair)
+								SpawnA4rng5Pair = MENU_GROUP_COMMAND:New( MenuGroup, "5 nmi", SpawnBfmA4menuPair, SpawnAdv, AdvA4Pair, MenuGroup, 5)
+								SpawnA4rng10Pair = MENU_GROUP_COMMAND:New( MenuGroup, "10 nmi", SpawnBfmA4menuPair, SpawnAdv, AdvA4Pair, MenuGroup, 10)
+								SpawnA4rng20Pair = MENU_GROUP_COMMAND:New( MenuGroup, "20 nmi", SpawnBfmA4menuPair, SpawnAdv, AdvA4Pair, MenuGroup, 20)
+							SpawnBfm28menuPair = MENU_GROUP:New( MenuGroup, "Adversary MiG-28", SpawnBfmPair)
+								Spawn28rng5Pair = MENU_GROUP_COMMAND:New( MenuGroup, "5 nmi", SpawnBfm28menuPair, SpawnAdv, Adv28Pair, MenuGroup, 5)
+								Spawn28rng10Pair = MENU_GROUP_COMMAND:New( MenuGroup, "10 nmi", SpawnBfm28menuPair, SpawnAdv, Adv28Pair, MenuGroup, 10)
+								Spawn28rng20Pair = MENU_GROUP_COMMAND:New( MenuGroup, "20 nmi", SpawnBfm28menuPair, SpawnAdv, Adv28Pair, MenuGroup, 20)
+							SpawnBfm23menuPair = MENU_GROUP:New( MenuGroup, "Adversary MiG-23", SpawnBfmPair)
+								Spawn23rng5Pair = MENU_GROUP_COMMAND:New( MenuGroup, "5 nmi", SpawnBfm23menuPair, SpawnAdv, Adv23Pair, MenuGroup, 5)
+								Spawn23rng10Pair = MENU_GROUP_COMMAND:New( MenuGroup, "10 nmi", SpawnBfm23menuPair, SpawnAdv, Adv23Pair, MenuGroup, 10)
+								Spawn23rng20Pair = MENU_GROUP_COMMAND:New( MenuGroup, "20 nmi", SpawnBfm23menuPair, SpawnAdv, Adv23Pair, MenuGroup, 20)
+							SpawnBfm27menuPair = MENU_GROUP:New( MenuGroup, "Adversary Su-27", SpawnBfmPair)
+								Spawn27rng5Pair = MENU_GROUP_COMMAND:New( MenuGroup, "5 nmi", SpawnBfm27menuPair, SpawnAdv, Adv27Pair, MenuGroup, 5)
+								Spawn27rng10Pair = MENU_GROUP_COMMAND:New( MenuGroup, "10 nmi", SpawnBfm27menuPair, SpawnAdv, Adv27Pair, MenuGroup, 10)
+								Spawn27rng20Pair = MENU_GROUP_COMMAND:New( MenuGroup, "20 nmi", SpawnBfm27menuPair, SpawnAdv, Adv27Pair, MenuGroup, 20)
+							SpawnBfm16menuPair = MENU_GROUP:New( MenuGroup, "Adversary F-16", SpawnBfmPair)
+								Spawn16rng5Pair = MENU_GROUP_COMMAND:New( MenuGroup, "5 nmi", SpawnBfm16menuPair, SpawnAdv, Adv16Pair, MenuGroup, 5)
+								Spawn16rng10Pair = MENU_GROUP_COMMAND:New( MenuGroup, "10 nmi", SpawnBfm16menuPair, SpawnAdv, Adv16Pair, MenuGroup, 10)
+								Spawn16rng20Pair = MENU_GROUP_COMMAND:New( MenuGroup, "20 nmi", SpawnBfm16menuPair, SpawnAdv, Adv16Pair, MenuGroup, 20)
+							SpawnBfm18menuPair = MENU_GROUP:New( MenuGroup, "Adversary F-18", SpawnBfmPair)
+								Spawn18rng5Pair = MENU_GROUP_COMMAND:New( MenuGroup, "5 nmi", SpawnBfm18menuPair, SpawnAdv, Adv18Pair, MenuGroup, 5)
+								Spawn18rng10Pair = MENU_GROUP_COMMAND:New( MenuGroup, "10 nmi", SpawnBfm18menuPair, SpawnAdv, Adv18Pair, MenuGroup, 10)
+								Spawn18rng20Pair = MENU_GROUP_COMMAND:New( MenuGroup, "20 nmi", SpawnBfm18menuPair, SpawnAdv, Adv18Pair, MenuGroup, 20)
 				
 					MESSAGE:New("You have entered the BFM/ACM zone.\nUse F10 menu to spawn adversaries."):ToGroup(group)
 					env.info("BFM/ACM entry Player name: " ..client:GetPlayerName())
