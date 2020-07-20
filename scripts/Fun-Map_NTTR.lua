@@ -31,64 +31,6 @@ end -- function
 
 -- END FUNCTIONS SECTION
 
--- BEGIN ATIS SECTION
---[[
-atisCreech=ATIS:New(AIRBASE.Nevada.Creech_AFB, 290.450)
-:SetRadioRelayUnitName("Radio Relay Creech")
-:SetTowerFrequencies({360.6, 118.3, 38.55})
-:SetTACAN(87)
-:Start()
-
-atisGroom=ATIS:New(AIRBASE.Nevada.Groom_Lake_AFB, 123.500)
-:SetRadioRelayUnitName("Radio Relay Groom")
-:SetTowerFrequencies({250.050, 118.0, 38.6})
-:SetTACAN(18)
-:AddILS(109.3, "32R")
-:Start()
-
-atisHenderson=ATIS:New(AIRBASE.Nevada.Henderson_Executive_Airport, 120.775)
-:SetRadioRelayUnitName("Radio Relay Henderson")
-:SetTowerFrequencies({250.1, 125.1, 38.75})
-:Start()
-
-atisLaughlin=ATIS:New(AIRBASE.Nevada.Laughlin_Airport, 119.825)
-:SetRadioRelayUnitName("Radio Relay Laughlin")
-:SetTowerFrequencies({250.0, 123.9, 38.4})
-:Start()
-
-atisMcCarran=ATIS:New(AIRBASE.Nevada.McCarran_International_Airport, 132.400)
-:SetRadioRelayUnitName("Radio Relay McCarran")
-:SetTowerFrequencies({257.8, 119.9, 118.750, 38.65})
-:SetTACAN(116)
-:AddILS(111.8, "25L")
-:AddILS(110.3, "25R")
-:Start()
-
-atisNellis=ATIS:New(AIRBASE.Nevada.Nellis_AFB, 270.100)
-:SetRadioRelayUnitName("Radio Relay Nellis")
---:SetActiveRunway("21L")
-:SetActiveRunway("03L")
-:SetTowerFrequencies({327.0, 132.550, 38.7})
-:SetTACAN(12)
-:AddILS(109.1, "21L")
-:Start()
-
-atisNLV=ATIS:New(AIRBASE.Nevada.North_Las_Vegas, 118.050)
-:SetRadioRelayUnitName("Radio Relay NLV")
-:SetTowerFrequencies({360.750, 125.700, 38.45})
-:AddILS(110.7, "12")
-:Start()
-
-atisTonopahT=ATIS:New(AIRBASE.Nevada.Tonopah_Test_Range_Airfield, 113.000)
-:SetRadioRelayUnitName("Radio Relay Tonopah")
-:SetTowerFrequencies({257.950, 124.750, 38.5})
-:SetTACAN(77)
-:AddILS(108.3, "14")
-:AddILS(111.7, "32")
-:Start()
---]]
--- END ATIS SECTION
-
 -- BEGIN SUPPORT AIRCRAFT SECTION
 
 ----------------------------------------------------
@@ -115,21 +57,6 @@ for i, v in ipairs( TableSpawnSupport ) do
 end
 
 -- END SUPPORT AIRCRAFT SECTION
-
-
--- BEGIN MISSILE TRAINER
-local Trainer = MISSILETRAINER:New( 500, "Missile Training Script ACTIVE" )
-  :InitMessagesOnOff(true)
-  :InitAlertsToAll(true) 
-  :InitAlertsHitsOnOff(true)
-  :InitAlertsLaunchesOnOff(false) 
-  :InitBearingOnOff(false)
-  :InitRangeOnOff(false)
-  :InitTrackingOnOff(false)
-  :InitTrackingToAll(false)
-  :InitMenusOnOff(false)
-
--- END MISSILE TRAINER
 
 
 -- BEGIN RANGE SECTION
@@ -413,7 +340,21 @@ Range_R65D:Start()
 
 -- BFM/ACM Zones
 BoxZone = ZONE_POLYGON:New( "Polygon_Box", GROUP:FindByName("zone_box") )
-BfmAcmZone = ZONE_POLYGON:New( "Polygon_BFM_ACM", GROUP:FindByName("COYOTEABC") )
+BfmAcmZoneEnter = ZONE_POLYGON:New( "Polygon_BFM_ACM", GROUP:FindByName("COYOTEABC") )
+BfmAcmZoneExit = ZONE:FindByName("BfmAcmZoneOut")
+
+-- MISSILE TRAINER
+
+-- Create a new missile trainer object.
+fox=FOX:New()
+
+-- Add training zones.
+fox:AddSafeZone(BfmAcmZoneExit)
+fox:AddLaunchZone(BfmAcmZoneExit)
+fox:SetDisableF10Menu()
+
+-- Start missile trainer.
+fox:Start()
 
 -- Spawn Objects
 AdvA4 = SPAWN:New( "ADV_A4" )		
@@ -423,16 +364,9 @@ Adv23 = SPAWN:New( "ADV_MiG23" )
 Adv16 = SPAWN:New( "ADV_F16" )
 Adv18 = SPAWN:New( "ADV_F18" )
 
-AdvA4Pair = SPAWN:New( "ADV_A4_P" )		
-Adv28Pair = SPAWN:New( "ADV_MiG28_P" )	
-Adv27Pair = SPAWN:New( "ADV_Su27_P" )
-Adv23Pair = SPAWN:New( "ADV_MiG23_P" )
-Adv16Pair = SPAWN:New( "ADV_F16_P" )
-Adv18Pair = SPAWN:New( "ADV_F18_P" )
-
 -- will need to pass function caller (from menu) to each of these spawn functions.  
 -- Then calculate spawn position/velocity relative to caller
-function SpawnAdv(adv,group,rng)
+function SpawnAdv(adv,qty,group,rng)
 	range = rng * 1852
 	hdg = group:GetHeading()
 	pos = group:GetPointVec2()
@@ -441,16 +375,39 @@ function SpawnAdv(adv,group,rng)
 	if BoxZone:IsVec3InZone(spawnVec3) then
 		MESSAGE:New("Cannot spawn adversary in The Box.\nChange course or increase your range from The Box, and try again."):ToGroup(group)
 	else
-		adv:SpawnFromVec3(spawnVec3)
+		adv:InitGrouping(qty):InitHeading(hdg + 180):SpawnFromVec3(spawnVec3)
 		MESSAGE:New("Adversary spawned."):ToGroup(group)
 	end
 end
 
+function BuildMenuCommands (AdvMenu, MenuGroup, MenuName, BfmMenu, AdvType, AdvQty)
+
+	_G[AdvMenu] = MENU_GROUP:New( MenuGroup, MenuName, _G[BfmMenu])
+		_G[AdvMenu .. "_rng5"] = MENU_GROUP_COMMAND:New( MenuGroup, "5 nmi", _G[AdvMenu], SpawnAdv, AdvType, AdvQty, MenuGroup, 5)
+		_G[AdvMenu .. "_rng10"] = MENU_GROUP_COMMAND:New( MenuGroup, "10 nmi", _G[AdvMenu], SpawnAdv, AdvType, AdvQty, MenuGroup, 10)
+		_G[AdvMenu .. "_rng20"] = MENU_GROUP_COMMAND:New( MenuGroup, "20 nmi", _G[AdvMenu], SpawnAdv, AdvType, AdvQty, MenuGroup, 20)
+
+end
+
+function BuildMenus(AdvQty, MenuGroup, MenuName, SpawnBfm)
+
+	local AdvSuffix = "_" .. tostring(AdvQty)
+	local BfmMenu = "SpawnBfm" .. AdvSuffix
+
+	_G[BfmMenu] = MENU_GROUP:New( MenuGroup, MenuName, SpawnBfm)
+	
+		BuildMenuCommands("SpawnBfmA4menu" .. AdvSuffix, MenuGroup, "Adversary A-4", BfmMenu, AdvA4, AdvQty)
+		BuildMenuCommands("SpawnBfm28menu" .. AdvSuffix, MenuGroup, "Adversary MiG-28", BfmMenu, Adv28, AdvQty)
+		BuildMenuCommands("SpawnBfm23menu" .. AdvSuffix, MenuGroup, "Adversary MiG-23", BfmMenu, Adv23, AdvQty)
+		BuildMenuCommands("SpawnBfm27menu" .. AdvSuffix, MenuGroup, "Adversary Su-27", BfmMenu, Adv27, AdvQty)
+		BuildMenuCommands("SpawnBfm16menu" .. AdvSuffix, MenuGroup, "Adversary F-16", BfmMenu, Adv16, AdvQty)
+		BuildMenuCommands("SpawnBfm18menu" .. AdvSuffix, MenuGroup, "Adversary F-18", BfmMenu, Adv18, AdvQty)		
+			
+end
 -- CLIENTS
 BLUFOR = SET_GROUP:New():FilterCoalitions( "blue" ):FilterStart()
 
 -- SPAWN AIR MENU
-
 local SetClient = SET_CLIENT:New():FilterCoalitions("blue"):FilterStart()
 
 local function MENU()
@@ -459,71 +416,24 @@ local function MENU()
  
 			local group = client:GetGroup()
 			local groupName = group:GetName()
-			if (group:IsCompletelyInZone(BfmAcmZone)) then
+			if (group:IsCompletelyInZone(BfmAcmZoneEnter)) then
 				if SpawnBfm == nil then
 					MenuGroup = group
 					MenuGroupName = MenuGroup:GetName()
 
 					SpawnBfm = MENU_GROUP:New( MenuGroup, "AI BFM/ACM" )
+						
+						BuildMenus(1, MenuGroup, "Single", SpawnBfm)
+						BuildMenus(2, MenuGroup, "Pair", SpawnBfm)
 
-						SpawnBfmSingle = MENU_GROUP:New( MenuGroup, "Single", SpawnBfm)
-							SpawnBfmA4menu = MENU_GROUP:New( MenuGroup, "Adversary A-4", SpawnBfmSingle)
-								SpawnA4rng5 = MENU_GROUP_COMMAND:New( MenuGroup, "5 nmi", SpawnBfmA4menu, SpawnAdv, AdvA4, MenuGroup, 5)
-								SpawnA4rng10 = MENU_GROUP_COMMAND:New( MenuGroup, "10 nmi", SpawnBfmA4menu, SpawnAdv, AdvA4, MenuGroup, 10)
-								SpawnA4rng20 = MENU_GROUP_COMMAND:New( MenuGroup, "20 nmi", SpawnBfmA4menu, SpawnAdv, AdvA4, MenuGroup, 20)
-							SpawnBfm28menu = MENU_GROUP:New( MenuGroup, "Adversary MiG-28", SpawnBfmSingle)
-								Spawn28rng5 = MENU_GROUP_COMMAND:New( MenuGroup, "5 nmi", SpawnBfm28menu, SpawnAdv, Adv28, MenuGroup, 5)
-								Spawn28rng10 = MENU_GROUP_COMMAND:New( MenuGroup, "10 nmi", SpawnBfm28menu, SpawnAdv, Adv28, MenuGroup, 10)
-								Spawn28rng20 = MENU_GROUP_COMMAND:New( MenuGroup, "20 nmi", SpawnBfm28menu, SpawnAdv, Adv28, MenuGroup, 20)
-							SpawnBfm23menu = MENU_GROUP:New( MenuGroup, "Adversary MiG-23", SpawnBfmSingle)
-								Spawn23rng5 = MENU_GROUP_COMMAND:New( MenuGroup, "5 nmi", SpawnBfm23menu, SpawnAdv, Adv23, MenuGroup, 5)
-								Spawn23rng10 = MENU_GROUP_COMMAND:New( MenuGroup, "10 nmi", SpawnBfm23menu, SpawnAdv, Adv23, MenuGroup, 10)
-								Spawn23rng20 = MENU_GROUP_COMMAND:New( MenuGroup, "20 nmi", SpawnBfm23menu, SpawnAdv, Adv23, MenuGroup, 20)
-							SpawnBfm27menu = MENU_GROUP:New( MenuGroup, "Adversary Su-27", SpawnBfmSingle)
-								Spawn27rng5 = MENU_GROUP_COMMAND:New( MenuGroup, "5 nmi", SpawnBfm27menu, SpawnAdv, Adv27, MenuGroup, 5)
-								Spawn27rng10 = MENU_GROUP_COMMAND:New( MenuGroup, "10 nmi", SpawnBfm27menu, SpawnAdv, Adv27, MenuGroup, 10)
-								Spawn27rng20 = MENU_GROUP_COMMAND:New( MenuGroup, "20 nmi", SpawnBfm27menu, SpawnAdv, Adv27, MenuGroup, 20)
-							SpawnBfm16menu = MENU_GROUP:New( MenuGroup, "Adversary F-16", SpawnBfmSingle)
-								Spawn16rng5 = MENU_GROUP_COMMAND:New( MenuGroup, "5 nmi", SpawnBfm16menu, SpawnAdv, Adv16, MenuGroup, 5)
-								Spawn16rng10 = MENU_GROUP_COMMAND:New( MenuGroup, "10 nmi", SpawnBfm16menu, SpawnAdv, Adv16, MenuGroup, 10)
-								Spawn16rng20 = MENU_GROUP_COMMAND:New( MenuGroup, "20 nmi", SpawnBfm16menu, SpawnAdv, Adv16, MenuGroup, 20)
-							SpawnBfm18menu = MENU_GROUP:New( MenuGroup, "Adversary F-18", SpawnBfmSingle)
-								Spawn18rng5 = MENU_GROUP_COMMAND:New( MenuGroup, "5 nmi", SpawnBfm18menu, SpawnAdv, Adv18, MenuGroup, 5)
-								Spawn18rng10 = MENU_GROUP_COMMAND:New( MenuGroup, "10 nmi", SpawnBfm18menu, SpawnAdv, Adv18, MenuGroup, 10)
-								Spawn18rng20 = MENU_GROUP_COMMAND:New( MenuGroup, "20 nmi", SpawnBfm18menu, SpawnAdv, Adv18, MenuGroup, 20)
 
-						SpawnBfmPair = MENU_GROUP:New( MenuGroup, "Pair", SpawnBfm)
-							SpawnBfmA4menuPair = MENU_GROUP:New( MenuGroup, "Adversary A-4", SpawnBfmPair)
-								SpawnA4rng5Pair = MENU_GROUP_COMMAND:New( MenuGroup, "5 nmi", SpawnBfmA4menuPair, SpawnAdv, AdvA4Pair, MenuGroup, 5)
-								SpawnA4rng10Pair = MENU_GROUP_COMMAND:New( MenuGroup, "10 nmi", SpawnBfmA4menuPair, SpawnAdv, AdvA4Pair, MenuGroup, 10)
-								SpawnA4rng20Pair = MENU_GROUP_COMMAND:New( MenuGroup, "20 nmi", SpawnBfmA4menuPair, SpawnAdv, AdvA4Pair, MenuGroup, 20)
-							SpawnBfm28menuPair = MENU_GROUP:New( MenuGroup, "Adversary MiG-28", SpawnBfmPair)
-								Spawn28rng5Pair = MENU_GROUP_COMMAND:New( MenuGroup, "5 nmi", SpawnBfm28menuPair, SpawnAdv, Adv28Pair, MenuGroup, 5)
-								Spawn28rng10Pair = MENU_GROUP_COMMAND:New( MenuGroup, "10 nmi", SpawnBfm28menuPair, SpawnAdv, Adv28Pair, MenuGroup, 10)
-								Spawn28rng20Pair = MENU_GROUP_COMMAND:New( MenuGroup, "20 nmi", SpawnBfm28menuPair, SpawnAdv, Adv28Pair, MenuGroup, 20)
-							SpawnBfm23menuPair = MENU_GROUP:New( MenuGroup, "Adversary MiG-23", SpawnBfmPair)
-								Spawn23rng5Pair = MENU_GROUP_COMMAND:New( MenuGroup, "5 nmi", SpawnBfm23menuPair, SpawnAdv, Adv23Pair, MenuGroup, 5)
-								Spawn23rng10Pair = MENU_GROUP_COMMAND:New( MenuGroup, "10 nmi", SpawnBfm23menuPair, SpawnAdv, Adv23Pair, MenuGroup, 10)
-								Spawn23rng20Pair = MENU_GROUP_COMMAND:New( MenuGroup, "20 nmi", SpawnBfm23menuPair, SpawnAdv, Adv23Pair, MenuGroup, 20)
-							SpawnBfm27menuPair = MENU_GROUP:New( MenuGroup, "Adversary Su-27", SpawnBfmPair)
-								Spawn27rng5Pair = MENU_GROUP_COMMAND:New( MenuGroup, "5 nmi", SpawnBfm27menuPair, SpawnAdv, Adv27Pair, MenuGroup, 5)
-								Spawn27rng10Pair = MENU_GROUP_COMMAND:New( MenuGroup, "10 nmi", SpawnBfm27menuPair, SpawnAdv, Adv27Pair, MenuGroup, 10)
-								Spawn27rng20Pair = MENU_GROUP_COMMAND:New( MenuGroup, "20 nmi", SpawnBfm27menuPair, SpawnAdv, Adv27Pair, MenuGroup, 20)
-							SpawnBfm16menuPair = MENU_GROUP:New( MenuGroup, "Adversary F-16", SpawnBfmPair)
-								Spawn16rng5Pair = MENU_GROUP_COMMAND:New( MenuGroup, "5 nmi", SpawnBfm16menuPair, SpawnAdv, Adv16Pair, MenuGroup, 5)
-								Spawn16rng10Pair = MENU_GROUP_COMMAND:New( MenuGroup, "10 nmi", SpawnBfm16menuPair, SpawnAdv, Adv16Pair, MenuGroup, 10)
-								Spawn16rng20Pair = MENU_GROUP_COMMAND:New( MenuGroup, "20 nmi", SpawnBfm16menuPair, SpawnAdv, Adv16Pair, MenuGroup, 20)
-							SpawnBfm18menuPair = MENU_GROUP:New( MenuGroup, "Adversary F-18", SpawnBfmPair)
-								Spawn18rng5Pair = MENU_GROUP_COMMAND:New( MenuGroup, "5 nmi", SpawnBfm18menuPair, SpawnAdv, Adv18Pair, MenuGroup, 5)
-								Spawn18rng10Pair = MENU_GROUP_COMMAND:New( MenuGroup, "10 nmi", SpawnBfm18menuPair, SpawnAdv, Adv18Pair, MenuGroup, 10)
-								Spawn18rng20Pair = MENU_GROUP_COMMAND:New( MenuGroup, "20 nmi", SpawnBfm18menuPair, SpawnAdv, Adv18Pair, MenuGroup, 20)
-				
+
 					MESSAGE:New("You have entered the BFM/ACM zone.\nUse F10 menu to spawn adversaries."):ToGroup(group)
 					env.info("BFM/ACM entry Player name: " ..client:GetPlayerName())
 					env.info("BFM/ACM entry Group Name: " ..group:GetName())
 				end
 				--SetClient:Remove(client:GetName(), true)
-			elseif SpawnBfm ~= nil then
+			elseif (SpawnBfm ~= nil) and (group:IsNotInZone(BfmAcmZoneExit)) then
 				SpawnBfm:Remove()
 				SpawnBfm = nil
 				MESSAGE:New("You have left the ACM/BFM zone."):ToGroup(group)
