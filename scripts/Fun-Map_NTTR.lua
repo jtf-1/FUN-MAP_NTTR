@@ -340,8 +340,8 @@ Range_R65D:Start()
 
 -- BFM/ACM Zones
 BoxZone = ZONE_POLYGON:New( "Polygon_Box", GROUP:FindByName("zone_box") )
-BfmAcmZoneEnter = ZONE_POLYGON:New( "Polygon_BFM_ACM", GROUP:FindByName("COYOTEABC") )
-BfmAcmZoneExit = ZONE:FindByName("BfmAcmZoneOut")
+BfmAcmZone = ZONE_POLYGON:New( "Polygon_BFM_ACM", GROUP:FindByName("COYOTEABC") )
+BfmAcmZoneFox = ZONE:FindByName("BfmAcmZoneProtected")
 
 -- MISSILE TRAINER
 
@@ -349,8 +349,8 @@ BfmAcmZoneExit = ZONE:FindByName("BfmAcmZoneOut")
 fox=FOX:New()
 
 -- Add training zones.
-fox:AddSafeZone(BfmAcmZoneExit)
-fox:AddLaunchZone(BfmAcmZoneExit)
+fox:AddSafeZone(BfmAcmZoneFox)
+fox:AddLaunchZone(BfmAcmZoneFox)
 fox:SetDisableF10Menu()
 
 -- Start missile trainer.
@@ -416,7 +416,7 @@ local function MENU()
  
 			local group = client:GetGroup()
 			local groupName = group:GetName()
-			if (group:IsCompletelyInZone(BfmAcmZoneEnter)) then
+			if (group:IsCompletelyInZone(BfmAcmZone)) then
 				if SpawnBfm == nil then
 					MenuGroup = group
 					MenuGroupName = MenuGroup:GetName()
@@ -433,7 +433,7 @@ local function MENU()
 					env.info("BFM/ACM entry Group Name: " ..group:GetName())
 				end
 				--SetClient:Remove(client:GetName(), true)
-			elseif (SpawnBfm ~= nil) and (group:IsNotInZone(BfmAcmZoneExit)) then
+			elseif SpawnBfm ~= nil then
 				SpawnBfm:Remove()
 				SpawnBfm = nil
 				MESSAGE:New("You have left the ACM/BFM zone."):ToGroup(group)
