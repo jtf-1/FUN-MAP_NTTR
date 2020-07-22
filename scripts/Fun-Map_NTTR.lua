@@ -1,6 +1,9 @@
 env.info( '*** JTF-1 NTTR Fun Map MOOSE script ***' )
 env.info( '*** JTF-1 MOOSE MISSION SCRIPT START ***' )
 
+
+local JtfDebug = true --activate debug menu option n debug slots
+
 _SETTINGS:SetPlayerMenuOff()
 
 -- BEGIN FUNCTIONS SECTION
@@ -338,10 +341,12 @@ Range_R65D:Start()
 
 -- BEGIN ACM/BFM SECTION
 
+--local SpawnBfm.groupName = nil
+
 -- BFM/ACM Zones
 BoxZone = ZONE_POLYGON:New( "Polygon_Box", GROUP:FindByName("zone_box") )
-BfmAcmZone = ZONE_POLYGON:New( "Polygon_BFM_ACM", GROUP:FindByName("COYOTEABC") )
-BfmAcmZoneFox = ZONE:FindByName("BfmAcmZoneProtected")
+BfmAcmZoneMenu = ZONE_POLYGON:New( "Polygon_BFM_ACM", GROUP:FindByName("COYOTEABC") )
+BfmAcmZone = ZONE:FindByName("Zone_BfmAcmFox")
 
 -- MISSILE TRAINER
 
@@ -351,6 +356,7 @@ fox=FOX:New()
 -- Add training zones.
 fox:AddSafeZone(BfmAcmZoneFox)
 fox:AddLaunchZone(BfmAcmZoneFox)
+fox:SetExplosionDistance(300)
 fox:SetDisableF10Menu()
 
 -- Start missile trainer.
@@ -382,19 +388,19 @@ end
 
 function BuildMenuCommands (AdvMenu, MenuGroup, MenuName, BfmMenu, AdvType, AdvQty)
 
-	_G[AdvMenu] = MENU_GROUP:New( MenuGroup, MenuName, _G[BfmMenu])
+	_G[AdvMenu] = MENU_GROUP:New( MenuGroup, MenuName, BfmMenu)
 		_G[AdvMenu .. "_rng5"] = MENU_GROUP_COMMAND:New( MenuGroup, "5 nmi", _G[AdvMenu], SpawnAdv, AdvType, AdvQty, MenuGroup, 5)
 		_G[AdvMenu .. "_rng10"] = MENU_GROUP_COMMAND:New( MenuGroup, "10 nmi", _G[AdvMenu], SpawnAdv, AdvType, AdvQty, MenuGroup, 10)
 		_G[AdvMenu .. "_rng20"] = MENU_GROUP_COMMAND:New( MenuGroup, "20 nmi", _G[AdvMenu], SpawnAdv, AdvType, AdvQty, MenuGroup, 20)
 
 end
 
-function BuildMenus(AdvQty, MenuGroup, MenuName, SpawnBfm)
+function BuildMenus(AdvQty, MenuGroup, MenuName, SpawnBfmGroup)
 
 	local AdvSuffix = "_" .. tostring(AdvQty)
-	local BfmMenu = "SpawnBfm" .. AdvSuffix
+	--local BfmMenu = "SpawnBfm" .. AdvSuffix
 
-	_G[BfmMenu] = MENU_GROUP:New( MenuGroup, MenuName, SpawnBfm)
+	BfmMenu = MENU_GROUP:New(MenuGroup, MenuName, SpawnBfmGroup)
 	
 		BuildMenuCommands("SpawnBfmA4menu" .. AdvSuffix, MenuGroup, "Adversary A-4", BfmMenu, AdvA4, AdvQty)
 		BuildMenuCommands("SpawnBfm28menu" .. AdvSuffix, MenuGroup, "Adversary MiG-28", BfmMenu, Adv28, AdvQty)
@@ -408,7 +414,7 @@ end
 BLUFOR = SET_GROUP:New():FilterCoalitions( "blue" ):FilterStart()
 
 -- SPAWN AIR MENU
-local SetClient = SET_CLIENT:New():FilterCoalitions("blue"):FilterStart()
+local SetClient = SET_CLIENT:New():FilterCoalitions("blue"):FilterStart() -- create a list of all clients
 
 local function MENU()
 	SetClient:ForEachClient(function(client)
@@ -416,28 +422,28 @@ local function MENU()
  
 			local group = client:GetGroup()
 			local groupName = group:GetName()
-			if (group:IsCompletelyInZone(BfmAcmZone)) then
-				if SpawnBfm == nil then
+			
+			if group:IsPartlyOrCompletelyInZone(BfmAcmZoneMenu) then
+				if _G["SpawnBfm" .. groupName] == nil then
 					MenuGroup = group
-					MenuGroupName = MenuGroup:GetName()
+					--MenuGroupName = MenuGroup:GetName()
 
-					SpawnBfm = MENU_GROUP:New( MenuGroup, "AI BFM/ACM" )
-						
-						BuildMenus(1, MenuGroup, "Single", SpawnBfm)
-						BuildMenus(2, MenuGroup, "Pair", SpawnBfm)
-
-
+					_G["SpawnBfm" .. groupName] = MENU_GROUP:New( MenuGroup, "AI BFM/ACM" )
+						BuildMenus(1, MenuGroup, "Single", _G["SpawnBfm" .. groupName])
+						BuildMenus(2, MenuGroup, "Pair", _G["SpawnBfm" .. groupName])
 
 					MESSAGE:New("You have entered the BFM/ACM zone.\nUse F10 menu to spawn adversaries."):ToGroup(group)
 					env.info("BFM/ACM entry Player name: " ..client:GetPlayerName())
 					env.info("BFM/ACM entry Group Name: " ..group:GetName())
+					--SetClient:Remove(client:GetName(), true)
 				end
-				--SetClient:Remove(client:GetName(), true)
-			elseif SpawnBfm ~= nil then
-				SpawnBfm:Remove()
-				SpawnBfm = nil
-				MESSAGE:New("You have left the ACM/BFM zone."):ToGroup(group)
-				env.info("BFM/ACM exit Group Name: " ..group:GetName())
+			elseif _G["SpawnBfm" .. groupName] ~= nil then
+				if group:IsNotInZone(BfmAcmZone) then
+					_G["SpawnBfm" .. groupName]:Remove()
+					_G["SpawnBfm" .. groupName] = nil
+					MESSAGE:New("You are outside the ACM/BFM zone."):ToGroup(group)
+					env.info("BFM/ACM exit Group Name: " ..group:GetName())
+				end
 			end
 		end
 	end)
@@ -449,5 +455,38 @@ MENU()
 -- END ACM/BFM SECTION
 
 
+-- DEBUG SECTION
 
+--SetDebugGroup = SET_GROUP:New():FilterPrefixes("XX_Test"):FilterStart()
+SetDebugClient = SET_CLIENT:New():FilterStart()
+
+local function restartMission()
+	trigger.action.setUserFlag("999", true)
+end
+
+local function BuildDebugMenu()
+	SetDebugClient:ForEachClient(function(client)
+		
+		if (client ~= nil) and (client:IsAlive()) then
+			debugGroup = client:GetGroup()
+			debugGroupName = debugGroup:GetName()
+
+			env.info("DEBUG Player name: " ..client:GetPlayerName())
+			env.info("DEBUG Group Name: " ..debugGroupName)
+
+			
+			if string.find(debugGroupName, "XX_TEST") then
+				debugMenu = MENU_GROUP:New(debugGroup, "DEBUG")
+				MENU_GROUP_COMMAND:New(debugGroup, "Restart Mission", debugMenu, restartMission )
+			end
+		SetDebugClient:Remove(client:GetName(), true)
+		end
+	end)
+	timer.scheduleFunction(BuildDebugMenu, nil, timer.getTime() + 10)
+end
+
+if JtfDebug then
+	env.info("DEBUG enabled")
+	BuildDebugMenu()
+end	
 env.info( '*** JTF-1 MOOSE MISSION SCRIPT END ***' )
