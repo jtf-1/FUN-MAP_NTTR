@@ -379,7 +379,7 @@ function SpawnAdv(adv,qty,group,rng)
 	spawnPt = pos:Translate(range, hdg, true)
 	spawnVec3 = spawnPt:GetVec3()
 	if BoxZone:IsVec3InZone(spawnVec3) then
-		MESSAGE:New("Cannot spawn adversary in The Box.\nChange course or increase your range from The Box, and try again."):ToGroup(group)
+		MESSAGE:New("Cannot spawn adversary aircraft in The Box.\nChange course or increase your range from The Box, and try again."):ToGroup(group)
 	else
 		adv:InitGrouping(qty):InitHeading(hdg + 180):SpawnFromVec3(spawnVec3)
 		MESSAGE:New("Adversary spawned."):ToGroup(group)
