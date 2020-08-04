@@ -19,9 +19,11 @@ function SpawnSupport (SupportSpawn) -- spawnobject, spawnzone
         local SpawnIndex = SupportSpawnObject:GetSpawnIndexFromGroup( SpawnGroup )
         local CheckTanker = SCHEDULER:New( nil, 
         function()
-          if SpawnGroup:IsNotInZone( SupportSpawn.spawnzone ) then
-            SupportSpawnObject:ReSpawn( SpawnIndex )
-          end
+			if SpawnGroup:IsNotInZone( SupportSpawn.spawnzone ) then
+				SupportSpawnObject:ReSpawn( SpawnIndex )
+			elseif (not SupportSpawnObject:IsAlive())
+				SupportSpawnObject:ReSpawn( SpawnIndex )
+			end
         end,
         {}, 0, 60 )
       end
