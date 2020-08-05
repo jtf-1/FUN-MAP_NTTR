@@ -18,17 +18,17 @@ function SpawnSupport (SupportSpawn) -- spawnobject, spawnzone
       function ( SpawnGroup )
         local SpawnIndex = SupportSpawnObject:GetSpawnIndexFromGroup( SpawnGroup )
         local CheckTanker = SCHEDULER:New( nil, 
-        function()
-			if SpawnGroup:IsNotInZone( SupportSpawn.spawnzone ) then
-				SupportSpawnObject:ReSpawn( SpawnIndex )
-			elseif (not SupportSpawnObject:IsAlive())
-				SupportSpawnObject:ReSpawn( SpawnIndex )
+        function ()
+			if SpawnGroup then
+				if SpawnGroup:IsNotInZone( SupportSpawn.spawnzone ) then
+					SupportSpawnObject:ReSpawn( SpawnIndex )
+				end
 			end
         end,
         {}, 0, 60 )
       end
     )
-    :InitRepeatOnEngineShutDown()
+    :InitRepeatOnLanding()
     :Spawn()
 
 
@@ -43,13 +43,13 @@ end -- function
 ----------------------------------------------------
 
 TableSpawnSupport = { -- {spawnobjectname, spawnzone}
-	{spawnobject = "AR230V_KC-130_01", spawnzone = ZONE:FindByName("AR230V")},
-	{spawnobject = "AR231V_KC-130_01", spawnzone = ZONE:FindByName("AR231V")},
-	{spawnobject = "AR635_KC-135_01", spawnzone = ZONE:FindByName("AR635")},
-	{spawnobject = "AR641A_KC135_01", spawnzone = ZONE:FindByName("AR641A")},
-	{spawnobject = "AR635_KC-135MPRS_01", spawnzone = ZONE:FindByName("AR635")},
-	{spawnobject = "AR641A_KC135MPRS_01", spawnzone = ZONE:FindByName("AR641A")},
-	{spawnobject = "AWACS_DARKSTAR", spawnzone = ZONE:FindByName("AWACS")},
+	{spawnobject = "AR230V_KC-130_01", spawnzone = ZONE:New("AR230V")},
+	{spawnobject = "AR231V_KC-130_01", spawnzone = ZONE:New("AR231V")},
+	{spawnobject = "AR635_KC-135_01", spawnzone = ZONE:New("AR635")},
+	{spawnobject = "AR641A_KC135_01", spawnzone = ZONE:New("AR641A")},
+	{spawnobject = "AR635_KC-135MPRS_01", spawnzone = ZONE:New("AR635")},
+	{spawnobject = "AR641A_KC135MPRS_01", spawnzone = ZONE:New("AR641A")},
+	{spawnobject = "AWACS_DARKSTAR", spawnzone = ZONE:New("AWACS")},
 }
 
 ------------------------------
@@ -91,6 +91,8 @@ Range_R61B:Start()
 -- RANGE R62A
 
 Range_R62A = RANGE:New("Range 62A")
+
+Range_R62A:DebugOFF()
 
 Range_R62A:SetRangeZone(ZONE_POLYGON:FindByName("R62A"))
 
@@ -339,6 +341,16 @@ Range_R65D:Start()
 
 -- END RANGE R65D
 
+Range_R61B:DebugOFF()
+Range_R62A:DebugOFF()
+Range_R62B:DebugOFF()
+Range_R63B:DebugOFF()
+Range_R64A:DebugOFF()
+Range_R64B:DebugOFF()
+Range_R64C:DebugOFF()
+Range_R65C:DebugOFF()
+Range_R65D:DebugOFF()
+
 -- END RANGE SECTION
 
 -- BEGIN ACM/BFM SECTION
@@ -363,6 +375,8 @@ fox:SetDisableF10Menu()
 
 -- Start missile trainer.
 fox:Start()
+fox:SetDebugOnOff(false)
+
 
 -- Spawn Objects
 AdvA4 = SPAWN:New( "ADV_A4" )		

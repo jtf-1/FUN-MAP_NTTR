@@ -1,0 +1,1 @@
+assert(loadfile("D:\\Documents\\GitHub\\FUN-MAP_NTTR\\scripts\\Fun-Map_NTTR.lua"))()
