@@ -2,7 +2,7 @@ env.info( '*** JTF-1 NTTR Fun Map MOOSE script ***' )
 env.info( '*** JTF-1 MOOSE MISSION SCRIPT START ***' )
 
 
-local JtfDebug = true --activate debug menu option n debug slots
+local JtfAdmin = true --activate admin menu option in admin slots
 
 _SETTINGS:SetPlayerMenuOff()
 
@@ -471,38 +471,41 @@ MENU()
 -- END ACM/BFM SECTION
 
 
--- DEBUG SECTION
+-- ADMIN SECTION
 
---SetDebugGroup = SET_GROUP:New():FilterPrefixes("XX_Test"):FilterStart()
-SetDebugClient = SET_CLIENT:New():FilterStart()
+--SeAdmingGroup = SET_GROUP:New():FilterPrefixes("XX_Test"):FilterStart()
+SetAdminClient = SET_CLIENT:New():FilterStart()
 
 local function restartMission()
 	trigger.action.setUserFlag("999", true)
 end
 
-local function BuildDebugMenu()
-	SetDebugClient:ForEachClient(function(client)
+local function BuildAdminMenu()
+	SetAdminClient:ForEachClient(function(client)
 		
 		if (client ~= nil) and (client:IsAlive()) then
-			debugGroup = client:GetGroup()
-			debugGroupName = debugGroup:GetName()
+			adminGroup = client:GetGroup()
+			adminGroupName = adminGroup:GetName()
 
-			env.info("DEBUG Player name: " ..client:GetPlayerName())
-			env.info("DEBUG Group Name: " ..debugGroupName)
+			env.info("ADMIN Player name: " ..client:GetPlayerName())
+			env.info("ADMIN Group Name: " ..adminGroupName)
 
 			
-			if string.find(debugGroupName, "XX_TEST") then
-				debugMenu = MENU_GROUP:New(debugGroup, "DEBUG")
-				MENU_GROUP_COMMAND:New(debugGroup, "Restart Mission", debugMenu, restartMission )
+			if string.find(adminGroupName, "XX_ADMIN") then
+				adminMenu = MENU_GROUP:New(adminGroup, "ADMIN")
+				MENU_GROUP_COMMAND:New(adminGroup, "Restart Mission", adminMenu, restartMission )
 			end
-		SetDebugClient:Remove(client:GetName(), true)
+		SetAdminClient:Remove(client:GetName(), true)
 		end
 	end)
-	timer.scheduleFunction(BuildDebugMenu, nil, timer.getTime() + 10)
+	timer.scheduleFunction(BuildAdminMenu, nil, timer.getTime() + 10)
 end
 
-if JtfDebug then
-	env.info("DEBUG enabled")
-	BuildDebugMenu()
-end	
+if JtfAdmin then
+	env.info("ADMIN enabled")
+	BuildAdminMenu()
+end
+
+--END ADMIN SECTION
+
 env.info( '*** JTF-1 MOOSE MISSION SCRIPT END ***' )
