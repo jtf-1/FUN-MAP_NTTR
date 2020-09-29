@@ -43,8 +43,8 @@ end -- function
 ----------------------------------------------------
 
 TableSpawnSupport = { -- {spawnobjectname, spawnzone}
-	{spawnobject = "AR230V_KC-130_01", spawnzone = ZONE:New("AR230V")},
-	{spawnobject = "AR231V_KC-130_01", spawnzone = ZONE:New("AR231V")},
+	{spawnobject = "AR230V_KC-135_01", spawnzone = ZONE:New("AR230V")},
+	{spawnobject = "AR231V_KC-135_01", spawnzone = ZONE:New("AR231V")},
 	{spawnobject = "AR635_KC-135_01", spawnzone = ZONE:New("AR635")},
 	{spawnobject = "AR641A_KC135_01", spawnzone = ZONE:New("AR641A")},
 	{spawnobject = "AR635_KC-135MPRS_01", spawnzone = ZONE:New("AR635")},
