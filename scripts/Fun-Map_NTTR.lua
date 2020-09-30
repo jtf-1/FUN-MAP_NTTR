@@ -157,7 +157,8 @@ Range_R62B:AddBombingTargetGroup(GROUP:FindByName("62-93"))
 local bombtarget_R62B = {
 	"62-32-01", 
 	"62-32-02", 
-	"62-32-03", 
+	"62-32-03",
+	"62-99",	
 }
 Range_R62B:AddBombingTargets( bombtarget_R62B )
 
