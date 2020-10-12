@@ -477,7 +477,10 @@ MENU()
 --SeAdmingGroup = SET_GROUP:New():FilterPrefixes("XX_Test"):FilterStart()
 SetAdminClient = SET_CLIENT:New():FilterStart()
 
-local function restartMission()
+local function adminRestartMission(adminClientName)
+	if adminClientName then
+		env.info("ADMIN Restart player name: " ..adminClientName)
+	end
 	trigger.action.setUserFlag("999", true)
 end
 
@@ -488,13 +491,10 @@ local function BuildAdminMenu()
 			adminGroup = client:GetGroup()
 			adminGroupName = adminGroup:GetName()
 
-			env.info("ADMIN Player name: " ..client:GetPlayerName())
-			env.info("ADMIN Group Name: " ..adminGroupName)
-
-			
 			if string.find(adminGroupName, "XX_ADMIN") then
 				adminMenu = MENU_GROUP:New(adminGroup, "ADMIN")
-				MENU_GROUP_COMMAND:New(adminGroup, "Restart Mission", adminMenu, restartMission )
+				MENU_GROUP_COMMAND:New(adminGroup, "Restart Mission", adminMenu, adminRestartMission, client:GetPlayerName() )
+				env.info("ADMIN Player name: " ..client:GetPlayerName())
 			end
 		SetAdminClient:Remove(client:GetName(), true)
 		end
