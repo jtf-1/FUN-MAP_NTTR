@@ -474,7 +474,6 @@ MENU()
 
 -- ADMIN SECTION
 
---SeAdmingGroup = SET_GROUP:New():FilterPrefixes("XX_Test"):FilterStart()
 SetAdminClient = SET_CLIENT:New():FilterStart()
 
 local function adminRestartMission(adminClientName)
