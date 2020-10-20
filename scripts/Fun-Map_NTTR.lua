@@ -2,7 +2,7 @@ env.info( '*** JTF-1 NTTR Fun Map MOOSE script ***' )
 env.info( '*** JTF-1 MOOSE MISSION SCRIPT START ***' )
 
 
-local JtfAdmin = true --activate admin menu option in admin slots
+JtfAdmin = true --activate admin menu option in admin slots
 
 _SETTINGS:SetPlayerMenuOff()
 
@@ -476,14 +476,14 @@ MENU()
 
 SetAdminClient = SET_CLIENT:New():FilterStart()
 
-local function adminRestartMission(adminClientName)
+local function adminRestartMission(adminClientName, mapFlag)
 	if adminClientName then
 		env.info("ADMIN Restart player name: " ..adminClientName)
 	end
-	trigger.action.setUserFlag("999", true)
+	trigger.action.setUserFlag(mapFlag, true) -- 999 = NTTR Day, 998 = NTTR Night
 end
 
-local function BuildAdminMenu()
+local function BuildAdminMenu(adminState)
 	SetAdminClient:ForEachClient(function(client)
 		
 		if (client ~= nil) and (client:IsAlive()) then
@@ -492,7 +492,8 @@ local function BuildAdminMenu()
 
 			if string.find(adminGroupName, "XX_ADMIN") then
 				adminMenu = MENU_GROUP:New(adminGroup, "ADMIN")
-				MENU_GROUP_COMMAND:New(adminGroup, "Restart Mission", adminMenu, adminRestartMission, client:GetPlayerName() )
+				MENU_GROUP_COMMAND:New(adminGroup, "Load DAY NTTR", adminMenu, adminRestartMission, client:GetPlayerName(), 999 )
+				MENU_GROUP_COMMAND:New(adminGroup, "Load NIGHT NTTR", adminMenu, adminRestartMission, client:GetPlayerName(), 998 )
 				env.info("ADMIN Player name: " ..client:GetPlayerName())
 			end
 		SetAdminClient:Remove(client:GetName(), true)
@@ -503,7 +504,7 @@ end
 
 if JtfAdmin then
 	env.info("ADMIN enabled")
-	BuildAdminMenu()
+	BuildAdminMenu(true)
 end
 
 --END ADMIN SECTION
