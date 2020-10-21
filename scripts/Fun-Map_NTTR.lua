@@ -16,14 +16,15 @@ function SpawnSupport (SupportSpawn) -- spawnobject, spawnzone
   SupportSpawnObject:InitLimit( 1, 50 )
     :OnSpawnGroup(
       function ( SpawnGroup )
+        SpawnGroup:CommandSetCallsign(SupportSpawn.callsignName, SupportSpawn.callsignNumber)
         local SpawnIndex = SupportSpawnObject:GetSpawnIndexFromGroup( SpawnGroup )
         local CheckTanker = SCHEDULER:New( nil, 
         function ()
-			if SpawnGroup then
-				if SpawnGroup:IsNotInZone( SupportSpawn.spawnzone ) then
-					SupportSpawnObject:ReSpawn( SpawnIndex )
-				end
-			end
+    			if SpawnGroup then
+    				if SpawnGroup:IsNotInZone( SupportSpawn.spawnzone ) then
+    					SupportSpawnObject:ReSpawn( SpawnIndex )
+    				end
+    			end
         end,
         {}, 0, 60 )
       end
@@ -43,13 +44,14 @@ end -- function
 ----------------------------------------------------
 
 TableSpawnSupport = { -- {spawnobjectname, spawnzone}
-	{spawnobject = "AR230V_KC-135_01", spawnzone = ZONE:New("AR230V")},
-	{spawnobject = "AR231V_KC-135_01", spawnzone = ZONE:New("AR231V")},
-	{spawnobject = "AR635_KC-135_01", spawnzone = ZONE:New("AR635")},
-	{spawnobject = "AR641A_KC135_01", spawnzone = ZONE:New("AR641A")},
-	{spawnobject = "AR635_KC-135MPRS_01", spawnzone = ZONE:New("AR635")},
-	{spawnobject = "AR641A_KC135MPRS_01", spawnzone = ZONE:New("AR641A")},
-	{spawnobject = "AWACS_DARKSTAR", spawnzone = ZONE:New("AWACS")},
+	{spawnobject = "AR230V_KC-135_01", spawnzone = ZONE:New("AR230V"), callsignName = 2, callsignNumber = 1},
+  {spawnobject = "AR230V_KC-130_01", spawnzone = ZONE:New("AR230V"), callsignName = 2, callsignNumber = 3},
+	{spawnobject = "AR231V_KC-135_01", spawnzone = ZONE:New("AR231V"), callsignName = 2, callSignNumber = 2},
+	{spawnobject = "AR635_KC-135_01", spawnzone = ZONE:New("AR635"), callsignName = 1, callsignNumber = 2},
+	{spawnobject = "AR641A_KC135_01", spawnzone = ZONE:New("AR641A"), callsignName = 1, callsignNumber = 1},
+	{spawnobject = "AR635_KC-135MPRS_01", spawnzone = ZONE:New("AR635"), callsignName = 3, callsignNumber = 2},
+	{spawnobject = "AR641A_KC135MPRS_01", spawnzone = ZONE:New("AR641A"), callsignName = 3, callsignNumber = 1},
+	{spawnobject = "AWACS_DARKSTAR", spawnzone = ZONE:New("AWACS"), callsignName = 5, callsignNumber = 1},
 }
 
 ------------------------------
@@ -65,6 +67,11 @@ end
 
 
 -- BEGIN RANGE SECTION
+
+local strafeMaxAlt = 1530 -- [5000ft] in metres. Height of strafe box.
+local strafeBoxLength = 3000 -- [10000ft] in metres. Length of strafe box.
+local strafeBoxWidth = 300 -- [1000ft] in metres. Width of Strafe pit box (from 1st listed lane).
+local strafeGoodPass = 20 -- Min hits for a good pass.
 
 -- RANGE R61B
 
@@ -181,6 +188,8 @@ Range_R63B = RANGE:New("Range 63B")
 
 Range_R63B:SetRangeZone(ZONE_POLYGON:FindByName("R63B"))
 
+Range_R63B:SetMaxStrafeAlt(strafeMaxAlt)
+
 Range_R63B:AddBombingTargetGroup(GROUP:FindByName("63-01"))
 Range_R63B:AddBombingTargetGroup(GROUP:FindByName("63-02"))
 Range_R63B:AddBombingTargetGroup(GROUP:FindByName("63-03"))
@@ -194,18 +203,18 @@ Range_R63B:AddBombingTargetGroup(GROUP:FindByName("R-63B Class A Range-02"))
 local FoulDist_R63B_Strafe = Range_R63B:GetFoullineDistance("R63B Strafe Lane L1", "R63B Foul Line Left")
 
 local Strafe_R63B_West = {
-	"R63B Strafe Lane L1",
 	"R63B Strafe Lane L2",
+	"R63B Strafe Lane L1",
 	"R63B Strafe Lane L3",
 }
-Range_R63B:AddStrafePit(Strafe_R63B_West, 3000, 300, nil, true, 20, FoulDist_R63B_Strafe)
+Range_R63B:AddStrafePit(Strafe_R63B_West, strafeBoxLength, strafeBoxWidth, nil, true, strafeGoodPass, FoulDist_R63B_Strafe)
 
 local Strafe_R63B_East = {
-	"R63B Strafe Lane R1",
 	"R63B Strafe Lane R2",
+	"R63B Strafe Lane R1",
 	"R63B Strafe Lane R3",
 }
-Range_R63B:AddStrafePit(Strafe_R63B_East, 3000, 300, nil, true, 20, FoulDist_R63B_Strafe)
+Range_R63B:AddStrafePit(Strafe_R63B_East, strafeBoxLength, strafeBoxWidth, nil, true, strafeGoodPass, FoulDist_R63B_Strafe)
 
 local bombtarget_R63B = {
 	"R63BWC",
@@ -269,6 +278,8 @@ Range_R64C = RANGE:New("Range 64C")
 
 Range_R64C:SetRangeZone(ZONE_POLYGON:FindByName("R64C"))
 
+Range_R64C:SetMaxStrafeAlt(strafeMaxAlt)
+
 Range_R64C:AddBombingTargetGroup(GROUP:FindByName("64-05"))
 Range_R64C:AddBombingTargetGroup(GROUP:FindByName("64-08"))
 Range_R64C:AddBombingTargetGroup(GROUP:FindByName("64-09"))
@@ -276,18 +287,18 @@ Range_R64C:AddBombingTargetGroup(GROUP:FindByName("64-09"))
 local FoulDist_R64C_Strafe = Range_R64C:GetFoullineDistance("R64C Strafe Lane L1", "R64C Strafe Foul Line L1")
 
 local Strafe_R64C_West = {
-	"R64C Strafe Lane L1",
 	"R64C Strafe Lane L2",
+	"R64C Strafe Lane L1",
 	"R64C Strafe Lane L3",
 }
-Range_R64C:AddStrafePit(Strafe_R64C_West, 3000, 300, nil, true, 20, FoulDist_R64C_Strafe)
+Range_R64C:AddStrafePit(Strafe_R64C_West, strafeBoxLength, strafeBoxWidth, nil, true, strafeGoodPass, FoulDist_R64C_Strafe)
 
 local Strafe_R64C_East = {
-	"R64C Strafe Lane R1",
 	"R64C Strafe Lane R2",
+	"R64C Strafe Lane R1",
 	"R64C Strafe Lane R3",
 }
-Range_R64C:AddStrafePit(Strafe_R64C_East, 3000, 300, nil, true, 20, FoulDist_R64C_Strafe)
+Range_R64C:AddStrafePit(Strafe_R64C_East, strafeBoxLength, strafeBoxWidth, nil, true, strafeGoodPass, FoulDist_R64C_Strafe)
 
 local bombtarget_R64C = {
 	"R64CWC", 
