@@ -3,6 +3,7 @@
 	<name>FUN-MAP_NTTR</name>
 	<comment></comment>
 	<projects>
+		<project>Moose_Framework</project>
 	</projects>
 	<buildSpec>
 		<buildCommand>

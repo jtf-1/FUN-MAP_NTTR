@@ -51,6 +51,10 @@ AR-635
 - HI, TEXACO 2-1 [KC-135] 52Y, 352.600, FL230-250
 - LO, SHELL 2-1 [KC-135MPRS] 34Y, 306.200, F180-210
 
+AR-625 
+- HI, TEXACO 3-1 [KC-135] 51Y, 324.050, FL230-250
+- LO, SHELL 3-1 [KC-135MPRS] 33Y, 319.800, F180-210
+
 AR-230V
 - ARCO 1-1 [KC-135] 30Y, 343.600, FL150 [215kts IAS]
 - ARCO 3-1 [KC-130] 29Y, 319.800, FL100
@@ -61,13 +65,19 @@ AR-231V
 RANGES
 ======
 
-The following ranges are populated with multiple targets; 61B, 62A, 62B, 63B, 64A, 64B, 64C, 65C and 65D. Each target contains one or more DMPI. See the in-game kneeboard for target data.
+The following ranges are populated with multiple targets; 61B, 62A, 62B, 63B, 64A, 64B, 64C, 65C, 65D and 74C. Each target contains one or more DMPI. See the in-game kneeboard for target data.
 
-Ranges are script scored and have an F10 menu system you can use to manage them. A range instructor is available at each range to provide hit assessment. 
+Non-active targets are script scored and have an F10 menu system you can use to manage them. A range instructor is available at each range to provide hit assessment. 
 
 Bomb targets are scored on the proximity of the last round to the target. Smoke will be used to mark the round's impact.
 
 Strafe Pits, where available (R63B, R64C), are configured with three targets per lane. Aircraft must be below 3000ft AGL and within 500ft either side of the inbound heading to the target to avoid a foul pass. Rounds fired after the foul line will not count.
+
+The following Active Targets are available in R74C and can be activated or reset from the F10 menu; 74-01, 74-06, 74-25, 74-26, 74-27, 74-29, 74-30, 74-36, 74-39. 
+
+Two activation options are available for each Active Target; Activate or Active with SAM. Activated targets will engage with firearms, AAA. If the SAM option is selected, SAM and MANPAD assets at or IVO the target will also engage.
+
+Missile Trainer will be active while inside the Range.
 
 AI BFM/ACM
 ==========
