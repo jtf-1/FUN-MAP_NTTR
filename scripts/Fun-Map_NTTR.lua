@@ -6,13 +6,17 @@ JtfAdmin = true --activate admin menu option in admin slots
 
 _SETTINGS:SetPlayerMenuOff()
 
+-- BEGIN MENUS SECTION
+
+-- END MENUS SECTION
+
+
 -- BEGIN FUNCTIONS SECTION
 
 function SpawnSupport (SupportSpawn) -- spawnobject, spawnzone
 
   --local SupportSpawn = _args[1]
   local SupportSpawnObject = SPAWN:New( SupportSpawn.spawnobject )
-
   SupportSpawnObject:InitLimit( 1, 50 )
     :OnSpawnGroup(
       function ( SpawnGroup )
@@ -32,10 +36,10 @@ function SpawnSupport (SupportSpawn) -- spawnobject, spawnzone
     :InitRepeatOnLanding()
     :Spawn()
 
-
 end -- function
 
 -- END FUNCTIONS SECTION
+
 
 -- BEGIN SUPPORT AIRCRAFT SECTION
 
@@ -43,14 +47,16 @@ end -- function
 --- define table of respawning support aircraft ---
 ----------------------------------------------------
 
-TableSpawnSupport = { -- {spawnobjectname, spawnzone}
+TableSpawnSupport = { -- {spawnobjectname, spawnzone, callsignName, callsignNumber}
 	{spawnobject = "AR230V_KC-135_01", spawnzone = ZONE:New("AR230V"), callsignName = 2, callsignNumber = 1},
   {spawnobject = "AR230V_KC-130_01", spawnzone = ZONE:New("AR230V"), callsignName = 2, callsignNumber = 3},
 	{spawnobject = "AR231V_KC-135_01", spawnzone = ZONE:New("AR231V"), callsignName = 2, callSignNumber = 2},
 	{spawnobject = "AR635_KC-135_01", spawnzone = ZONE:New("AR635"), callsignName = 1, callsignNumber = 2},
-	{spawnobject = "AR641A_KC135_01", spawnzone = ZONE:New("AR641A"), callsignName = 1, callsignNumber = 1},
+  {spawnobject = "AR625_KC-135_01", spawnzone = ZONE:New("AR625"), callsignName = 1, callsignNumber = 3},
+	{spawnobject = "AR641A_KC-135_01", spawnzone = ZONE:New("AR641A"), callsignName = 1, callsignNumber = 1},
 	{spawnobject = "AR635_KC-135MPRS_01", spawnzone = ZONE:New("AR635"), callsignName = 3, callsignNumber = 2},
-	{spawnobject = "AR641A_KC135MPRS_01", spawnzone = ZONE:New("AR641A"), callsignName = 3, callsignNumber = 1},
+  {spawnobject = "AR625_KC-135MPRS_01", spawnzone = ZONE:New("AR625"), callsignName = 3, callsignNumber = 3},
+	{spawnobject = "AR641A_KC-135MPRS_01", spawnzone = ZONE:New("AR641A"), callsignName = 3, callsignNumber = 1},
 	{spawnobject = "AWACS_DARKSTAR", spawnzone = ZONE:New("AWACS"), callsignName = 5, callsignNumber = 1},
 }
 
@@ -60,13 +66,12 @@ TableSpawnSupport = { -- {spawnobjectname, spawnzone}
 
 for i, v in ipairs( TableSpawnSupport ) do
 	SpawnSupport ( v )
-	
 end
 
 -- END SUPPORT AIRCRAFT SECTION
 
 
--- BEGIN RANGE SECTION
+-- BEGIN STATIC RANGE SECTION
 
 local strafeMaxAlt = 1530 -- [5000ft] in metres. Height of strafe box.
 local strafeBoxLength = 3000 -- [10000ft] in metres. Length of strafe box.
@@ -76,9 +81,7 @@ local strafeGoodPass = 20 -- Min hits for a good pass.
 -- RANGE R61B
 
 Range_R61B = RANGE:New("Range 61B")
-
 Range_R61B:SetRangeZone(ZONE_POLYGON:FindByName("R61B"))
-
 Range_R61B:AddBombingTargetGroup(GROUP:FindByName("61-01"))
 Range_R61B:AddBombingTargetGroup(GROUP:FindByName("61-03"))
 
@@ -86,11 +89,10 @@ local bombtarget_R61B = {
 	"61-01 Aircraft #001", 
 	"61-01 Aircraft #002", 
 }
+                                
 Range_R61B:AddBombingTargets( bombtarget_R61B )
-
 Range_R61B:SetSoundfilesPath("Range Soundfiles/")
 Range_R61B:SetRangeControl(341.925)
-
 Range_R61B:Start()
 
 -- END RANGE 61B
@@ -98,18 +100,13 @@ Range_R61B:Start()
 -- RANGE R62A
 
 Range_R62A = RANGE:New("Range 62A")
-
 Range_R62A:DebugOFF()
-
 Range_R62A:SetRangeZone(ZONE_POLYGON:FindByName("R62A"))
-
 Range_R62A:AddBombingTargetGroup(GROUP:FindByName("62-01"))
 Range_R62A:AddBombingTargetGroup(GROUP:FindByName("62-02"))
 Range_R62A:AddBombingTargetGroup(GROUP:FindByName("62-04"))
-
 Range_R62A:SetSoundfilesPath("Range Soundfiles/")
 Range_R62A:SetRangeControl(234.250)
-
 Range_R62A:Start()
 
 -- END RANGE R62A
@@ -117,9 +114,7 @@ Range_R62A:Start()
 -- RANGE R62B
 
 Range_R62B = RANGE:New("Range 62B")
-
 Range_R62B:SetRangeZone(ZONE_POLYGON:FindByName("R62B"))
-
 Range_R62B:AddBombingTargetGroup(GROUP:FindByName("62-03"))
 Range_R62B:AddBombingTargetGroup(GROUP:FindByName("62-08"))
 Range_R62B:AddBombingTargetGroup(GROUP:FindByName("62-09"))
@@ -167,11 +162,10 @@ local bombtarget_R62B = {
 	"62-32-03",
 	"62-99",	
 }
-Range_R62B:AddBombingTargets( bombtarget_R62B )
 
+Range_R62B:AddBombingTargets( bombtarget_R62B )
 Range_R62B:SetSoundfilesPath("Range Soundfiles/")
 Range_R62B:SetRangeControl(234.250)
-
 Range_R62B:Start()
 
 -- T6208 moving strafe targets
@@ -185,11 +179,8 @@ MenuT6208_3 = MENU_COALITION_COMMAND:New( coalition.side.BLUE, "TGT 6208: Activa
 -- RANGE R63B (CLASS A)
 
 Range_R63B = RANGE:New("Range 63B")
-
 Range_R63B:SetRangeZone(ZONE_POLYGON:FindByName("R63B"))
-
 Range_R63B:SetMaxStrafeAlt(strafeMaxAlt)
-
 Range_R63B:AddBombingTargetGroup(GROUP:FindByName("63-01"))
 Range_R63B:AddBombingTargetGroup(GROUP:FindByName("63-02"))
 Range_R63B:AddBombingTargetGroup(GROUP:FindByName("63-03"))
@@ -207,6 +198,7 @@ local Strafe_R63B_West = {
 	"R63B Strafe Lane L1",
 	"R63B Strafe Lane L3",
 }
+
 Range_R63B:AddStrafePit(Strafe_R63B_West, strafeBoxLength, strafeBoxWidth, nil, true, strafeGoodPass, FoulDist_R63B_Strafe)
 
 local Strafe_R63B_East = {
@@ -214,18 +206,17 @@ local Strafe_R63B_East = {
 	"R63B Strafe Lane R1",
 	"R63B Strafe Lane R3",
 }
+
 Range_R63B:AddStrafePit(Strafe_R63B_East, strafeBoxLength, strafeBoxWidth, nil, true, strafeGoodPass, FoulDist_R63B_Strafe)
 
 local bombtarget_R63B = {
 	"R63BWC",
 	"R63BEC",	
 }
+
 Range_R63B:AddBombingTargets( bombtarget_R63B )
-
-
 Range_R63B:SetSoundfilesPath("Range Soundfiles/")
 Range_R63B:SetRangeControl(234.250)
-
 Range_R63B:Start()
 
 -- END RANGE R63B
@@ -234,20 +225,17 @@ Range_R63B:Start()
 -- RANGE R64A
 
 Range_R64A= RANGE:New("Range R64A")
-
 Range_R64A:SetRangeZone(ZONE_POLYGON:FindByName("R64A"))
-
 Range_R64A:AddBombingTargetGroup(GROUP:FindByName("64-10"))
 Range_R64A:AddBombingTargetGroup(GROUP:FindByName("64-11"))
 
 local bombtarget_R64A = {
 	"64-12-05", 
 }
-Range_R64A:AddBombingTargets( bombtarget_R64A )
 
+Range_R64A:AddBombingTargets( bombtarget_R64A )
 Range_R64A:SetSoundfilesPath("Range Soundfiles/")
 Range_R64A:SetRangeControl(341.925)
-
 Range_R64A:Start()
 
 -- END RANGE 64A
@@ -255,18 +243,14 @@ Range_R64A:Start()
 -- RANGE R64B
 
 Range_R64B= RANGE:New("Range R64B")
-
 Range_R64B:SetRangeZone(ZONE_POLYGON:FindByName("R64B"))
-
 Range_R64B:AddBombingTargetGroup(GROUP:FindByName("64-13"))
 Range_R64B:AddBombingTargetGroup(GROUP:FindByName("64-14"))
 Range_R64B:AddBombingTargetGroup(GROUP:FindByName("64-17"))
 Range_R64B:AddBombingTargetGroup(GROUP:FindByName("64-19"))
 Range_R64B:AddBombingTargetGroup(GROUP:FindByName("64-15"))
-
 Range_R64B:SetSoundfilesPath("Range Soundfiles/")
 Range_R64B:SetRangeControl(341.925)
-
 Range_R64B:Start()
 
 -- END RANGE 64B
@@ -275,11 +259,8 @@ Range_R64B:Start()
 -- Range R64C
 
 Range_R64C = RANGE:New("Range 64C")
-
 Range_R64C:SetRangeZone(ZONE_POLYGON:FindByName("R64C"))
-
 Range_R64C:SetMaxStrafeAlt(strafeMaxAlt)
-
 Range_R64C:AddBombingTargetGroup(GROUP:FindByName("64-05"))
 Range_R64C:AddBombingTargetGroup(GROUP:FindByName("64-08"))
 Range_R64C:AddBombingTargetGroup(GROUP:FindByName("64-09"))
@@ -291,6 +272,7 @@ local Strafe_R64C_West = {
 	"R64C Strafe Lane L1",
 	"R64C Strafe Lane L3",
 }
+
 Range_R64C:AddStrafePit(Strafe_R64C_West, strafeBoxLength, strafeBoxWidth, nil, true, strafeGoodPass, FoulDist_R64C_Strafe)
 
 local Strafe_R64C_East = {
@@ -298,6 +280,7 @@ local Strafe_R64C_East = {
 	"R64C Strafe Lane R1",
 	"R64C Strafe Lane R3",
 }
+
 Range_R64C:AddStrafePit(Strafe_R64C_East, strafeBoxLength, strafeBoxWidth, nil, true, strafeGoodPass, FoulDist_R64C_Strafe)
 
 local bombtarget_R64C = {
@@ -305,12 +288,11 @@ local bombtarget_R64C = {
 	"R64CEC", 
 	"R-64C Class A Range-01", 
 	"R-64C Class A Range-02", 
-	}
+}
+	
 Range_R64C:AddBombingTargets( bombtarget_R64C )
-
 Range_R64C:SetSoundfilesPath("Range Soundfiles/")
 Range_R64C:SetRangeControl(288.800)
-
 Range_R64C:Start()
 
 -- END Range R64C
@@ -318,9 +300,7 @@ Range_R64C:Start()
 -- RANGE R65C
 
 Range_R65C = RANGE:New("Range R65C")
-
 Range_R65C:SetRangeZone(ZONE_POLYGON:FindByName("R65C"))
-
 Range_R65C:AddBombingTargetGroup(GROUP:FindByName("65-01"))
 Range_R65C:AddBombingTargetGroup(GROUP:FindByName("65-02"))
 Range_R65C:AddBombingTargetGroup(GROUP:FindByName("65-03"))
@@ -330,28 +310,24 @@ Range_R65C:AddBombingTargetGroup(GROUP:FindByName("65-06"))
 Range_R65C:AddBombingTargetGroup(GROUP:FindByName("65-07"))
 Range_R65C:AddBombingTargetGroup(GROUP:FindByName("65-08"))
 Range_R65C:AddBombingTargetGroup(GROUP:FindByName("65-11"))
-
 Range_R65C:SetSoundfilesPath("Range Soundfiles/")
 Range_R65C:SetRangeControl(225.45)
-
 Range_R65C:Start()
 
 -- END RANGE R65C
 
--- RANGE R65D
+-- BEGIN RANGE R65D
 
 Range_R65D = RANGE:New("Range R65D")
-
 Range_R65D:SetRangeZone(ZONE_POLYGON:FindByName("R65D"))
-
 Range_R65D:AddBombingTargetGroup(GROUP:FindByName("65-10"))
-
 Range_R65D:SetSoundfilesPath("Range Soundfiles/")
 Range_R65D:SetRangeControl(225.45)
-
 Range_R65D:Start()
 
 -- END RANGE R65D
+
+-- RANGE DEBUG
 
 Range_R61B:DebugOFF()
 Range_R62A:DebugOFF()
@@ -363,7 +339,99 @@ Range_R64C:DebugOFF()
 Range_R65C:DebugOFF()
 Range_R65D:DebugOFF()
 
--- END RANGE SECTION
+-- END RANGE DEBUG
+
+-- END STATIC RANGE SECTION
+
+-- BEGIN DYNAMIC RANGES
+
+MenuActiveRangesTop = MENU_COALITION:New(coalition.side.BLUE, "ACTIVE RANGES")
+
+function resetRangeTarget(rangeGroup, rangePrefix, rangeMenu, withSam)
+
+  rangeMenu:Remove()
+  if rangeGroup:IsActive() then
+     if withSam then
+      withSam:Destroy()
+    end
+    rangeGroup:Destroy()
+    initActiveRange(GROUP:FindByName("ACTIVE_" .. rangePrefix))    
+  end
+
+end
+
+function activateRangeTarget(rangeGroup, rangePrefix, rangeMenu, withSam)
+
+  rangeMenu:Remove()
+  rangeGroup:SetAIOn()
+  rangeGroup:OptionROE(ENUMS.ROE.WeaponFree)
+  rangeGroup:OptionROTEvadeFire()
+  rangeGroup:OptionAlarmStateRed()
+
+  _G["rangeMenu_" .. rangePrefix] = MENU_COALITION:New(coalition.side.BLUE, rangePrefix, MenuActiveRangesTop)
+  if withSam then
+    local samTemplate = "SAM_" .. rangePrefix
+    local activateSam = SPAWN:New(samTemplate)
+    activateSam:OnSpawnGroup(
+      function (spawnGroup)
+        MENU_COALITION_COMMAND:New(coalition.side.BLUE, "Reset " .. rangePrefix , _G["rangeMenu_" .. rangePrefix], resetRangeTarget, rangeGroup, rangePrefix, _G["rangeMenu_" .. rangePrefix], spawnGroup)
+      end, rangeGroup, rangePrefix, rangeMenu
+    )
+    :Spawn()
+  else
+    MENU_COALITION_COMMAND:New(coalition.side.BLUE, "Reset " .. rangePrefix , _G["rangeMenu_" .. rangePrefix], resetRangeTarget, rangeGroup, rangePrefix, _G["rangeMenu_" .. rangePrefix], withSam)
+  end
+  
+end
+
+function addActiveRangeMenu(rangeGroup, rangePrefix)
+
+  _G["rangeMenu_" .. rangePrefix] = MENU_COALITION:New(coalition.side.BLUE, rangePrefix, MenuActiveRangesTop)
+  MENU_COALITION_COMMAND:New(coalition.side.BLUE, "Activate " .. rangePrefix , _G["rangeMenu_" .. rangePrefix], activateRangeTarget, rangeGroup, rangePrefix, _G["rangeMenu_" .. rangePrefix], false )
+  MENU_COALITION_COMMAND:New(coalition.side.BLUE, "Activate " .. rangePrefix .. " with SAM" , _G["rangeMenu_" .. rangePrefix], activateRangeTarget, rangeGroup, rangePrefix, _G["rangeMenu_" .. rangePrefix], true )
+
+end
+
+function initActiveRange(rangeTemplateGroup) -- initial menu build for active ranges
+
+  rangeTemplate = rangeTemplateGroup.GroupName
+  local activeRange = SPAWN:New(rangeTemplate)
+  activeRange:OnSpawnGroup(
+    function (spawnGroup)
+      local rangeName = spawnGroup.GroupName
+      local rangePrefix = string.sub(rangeName, 8, 12)
+      addActiveRangeMenu(spawnGroup, rangePrefix)
+    end 
+  )
+  :Spawn()
+  
+end
+
+local SetInitActiveRangeGroups = SET_GROUP:New():FilterPrefixes("ACTIVE_"):FilterOnce() -- create list of group objects with prefix "ACTIVE_"
+SetInitActiveRangeGroups:ForEachGroup(initActiveRange)
+
+--- END DYNAMIC RANGES
+
+
+--- BEGIN MISSILE TRAINER
+
+-- Create a new missile trainer object.
+fox=FOX:New()
+
+-- Add training zones.
+fox:AddSafeZone(ZONE:FindByName("Zone_BfmAcmFox"))
+fox:AddSafeZone(ZONE:FindByName("ZONE_74C"))
+fox:AddLaunchZone(ZONE:FindByName("Zone_BfmAcmFox"))
+fox:AddLaunchZone(ZONE:FindByName("ZONE_74C"))
+fox:SetExplosionDistance(300)
+fox:SetDisableF10Menu()
+fox:SetDebugOnOff()
+
+-- Start missile trainer.
+fox:Start()
+
+--- END MISSILE TRAINER
+
 
 -- BEGIN ACM/BFM SECTION
 
@@ -374,22 +442,6 @@ BoxZone = ZONE_POLYGON:New( "Polygon_Box", GROUP:FindByName("zone_box") )
 BfmAcmZoneMenu = ZONE_POLYGON:New( "Polygon_BFM_ACM", GROUP:FindByName("COYOTEABC") )
 BfmAcmZone = ZONE:FindByName("Zone_BfmAcmFox")
 
--- MISSILE TRAINER
-
--- Create a new missile trainer object.
-fox=FOX:New()
-
--- Add training zones.
-fox:AddSafeZone(BfmAcmZoneFox)
-fox:AddLaunchZone(BfmAcmZoneFox)
-fox:SetExplosionDistance(300)
-fox:SetDisableF10Menu()
-
--- Start missile trainer.
-fox:Start()
-fox:SetDebugOnOff(false)
-
-
 -- Spawn Objects
 AdvA4 = SPAWN:New( "ADV_A4" )		
 Adv28 = SPAWN:New( "ADV_MiG28" )	
@@ -398,9 +450,8 @@ Adv23 = SPAWN:New( "ADV_MiG23" )
 Adv16 = SPAWN:New( "ADV_F16" )
 Adv18 = SPAWN:New( "ADV_F18" )
 
--- will need to pass function caller (from menu) to each of these spawn functions.  
--- Then calculate spawn position/velocity relative to caller
 function SpawnAdv(adv,qty,group,rng)
+
 	range = rng * 1852
 	hdg = group:GetHeading()
 	pos = group:GetPointVec2()
@@ -412,6 +463,7 @@ function SpawnAdv(adv,qty,group,rng)
 		adv:InitGrouping(qty):InitHeading(hdg + 180):SpawnFromVec3(spawnVec3)
 		MESSAGE:New("Adversary spawned."):ToGroup(group)
 	end
+
 end
 
 function BuildMenuCommands (AdvMenu, MenuGroup, MenuName, BfmMenu, AdvType, AdvQty)
@@ -426,10 +478,7 @@ end
 function BuildMenus(AdvQty, MenuGroup, MenuName, SpawnBfmGroup)
 
 	local AdvSuffix = "_" .. tostring(AdvQty)
-	--local BfmMenu = "SpawnBfm" .. AdvSuffix
-
 	BfmMenu = MENU_GROUP:New(MenuGroup, MenuName, SpawnBfmGroup)
-	
 		BuildMenuCommands("SpawnBfmA4menu" .. AdvSuffix, MenuGroup, "Adversary A-4", BfmMenu, AdvA4, AdvQty)
 		BuildMenuCommands("SpawnBfm28menu" .. AdvSuffix, MenuGroup, "Adversary MiG-28", BfmMenu, Adv28, AdvQty)
 		BuildMenuCommands("SpawnBfm23menu" .. AdvSuffix, MenuGroup, "Adversary MiG-23", BfmMenu, Adv23, AdvQty)
@@ -445,25 +494,20 @@ BLUFOR = SET_GROUP:New():FilterCoalitions( "blue" ):FilterStart()
 local SetClient = SET_CLIENT:New():FilterCoalitions("blue"):FilterStart() -- create a list of all clients
 
 local function MENU()
+
 	SetClient:ForEachClient(function(client)
 		if (client ~= nil) and (client:IsAlive()) then 
- 
 			local group = client:GetGroup()
 			local groupName = group:GetName()
-			
 			if group:IsPartlyOrCompletelyInZone(BfmAcmZoneMenu) then
 				if _G["SpawnBfm" .. groupName] == nil then
 					MenuGroup = group
-					--MenuGroupName = MenuGroup:GetName()
-
 					_G["SpawnBfm" .. groupName] = MENU_GROUP:New( MenuGroup, "AI BFM/ACM" )
 						BuildMenus(1, MenuGroup, "Single", _G["SpawnBfm" .. groupName])
 						BuildMenus(2, MenuGroup, "Pair", _G["SpawnBfm" .. groupName])
-
 					MESSAGE:New("You have entered the BFM/ACM zone.\nUse F10 menu to spawn adversaries."):ToGroup(group)
 					env.info("BFM/ACM entry Player name: " ..client:GetPlayerName())
 					env.info("BFM/ACM entry Group Name: " ..group:GetName())
-					--SetClient:Remove(client:GetName(), true)
 				end
 			elseif _G["SpawnBfm" .. groupName] ~= nil then
 				if group:IsNotInZone(BfmAcmZone) then
@@ -475,7 +519,8 @@ local function MENU()
 			end
 		end
 	end)
-timer.scheduleFunction(MENU,nil,timer.getTime() + 5)
+  timer.scheduleFunction(MENU,nil,timer.getTime() + 5)
+
 end
 
 MENU()
@@ -488,19 +533,20 @@ MENU()
 SetAdminClient = SET_CLIENT:New():FilterStart()
 
 local function adminRestartMission(adminClientName, mapFlag)
+
 	if adminClientName then
 		env.info("ADMIN Restart player name: " ..adminClientName)
 	end
 	trigger.action.setUserFlag(mapFlag, true) -- 999 = NTTR Day, 998 = NTTR Night
+
 end
 
 local function BuildAdminMenu(adminState)
+
 	SetAdminClient:ForEachClient(function(client)
-		
 		if (client ~= nil) and (client:IsAlive()) then
 			adminGroup = client:GetGroup()
 			adminGroupName = adminGroup:GetName()
-
 			if string.find(adminGroupName, "XX_ADMIN") then
 				adminMenu = MENU_GROUP:New(adminGroup, "ADMIN")
 				MENU_GROUP_COMMAND:New(adminGroup, "Load DAY NTTR", adminMenu, adminRestartMission, client:GetPlayerName(), 999 )
@@ -511,6 +557,7 @@ local function BuildAdminMenu(adminState)
 		end
 	end)
 	timer.scheduleFunction(BuildAdminMenu, nil, timer.getTime() + 10)
+
 end
 
 if JtfAdmin then
