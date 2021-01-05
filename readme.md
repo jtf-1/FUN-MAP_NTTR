@@ -7,6 +7,27 @@ Please make yourself aware of the following information:
 
 Radio presets are per NELLISAFBI-11-250
 
+- 01 - SQUADRON COMMON
+- 02 - 289.400 - Nellis Clearance Delivery
+- 03 - 275.800 - Nellis Ground
+- 04 - 327.000 - Nellis Tower
+- 05 - 385.400 - Nellis App/Dep WEST
+- 06 - 273.550 - Nellis App/Dep EAST
+- 07 - 317.525 - Nellis Control SALLY
+- 08 - 254.400 - Nellis Control LEE
+- 09 - 305.600 - SOF (BULLSEYE SOF)
+- 10 - 251.000 - Emergeency Single Frequency App
+- 11 - 270.100 - ATIS
+- 12 - 360.625 - Creech AFB Tower
+- 13 - UNUSED
+- 14 - 377.800 - BLACKJACK
+- 15 - 295.400 - Unit Option / AR-641A HI
+- 16 - 276.100 - Unit Option / AR-641A LO
+- 17 - 352.600 - Unit Option / AR-635 HI
+- 18 - 317.775 - Unit Option / AR-635 LO
+- 19 - 343.600 - Unit Option / AR-230V
+- 20 - 282.025 - AWACS
+
 Default waypoints for all aircraft are;
 
 - 1: FLEX

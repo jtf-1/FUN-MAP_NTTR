@@ -78,6 +78,21 @@ local strafeBoxLength = 3000 -- [10000ft] in metres. Length of strafe box.
 local strafeBoxWidth = 300 -- [1000ft] in metres. Width of Strafe pit box (from 1st listed lane).
 local strafeGoodPass = 20 -- Min hits for a good pass.
 
+local RadioRangeControl = {
+	{R61B = 341.925},
+	{R62A = 341.925},
+	{R62B = 234.250},
+	{R63B = 361.600},
+	{R64A = 341.925},
+	{R64B = 341.925},
+	{R64C = 341.925},
+	{R65C = 225.450},
+	{R65D = 225.450},
+	{R74C = 228.000},
+ 	}
+	
+	
+
 -- RANGE R61B
 
 Range_R61B = RANGE:New("Range 61B")
@@ -92,7 +107,7 @@ local bombtarget_R61B = {
                                 
 Range_R61B:AddBombingTargets( bombtarget_R61B )
 Range_R61B:SetSoundfilesPath("Range Soundfiles/")
-Range_R61B:SetRangeControl(341.925)
+Range_R61B:SetRangeControl(RadioRangeControl.R61B)
 Range_R61B:Start()
 
 -- END RANGE 61B
@@ -106,7 +121,7 @@ Range_R62A:AddBombingTargetGroup(GROUP:FindByName("62-01"))
 Range_R62A:AddBombingTargetGroup(GROUP:FindByName("62-02"))
 Range_R62A:AddBombingTargetGroup(GROUP:FindByName("62-04"))
 Range_R62A:SetSoundfilesPath("Range Soundfiles/")
-Range_R62A:SetRangeControl(234.250)
+Range_R62A:SetRangeControl(RadioRangeControl.R62A)
 Range_R62A:Start()
 
 -- END RANGE R62A
@@ -165,7 +180,7 @@ local bombtarget_R62B = {
 
 Range_R62B:AddBombingTargets( bombtarget_R62B )
 Range_R62B:SetSoundfilesPath("Range Soundfiles/")
-Range_R62B:SetRangeControl(234.250)
+Range_R62B:SetRangeControl(RadioRangeControl.R62B)
 Range_R62B:Start()
 
 -- T6208 moving strafe targets
@@ -216,7 +231,7 @@ local bombtarget_R63B = {
 
 Range_R63B:AddBombingTargets( bombtarget_R63B )
 Range_R63B:SetSoundfilesPath("Range Soundfiles/")
-Range_R63B:SetRangeControl(234.250)
+Range_R63B:SetRangeControl(RadioRangeControl.R63B)
 Range_R63B:Start()
 
 -- END RANGE R63B
@@ -235,7 +250,7 @@ local bombtarget_R64A = {
 
 Range_R64A:AddBombingTargets( bombtarget_R64A )
 Range_R64A:SetSoundfilesPath("Range Soundfiles/")
-Range_R64A:SetRangeControl(341.925)
+Range_R64A:SetRangeControl(RadioRangeControl.R64A)
 Range_R64A:Start()
 
 -- END RANGE 64A
@@ -250,7 +265,7 @@ Range_R64B:AddBombingTargetGroup(GROUP:FindByName("64-17"))
 Range_R64B:AddBombingTargetGroup(GROUP:FindByName("64-19"))
 Range_R64B:AddBombingTargetGroup(GROUP:FindByName("64-15"))
 Range_R64B:SetSoundfilesPath("Range Soundfiles/")
-Range_R64B:SetRangeControl(341.925)
+Range_R64B:SetRangeControl(RadioRangeControl.R64B)
 Range_R64B:Start()
 
 -- END RANGE 64B
@@ -292,7 +307,7 @@ local bombtarget_R64C = {
 	
 Range_R64C:AddBombingTargets( bombtarget_R64C )
 Range_R64C:SetSoundfilesPath("Range Soundfiles/")
-Range_R64C:SetRangeControl(288.800)
+Range_R64C:SetRangeControl(RadioRangeControl.R64C)
 Range_R64C:Start()
 
 -- END Range R64C
@@ -311,7 +326,7 @@ Range_R65C:AddBombingTargetGroup(GROUP:FindByName("65-07"))
 Range_R65C:AddBombingTargetGroup(GROUP:FindByName("65-08"))
 Range_R65C:AddBombingTargetGroup(GROUP:FindByName("65-11"))
 Range_R65C:SetSoundfilesPath("Range Soundfiles/")
-Range_R65C:SetRangeControl(225.45)
+Range_R65C:SetRangeControl(RadioRangeControl.R65C)
 Range_R65C:Start()
 
 -- END RANGE R65C
@@ -322,7 +337,7 @@ Range_R65D = RANGE:New("Range R65D")
 Range_R65D:SetRangeZone(ZONE_POLYGON:FindByName("R65D"))
 Range_R65D:AddBombingTargetGroup(GROUP:FindByName("65-10"))
 Range_R65D:SetSoundfilesPath("Range Soundfiles/")
-Range_R65D:SetRangeControl(225.45)
+Range_R65D:SetRangeControl(RadioRangeControl.R65D)
 Range_R65D:Start()
 
 -- END RANGE R65D
