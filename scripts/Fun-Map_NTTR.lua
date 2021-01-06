@@ -367,9 +367,9 @@ function resetRangeTarget(rangeGroup, rangePrefix, rangeMenu, withSam)
   rangeMenu:Remove()
   if rangeGroup:IsActive() then
      if withSam then
-      withSam:Destroy()
+      withSam:Destroy(false)
     end
-    rangeGroup:Destroy()
+    rangeGroup:Destroy(false)
     initActiveRange(GROUP:FindByName("ACTIVE_" .. rangePrefix))    
   end
 
@@ -435,9 +435,9 @@ fox=FOX:New()
 
 -- Add training zones.
 fox:AddSafeZone(ZONE:FindByName("Zone_BfmAcmFox"))
-fox:AddSafeZone(ZONE:FindByName("ZONE_74C"))
+fox:AddSafeZone(ZONE:FindByName("ZONE_4807"))
 fox:AddLaunchZone(ZONE:FindByName("Zone_BfmAcmFox"))
-fox:AddLaunchZone(ZONE:FindByName("ZONE_74C"))
+fox:AddLaunchZone(ZONE:FindByName("ZONE_4807"))
 fox:SetExplosionDistance(300)
 fox:SetDisableF10Menu()
 fox:SetDebugOnOff()

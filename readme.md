@@ -94,7 +94,13 @@ Bomb targets are scored on the proximity of the last round to the target. Smoke 
 
 Strafe Pits, where available (R63B, R64C), are configured with three targets per lane. Aircraft must be below 3000ft AGL and within 500ft either side of the inbound heading to the target to avoid a foul pass. Rounds fired after the foul line will not count.
 
-The following Active Targets are available in R74C and can be activated or reset from the F10 menu; 74-01, 74-06, 74-25, 74-26, 74-27, 74-29, 74-30, 74-36, 74-39. 
+Active Targets are available in the following ranges and can be activated or reset from the F10 menu; 
+
+R74C
+- 74-01, 74-06, 74-25, 74-26, 74-27, 74-29, 74-30, 74-36, 74-39
+
+R75W
+- 75-16
 
 Two activation options are available for each Active Target; Activate or Active with SAM. Activated targets will engage with firearms, AAA. If the SAM option is selected, SAM and MANPAD assets at or IVO the target will also engage.
 
