@@ -83,16 +83,19 @@ AR-230V
 AR-231V
 - ARCO 2-1 [KC-135] 13Y, 323.200, FL150 [215kts IAS]
  
-RANGES
-======
+STATIC RANGES
+=============
 
-The following ranges are populated with multiple targets; 61B, 62A, 62B, 63B, 64A, 64B, 64C, 65C, 65D and 74C. Each target contains one or more DMPI. See the in-game kneeboard for target data.
+The following ranges are populated with multiple static targets; 61B, 62A, 62B, 63B, 64A, 64B, 64C, 65C, 65D and 74C. Each target contains one or more DMPI. See the in-game kneeboard for target data.
 
-Non-active targets are script scored and have an F10 menu system you can use to manage them. A range instructor is available at each range to provide hit assessment. 
+Static targets are script scored and have an F10 menu system you can use to manage them. A range instructor is available at each range to provide hit assessment. 
 
 Bomb targets are scored on the proximity of the last round to the target. Smoke will be used to mark the round's impact.
 
 Strafe Pits, where available (R63B, R64C), are configured with three targets per lane. Aircraft must be below 3000ft AGL and within 500ft either side of the inbound heading to the target to avoid a foul pass. Rounds fired after the foul line will not count.
+
+ACTIVE RANGES
+=============
 
 Active Targets are available in the following ranges and can be activated or reset from the F10 menu; 
 
@@ -103,6 +106,21 @@ R75W
 - 75-16
 
 Two activation options are available for each Active Target; Activate or Active with SAM. Activated targets will engage with firearms, AAA. If the SAM option is selected, SAM and MANPAD assets at or IVO the target will also engage.
+
+Missile Trainer will be active while inside the Range.
+
+ELECTRONIC COMBAT SIMULATION RANGE
+==================================
+
+Electronic Combat simulations are available in EC South and can be activated, or reset, from the F10 menu.
+
+The following SAM threats can be activated IVO target 77-69;
+
+- SA-2
+- SA-3
+- SA-6
+- SA-8
+- SA-15
 
 Missile Trainer will be active while inside the Range.
 

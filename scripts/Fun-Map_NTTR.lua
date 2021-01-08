@@ -78,110 +78,102 @@ local strafeBoxLength = 3000 -- [10000ft] in metres. Length of strafe box.
 local strafeBoxWidth = 300 -- [1000ft] in metres. Width of Strafe pit box (from 1st listed lane).
 local strafeGoodPass = 20 -- Min hits for a good pass.
 
+-- Range tactical frequencies
 local RadioRangeControl = {
-	{R61B = 341.925},
-	{R62A = 341.925},
-	{R62B = 234.250},
-	{R63B = 361.600},
-	{R64A = 341.925},
-	{R64B = 341.925},
-	{R64C = 341.925},
-	{R65C = 225.450},
-	{R65D = 225.450},
-	{R74C = 228.000},
+	{R61 = 341.925},
+	{R62 = 234.250},
+	{R63 = 361.600},
+	{R64 = 341.925},
+	{R65 = 225.450},
+	{R74 = 228.000},
+  {ECS = 293.500},
  	}
 	
-	
+-- RANGE R61
 
--- RANGE R61B
+Range_R61 = RANGE:New("Range 61")
+Range_R61:SetRangeZone(ZONE_POLYGON:FindByName("R61"))
+Range_R61:SetSoundfilesPath("Range Soundfiles/")
+Range_R61:SetRangeControl(RadioRangeControl.R61)
 
-Range_R61B = RANGE:New("Range 61B")
-Range_R61B:SetRangeZone(ZONE_POLYGON:FindByName("R61B"))
-Range_R61B:AddBombingTargetGroup(GROUP:FindByName("61-01"))
-Range_R61B:AddBombingTargetGroup(GROUP:FindByName("61-03"))
+-- R61B
+Range_R61:AddBombingTargetGroup(GROUP:FindByName("61-01"))
+Range_R61:AddBombingTargetGroup(GROUP:FindByName("61-03"))
 
 local bombtarget_R61B = {
 	"61-01 Aircraft #001", 
 	"61-01 Aircraft #002", 
 }
-                                
-Range_R61B:AddBombingTargets( bombtarget_R61B )
-Range_R61B:SetSoundfilesPath("Range Soundfiles/")
-Range_R61B:SetRangeControl(RadioRangeControl.R61B)
-Range_R61B:Start()
+Range_R61:AddBombingTargets( bombtarget_R61B )
 
--- END RANGE 61B
+Range_R61:Start()
 
--- RANGE R62A
+-- END RANGE 61
 
-Range_R62A = RANGE:New("Range 62A")
-Range_R62A:DebugOFF()
-Range_R62A:SetRangeZone(ZONE_POLYGON:FindByName("R62A"))
-Range_R62A:AddBombingTargetGroup(GROUP:FindByName("62-01"))
-Range_R62A:AddBombingTargetGroup(GROUP:FindByName("62-02"))
-Range_R62A:AddBombingTargetGroup(GROUP:FindByName("62-04"))
-Range_R62A:SetSoundfilesPath("Range Soundfiles/")
-Range_R62A:SetRangeControl(RadioRangeControl.R62A)
-Range_R62A:Start()
+-- RANGE R62
 
--- END RANGE R62A
+Range_R62 = RANGE:New("Range 62")
+Range_R62:DebugOFF()
+Range_R62:SetRangeZone(ZONE_POLYGON:FindByName("R62"))
+Range_R62:SetSoundfilesPath("Range Soundfiles/")
+Range_R62:SetRangeControl(RadioRangeControl.R62)
 
--- RANGE R62B
+-- R62A
+Range_R62:AddBombingTargetGroup(GROUP:FindByName("62-01"))
+Range_R62:AddBombingTargetGroup(GROUP:FindByName("62-02"))
+Range_R62:AddBombingTargetGroup(GROUP:FindByName("62-04"))
 
-Range_R62B = RANGE:New("Range 62B")
-Range_R62B:SetRangeZone(ZONE_POLYGON:FindByName("R62B"))
-Range_R62B:AddBombingTargetGroup(GROUP:FindByName("62-03"))
-Range_R62B:AddBombingTargetGroup(GROUP:FindByName("62-08"))
-Range_R62B:AddBombingTargetGroup(GROUP:FindByName("62-09"))
-Range_R62B:AddBombingTargetGroup(GROUP:FindByName("62-11"))
-Range_R62B:AddBombingTargetGroup(GROUP:FindByName("62-12"))
-Range_R62B:AddBombingTargetGroup(GROUP:FindByName("62-13"))
-Range_R62B:AddBombingTargetGroup(GROUP:FindByName("62-14"))
-Range_R62B:AddBombingTargetGroup(GROUP:FindByName("62-21"))
-Range_R62B:AddBombingTargetGroup(GROUP:FindByName("62-21-01"))
-Range_R62B:AddBombingTargetGroup(GROUP:FindByName("62-22"))
-Range_R62B:AddBombingTargetGroup(GROUP:FindByName("62-31"))
-Range_R62B:AddBombingTargetGroup(GROUP:FindByName("62-32"))
-Range_R62B:AddBombingTargetGroup(GROUP:FindByName("62-41"))
-Range_R62B:AddBombingTargetGroup(GROUP:FindByName("62-42"))
-Range_R62B:AddBombingTargetGroup(GROUP:FindByName("62-43"))
-Range_R62B:AddBombingTargetGroup(GROUP:FindByName("62-44"))
-Range_R62B:AddBombingTargetGroup(GROUP:FindByName("62-45"))
-Range_R62B:AddBombingTargetGroup(GROUP:FindByName("62-51"))
-Range_R62B:AddBombingTargetGroup(GROUP:FindByName("62-52"))
-Range_R62B:AddBombingTargetGroup(GROUP:FindByName("62-53"))
-Range_R62B:AddBombingTargetGroup(GROUP:FindByName("62-54"))
-Range_R62B:AddBombingTargetGroup(GROUP:FindByName("62-55"))
-Range_R62B:AddBombingTargetGroup(GROUP:FindByName("62-56"))
-Range_R62B:AddBombingTargetGroup(GROUP:FindByName("62-61"))
-Range_R62B:AddBombingTargetGroup(GROUP:FindByName("62-62"))
-Range_R62B:AddBombingTargetGroup(GROUP:FindByName("62-63"))
-Range_R62B:AddBombingTargetGroup(GROUP:FindByName("62-71"))
-Range_R62B:AddBombingTargetGroup(GROUP:FindByName("62-72"))
-Range_R62B:AddBombingTargetGroup(GROUP:FindByName("62-73"))
-Range_R62B:AddBombingTargetGroup(GROUP:FindByName("62-74"))
-Range_R62B:AddBombingTargetGroup(GROUP:FindByName("62-75"))
-Range_R62B:AddBombingTargetGroup(GROUP:FindByName("62-76"))
-Range_R62B:AddBombingTargetGroup(GROUP:FindByName("62-77"))
-Range_R62B:AddBombingTargetGroup(GROUP:FindByName("62-78"))
-Range_R62B:AddBombingTargetGroup(GROUP:FindByName("62-79"))
-Range_R62B:AddBombingTargetGroup(GROUP:FindByName("62-81"))
-Range_R62B:AddBombingTargetGroup(GROUP:FindByName("62-83"))
-Range_R62B:AddBombingTargetGroup(GROUP:FindByName("62-91"))
-Range_R62B:AddBombingTargetGroup(GROUP:FindByName("62-92"))
-Range_R62B:AddBombingTargetGroup(GROUP:FindByName("62-93"))
+-- R62B
+Range_R62:AddBombingTargetGroup(GROUP:FindByName("62-03"))
+Range_R62:AddBombingTargetGroup(GROUP:FindByName("62-08"))
+Range_R62:AddBombingTargetGroup(GROUP:FindByName("62-09"))
+Range_R62:AddBombingTargetGroup(GROUP:FindByName("62-11"))
+Range_R62:AddBombingTargetGroup(GROUP:FindByName("62-12"))
+Range_R62:AddBombingTargetGroup(GROUP:FindByName("62-13"))
+Range_R62:AddBombingTargetGroup(GROUP:FindByName("62-14"))
+Range_R62:AddBombingTargetGroup(GROUP:FindByName("62-21"))
+Range_R62:AddBombingTargetGroup(GROUP:FindByName("62-21-01"))
+Range_R62:AddBombingTargetGroup(GROUP:FindByName("62-22"))
+Range_R62:AddBombingTargetGroup(GROUP:FindByName("62-31"))
+Range_R62:AddBombingTargetGroup(GROUP:FindByName("62-32"))
+Range_R62:AddBombingTargetGroup(GROUP:FindByName("62-41"))
+Range_R62:AddBombingTargetGroup(GROUP:FindByName("62-42"))
+Range_R62:AddBombingTargetGroup(GROUP:FindByName("62-43"))
+Range_R62:AddBombingTargetGroup(GROUP:FindByName("62-44"))
+Range_R62:AddBombingTargetGroup(GROUP:FindByName("62-45"))
+Range_R62:AddBombingTargetGroup(GROUP:FindByName("62-51"))
+Range_R62:AddBombingTargetGroup(GROUP:FindByName("62-52"))
+Range_R62:AddBombingTargetGroup(GROUP:FindByName("62-53"))
+Range_R62:AddBombingTargetGroup(GROUP:FindByName("62-54"))
+Range_R62:AddBombingTargetGroup(GROUP:FindByName("62-55"))
+Range_R62:AddBombingTargetGroup(GROUP:FindByName("62-56"))
+Range_R62:AddBombingTargetGroup(GROUP:FindByName("62-61"))
+Range_R62:AddBombingTargetGroup(GROUP:FindByName("62-62"))
+Range_R62:AddBombingTargetGroup(GROUP:FindByName("62-63"))
+Range_R62:AddBombingTargetGroup(GROUP:FindByName("62-71"))
+Range_R62:AddBombingTargetGroup(GROUP:FindByName("62-72"))
+Range_R62:AddBombingTargetGroup(GROUP:FindByName("62-73"))
+Range_R62:AddBombingTargetGroup(GROUP:FindByName("62-74"))
+Range_R62:AddBombingTargetGroup(GROUP:FindByName("62-75"))
+Range_R62:AddBombingTargetGroup(GROUP:FindByName("62-76"))
+Range_R62:AddBombingTargetGroup(GROUP:FindByName("62-77"))
+Range_R62:AddBombingTargetGroup(GROUP:FindByName("62-78"))
+Range_R62:AddBombingTargetGroup(GROUP:FindByName("62-79"))
+Range_R62:AddBombingTargetGroup(GROUP:FindByName("62-81"))
+Range_R62:AddBombingTargetGroup(GROUP:FindByName("62-83"))
+Range_R62:AddBombingTargetGroup(GROUP:FindByName("62-91"))
+Range_R62:AddBombingTargetGroup(GROUP:FindByName("62-92"))
+Range_R62:AddBombingTargetGroup(GROUP:FindByName("62-93"))
 
-local bombtarget_R62B = {
+local bombtarget_R62 = {
 	"62-32-01", 
 	"62-32-02", 
 	"62-32-03",
 	"62-99",	
 }
+Range_R62:AddBombingTargets( bombtarget_R62 )
 
-Range_R62B:AddBombingTargets( bombtarget_R62B )
-Range_R62B:SetSoundfilesPath("Range Soundfiles/")
-Range_R62B:SetRangeControl(RadioRangeControl.R62B)
-Range_R62B:Start()
+Range_R62:Start()
 
 -- T6208 moving strafe targets
 MenuT6208 = MENU_COALITION:New( coalition.side.BLUE, "Target 62-08" )
@@ -189,170 +181,144 @@ MenuT6208_1 = MENU_COALITION_COMMAND:New( coalition.side.BLUE, "TGT 6208: Activa
 MenuT6208_2 = MENU_COALITION_COMMAND:New( coalition.side.BLUE, "TGT 6208: Activate  Truck (23 mph)", MenuT6208, function() trigger.action.setUserFlag(62082, 1) end) 
 MenuT6208_3 = MENU_COALITION_COMMAND:New( coalition.side.BLUE, "TGT 6208: Activate  T-55 (11 mph)", MenuT6208, function() trigger.action.setUserFlag(62083, 1) end) 
 
--- END RANGE R62B
+-- END RANGE R62
 
--- RANGE R63B (CLASS A)
+-- RANGE R63 (CLASS A)
 
-Range_R63B = RANGE:New("Range 63B")
-Range_R63B:SetRangeZone(ZONE_POLYGON:FindByName("R63B"))
-Range_R63B:SetMaxStrafeAlt(strafeMaxAlt)
-Range_R63B:AddBombingTargetGroup(GROUP:FindByName("63-01"))
-Range_R63B:AddBombingTargetGroup(GROUP:FindByName("63-02"))
-Range_R63B:AddBombingTargetGroup(GROUP:FindByName("63-03"))
-Range_R63B:AddBombingTargetGroup(GROUP:FindByName("63-05"))
-Range_R63B:AddBombingTargetGroup(GROUP:FindByName("63-10"))
-Range_R63B:AddBombingTargetGroup(GROUP:FindByName("63-12"))
-Range_R63B:AddBombingTargetGroup(GROUP:FindByName("63-15"))
-Range_R63B:AddBombingTargetGroup(GROUP:FindByName("R-63B Class A Range-01"))
-Range_R63B:AddBombingTargetGroup(GROUP:FindByName("R-63B Class A Range-02"))
+Range_R63 = RANGE:New("Range 63")
+Range_R63:SetRangeZone(ZONE_POLYGON:FindByName("R63"))
+Range_R63:SetSoundfilesPath("Range Soundfiles/")
+Range_R63:SetRangeControl(RadioRangeControl.R63B)
+Range_R63:SetMaxStrafeAlt(strafeMaxAlt)
 
-local FoulDist_R63B_Strafe = Range_R63B:GetFoullineDistance("R63B Strafe Lane L1", "R63B Foul Line Left")
+--R63B
+Range_R63:AddBombingTargetGroup(GROUP:FindByName("63-01"))
+Range_R63:AddBombingTargetGroup(GROUP:FindByName("63-02"))
+Range_R63:AddBombingTargetGroup(GROUP:FindByName("63-03"))
+Range_R63:AddBombingTargetGroup(GROUP:FindByName("63-05"))
+Range_R63:AddBombingTargetGroup(GROUP:FindByName("63-10"))
+Range_R63:AddBombingTargetGroup(GROUP:FindByName("63-12"))
+Range_R63:AddBombingTargetGroup(GROUP:FindByName("63-15"))
+Range_R63:AddBombingTargetGroup(GROUP:FindByName("R-63B Class A Range-01"))
+Range_R63:AddBombingTargetGroup(GROUP:FindByName("R-63B Class A Range-02"))
+
+local FoulDist_R63B_Strafe = Range_R63:GetFoullineDistance("R63B Strafe Lane L1", "R63B Foul Line Left")
 
 local Strafe_R63B_West = {
 	"R63B Strafe Lane L2",
 	"R63B Strafe Lane L1",
 	"R63B Strafe Lane L3",
 }
-
-Range_R63B:AddStrafePit(Strafe_R63B_West, strafeBoxLength, strafeBoxWidth, nil, true, strafeGoodPass, FoulDist_R63B_Strafe)
+Range_R63:AddStrafePit(Strafe_R63B_West, strafeBoxLength, strafeBoxWidth, nil, true, strafeGoodPass, FoulDist_R63B_Strafe)
 
 local Strafe_R63B_East = {
 	"R63B Strafe Lane R2",
 	"R63B Strafe Lane R1",
 	"R63B Strafe Lane R3",
 }
-
-Range_R63B:AddStrafePit(Strafe_R63B_East, strafeBoxLength, strafeBoxWidth, nil, true, strafeGoodPass, FoulDist_R63B_Strafe)
+Range_R63:AddStrafePit(Strafe_R63B_East, strafeBoxLength, strafeBoxWidth, nil, true, strafeGoodPass, FoulDist_R63B_Strafe)
 
 local bombtarget_R63B = {
 	"R63BWC",
 	"R63BEC",	
 }
+Range_R63:AddBombingTargets( bombtarget_R63B )
 
-Range_R63B:AddBombingTargets( bombtarget_R63B )
-Range_R63B:SetSoundfilesPath("Range Soundfiles/")
-Range_R63B:SetRangeControl(RadioRangeControl.R63B)
-Range_R63B:Start()
+Range_R63:Start()
 
 -- END RANGE R63B
 
 
--- RANGE R64A
+-- RANGE R64
 
-Range_R64A= RANGE:New("Range R64A")
-Range_R64A:SetRangeZone(ZONE_POLYGON:FindByName("R64A"))
-Range_R64A:AddBombingTargetGroup(GROUP:FindByName("64-10"))
-Range_R64A:AddBombingTargetGroup(GROUP:FindByName("64-11"))
+Range_R64= RANGE:New("Range R64")
+Range_R64:SetRangeZone(ZONE_POLYGON:FindByName("R64"))
+Range_R64:SetSoundfilesPath("Range Soundfiles/")
+Range_R64:SetRangeControl(RadioRangeControl.R64C)
+Range_R64:SetMaxStrafeAlt(strafeMaxAlt)
+
+-- R64A
+Range_R64:AddBombingTargetGroup(GROUP:FindByName("64-10"))
+Range_R64:AddBombingTargetGroup(GROUP:FindByName("64-11"))
 
 local bombtarget_R64A = {
 	"64-12-05", 
 }
+Range_R64:AddBombingTargets( bombtarget_R64A )
 
-Range_R64A:AddBombingTargets( bombtarget_R64A )
-Range_R64A:SetSoundfilesPath("Range Soundfiles/")
-Range_R64A:SetRangeControl(RadioRangeControl.R64A)
-Range_R64A:Start()
+-- R64B
+Range_R64:AddBombingTargetGroup(GROUP:FindByName("64-13"))
+Range_R64:AddBombingTargetGroup(GROUP:FindByName("64-14"))
+Range_R64:AddBombingTargetGroup(GROUP:FindByName("64-17"))
+Range_R64:AddBombingTargetGroup(GROUP:FindByName("64-19"))
+Range_R64:AddBombingTargetGroup(GROUP:FindByName("64-15"))
 
--- END RANGE 64A
+-- R64C
+Range_R64:AddBombingTargetGroup(GROUP:FindByName("64-05"))
+Range_R64:AddBombingTargetGroup(GROUP:FindByName("64-08"))
+Range_R64:AddBombingTargetGroup(GROUP:FindByName("64-09"))
 
--- RANGE R64B
+local bombtarget_R64C = {
+  "R64CWC", 
+  "R64CEC", 
+  "R-64C Class A Range-01", 
+  "R-64C Class A Range-02", 
+}
+Range_R64:AddBombingTargets( bombtarget_R64C )
 
-Range_R64B= RANGE:New("Range R64B")
-Range_R64B:SetRangeZone(ZONE_POLYGON:FindByName("R64B"))
-Range_R64B:AddBombingTargetGroup(GROUP:FindByName("64-13"))
-Range_R64B:AddBombingTargetGroup(GROUP:FindByName("64-14"))
-Range_R64B:AddBombingTargetGroup(GROUP:FindByName("64-17"))
-Range_R64B:AddBombingTargetGroup(GROUP:FindByName("64-19"))
-Range_R64B:AddBombingTargetGroup(GROUP:FindByName("64-15"))
-Range_R64B:SetSoundfilesPath("Range Soundfiles/")
-Range_R64B:SetRangeControl(RadioRangeControl.R64B)
-Range_R64B:Start()
-
--- END RANGE 64B
-
-
--- Range R64C
-
-Range_R64C = RANGE:New("Range 64C")
-Range_R64C:SetRangeZone(ZONE_POLYGON:FindByName("R64C"))
-Range_R64C:SetMaxStrafeAlt(strafeMaxAlt)
-Range_R64C:AddBombingTargetGroup(GROUP:FindByName("64-05"))
-Range_R64C:AddBombingTargetGroup(GROUP:FindByName("64-08"))
-Range_R64C:AddBombingTargetGroup(GROUP:FindByName("64-09"))
-
-local FoulDist_R64C_Strafe = Range_R64C:GetFoullineDistance("R64C Strafe Lane L1", "R64C Strafe Foul Line L1")
+-- Strafe Pits
+local FoulDist_R64C_Strafe = Range_R64:GetFoullineDistance("R64C Strafe Lane L1", "R64C Strafe Foul Line L1")
 
 local Strafe_R64C_West = {
 	"R64C Strafe Lane L2",
 	"R64C Strafe Lane L1",
 	"R64C Strafe Lane L3",
 }
-
-Range_R64C:AddStrafePit(Strafe_R64C_West, strafeBoxLength, strafeBoxWidth, nil, true, strafeGoodPass, FoulDist_R64C_Strafe)
+Range_R64:AddStrafePit(Strafe_R64C_West, strafeBoxLength, strafeBoxWidth, nil, true, strafeGoodPass, FoulDist_R64C_Strafe)
 
 local Strafe_R64C_East = {
 	"R64C Strafe Lane R2",
 	"R64C Strafe Lane R1",
 	"R64C Strafe Lane R3",
 }
+Range_R64:AddStrafePit(Strafe_R64C_East, strafeBoxLength, strafeBoxWidth, nil, true, strafeGoodPass, FoulDist_R64C_Strafe)
 
-Range_R64C:AddStrafePit(Strafe_R64C_East, strafeBoxLength, strafeBoxWidth, nil, true, strafeGoodPass, FoulDist_R64C_Strafe)
+Range_R64:Start()
 
-local bombtarget_R64C = {
-	"R64CWC", 
-	"R64CEC", 
-	"R-64C Class A Range-01", 
-	"R-64C Class A Range-02", 
-}
-	
-Range_R64C:AddBombingTargets( bombtarget_R64C )
-Range_R64C:SetSoundfilesPath("Range Soundfiles/")
-Range_R64C:SetRangeControl(RadioRangeControl.R64C)
-Range_R64C:Start()
+-- END Range R64
 
--- END Range R64C
+-- RANGE R65
 
--- RANGE R65C
+Range_R65 = RANGE:New("Range R65")
+Range_R65:SetRangeZone(ZONE_POLYGON:FindByName("R65"))
+Range_R65:SetSoundfilesPath("Range Soundfiles/")
+Range_R65:SetRangeControl(RadioRangeControl.R65)
 
-Range_R65C = RANGE:New("Range R65C")
-Range_R65C:SetRangeZone(ZONE_POLYGON:FindByName("R65C"))
-Range_R65C:AddBombingTargetGroup(GROUP:FindByName("65-01"))
-Range_R65C:AddBombingTargetGroup(GROUP:FindByName("65-02"))
-Range_R65C:AddBombingTargetGroup(GROUP:FindByName("65-03"))
-Range_R65C:AddBombingTargetGroup(GROUP:FindByName("65-04"))
-Range_R65C:AddBombingTargetGroup(GROUP:FindByName("65-05"))
-Range_R65C:AddBombingTargetGroup(GROUP:FindByName("65-06"))
-Range_R65C:AddBombingTargetGroup(GROUP:FindByName("65-07"))
-Range_R65C:AddBombingTargetGroup(GROUP:FindByName("65-08"))
-Range_R65C:AddBombingTargetGroup(GROUP:FindByName("65-11"))
-Range_R65C:SetSoundfilesPath("Range Soundfiles/")
-Range_R65C:SetRangeControl(RadioRangeControl.R65C)
-Range_R65C:Start()
+--R65C
+Range_R65:AddBombingTargetGroup(GROUP:FindByName("65-01"))
+Range_R65:AddBombingTargetGroup(GROUP:FindByName("65-02"))
+Range_R65:AddBombingTargetGroup(GROUP:FindByName("65-03"))
+Range_R65:AddBombingTargetGroup(GROUP:FindByName("65-04"))
+Range_R65:AddBombingTargetGroup(GROUP:FindByName("65-05"))
+Range_R65:AddBombingTargetGroup(GROUP:FindByName("65-06"))
+Range_R65:AddBombingTargetGroup(GROUP:FindByName("65-07"))
+Range_R65:AddBombingTargetGroup(GROUP:FindByName("65-08"))
+Range_R65:AddBombingTargetGroup(GROUP:FindByName("65-11"))
 
--- END RANGE R65C
+--R65D
+Range_R65:AddBombingTargetGroup(GROUP:FindByName("65-10"))
 
--- BEGIN RANGE R65D
-
-Range_R65D = RANGE:New("Range R65D")
-Range_R65D:SetRangeZone(ZONE_POLYGON:FindByName("R65D"))
-Range_R65D:AddBombingTargetGroup(GROUP:FindByName("65-10"))
-Range_R65D:SetSoundfilesPath("Range Soundfiles/")
-Range_R65D:SetRangeControl(RadioRangeControl.R65D)
-Range_R65D:Start()
+Range_R65:Start()
 
 -- END RANGE R65D
 
 -- RANGE DEBUG
 
-Range_R61B:DebugOFF()
-Range_R62A:DebugOFF()
-Range_R62B:DebugOFF()
-Range_R63B:DebugOFF()
-Range_R64A:DebugOFF()
-Range_R64B:DebugOFF()
-Range_R64C:DebugOFF()
-Range_R65C:DebugOFF()
-Range_R65D:DebugOFF()
+Range_R61:DebugOFF()
+Range_R62:DebugOFF()
+Range_R63:DebugOFF()
+Range_R64:DebugOFF()
+Range_R65:DebugOFF()
 
 -- END RANGE DEBUG
 
@@ -362,63 +328,90 @@ Range_R65D:DebugOFF()
 
 MenuActiveRangesTop = MENU_COALITION:New(coalition.side.BLUE, "ACTIVE RANGES")
 
-function resetRangeTarget(rangeGroup, rangePrefix, rangeMenu, withSam)
+function resetRangeTarget(rangeGroup, rangePrefix, rangeMenu, withSam, refreshRange)
 
-  rangeMenu:Remove()
+
   if rangeGroup:IsActive() then
-     if withSam then
+    rangeGroup:Destroy(false)
+    if withSam then
       withSam:Destroy(false)
     end
-    rangeGroup:Destroy(false)
-    initActiveRange(GROUP:FindByName("ACTIVE_" .. rangePrefix))    
+    if not refreshRange then
+      rangeMenu:Remove()
+      initActiveRange(GROUP:FindByName("ACTIVE_" .. rangePrefix))
+      MESSAGE:New("Target " .. rangePrefix .. " has been deactivated."):ToAll()
+    else
+      refreshRangeGroup = initActiveRange(GROUP:FindByName("ACTIVE_" .. rangePrefix), refreshRange)
+      activateRangeTarget(refreshRangeGroup, rangePrefix, rangeMenu, withSam, refreshRange)      
+    end
   end
-
+  
 end
 
-function activateRangeTarget(rangeGroup, rangePrefix, rangeMenu, withSam)
+function activateRangeTarget(rangeGroup, rangePrefix, rangeMenu, withSam, refreshRange)
 
-  rangeMenu:Remove()
+  if refreshRange == nil then
+    rangeMenu:Remove()
+    _G["rangeMenu_" .. rangePrefix] = MENU_COALITION:New(coalition.side.BLUE, "Reset " .. rangePrefix, MenuActiveRangesTop)
+  end
+  
   rangeGroup:SetAIOn()
   rangeGroup:OptionROE(ENUMS.ROE.WeaponFree)
   rangeGroup:OptionROTEvadeFire()
   rangeGroup:OptionAlarmStateRed()
 
-  _G["rangeMenu_" .. rangePrefix] = MENU_COALITION:New(coalition.side.BLUE, rangePrefix, MenuActiveRangesTop)
+  local deactivateText = "Deactivate " .. rangePrefix
+  local refreshText = "Refresh " .. rangePrefix
+  
   if withSam then
     local samTemplate = "SAM_" .. rangePrefix
     local activateSam = SPAWN:New(samTemplate)
-    activateSam:OnSpawnGroup(
+     activateSam:OnSpawnGroup(
       function (spawnGroup)
-        MENU_COALITION_COMMAND:New(coalition.side.BLUE, "Reset " .. rangePrefix , _G["rangeMenu_" .. rangePrefix], resetRangeTarget, rangeGroup, rangePrefix, _G["rangeMenu_" .. rangePrefix], spawnGroup)
-      end, rangeGroup, rangePrefix, rangeMenu
+        MENU_COALITION_COMMAND:New(coalition.side.BLUE, deactivateText , _G["rangeMenu_" .. rangePrefix], resetRangeTarget, rangeGroup, rangePrefix, _G["rangeMenu_" .. rangePrefix], spawnGroup, false)
+        MENU_COALITION_COMMAND:New(coalition.side.BLUE, refreshText .. " with SAM" , _G["rangeMenu_" .. rangePrefix], resetRangeTarget, rangeGroup, rangePrefix, _G["rangeMenu_" .. rangePrefix], spawnGroup, true)
+        MESSAGE:New("Target " .. rangePrefix .. " is active, with SAM."):ToAll()
+      end, rangeGroup, rangePrefix, rangeMenu, withSam, deactivateText, refreshText
     )
     :Spawn()
   else
-    MENU_COALITION_COMMAND:New(coalition.side.BLUE, "Reset " .. rangePrefix , _G["rangeMenu_" .. rangePrefix], resetRangeTarget, rangeGroup, rangePrefix, _G["rangeMenu_" .. rangePrefix], withSam)
+    MENU_COALITION_COMMAND:New(coalition.side.BLUE, deactivateText , _G["rangeMenu_" .. rangePrefix], resetRangeTarget, rangeGroup, rangePrefix, _G["rangeMenu_" .. rangePrefix], withSam, false)
+    MENU_COALITION_COMMAND:New(coalition.side.BLUE, refreshText .. " NO SAM" , _G["rangeMenu_" .. rangePrefix], resetRangeTarget, rangeGroup, rangePrefix, _G["rangeMenu_" .. rangePrefix], withSam, true)
+    MESSAGE:New("Target " .. rangePrefix .. " is active."):ToAll()
   end
   
 end
 
 function addActiveRangeMenu(rangeGroup, rangePrefix)
 
-  _G["rangeMenu_" .. rangePrefix] = MENU_COALITION:New(coalition.side.BLUE, rangePrefix, MenuActiveRangesTop)
-  MENU_COALITION_COMMAND:New(coalition.side.BLUE, "Activate " .. rangePrefix , _G["rangeMenu_" .. rangePrefix], activateRangeTarget, rangeGroup, rangePrefix, _G["rangeMenu_" .. rangePrefix], false )
+  local rangeIdent = string.sub(rangePrefix, 1, 2)
+  
+  if _G["rangeMenuSub_" .. rangeIdent] == nil then
+    _G["rangeMenuSub_" .. rangeIdent] = MENU_COALITION:New(coalition.side.BLUE, "R" .. rangeIdent, MenuActiveRangesTop)
+  end
+  
+  _G["rangeMenu_" .. rangePrefix] = MENU_COALITION:New(coalition.side.BLUE, rangePrefix, _G["rangeMenuSub_" .. rangeIdent])
+  MENU_COALITION_COMMAND:New(coalition.side.BLUE, "Activate " .. rangePrefix .. " NO SAM", _G["rangeMenu_" .. rangePrefix], activateRangeTarget, rangeGroup, rangePrefix, _G["rangeMenu_" .. rangePrefix], false )
   MENU_COALITION_COMMAND:New(coalition.side.BLUE, "Activate " .. rangePrefix .. " with SAM" , _G["rangeMenu_" .. rangePrefix], activateRangeTarget, rangeGroup, rangePrefix, _G["rangeMenu_" .. rangePrefix], true )
-
+  return _G["rangeMenu_" .. rangePrefix]
+  
 end
 
-function initActiveRange(rangeTemplateGroup) -- initial menu build for active ranges
+function initActiveRange(rangeTemplateGroup, refreshRange) -- initial menu build for active ranges
 
   rangeTemplate = rangeTemplateGroup.GroupName
   local activeRange = SPAWN:New(rangeTemplate)
-  activeRange:OnSpawnGroup(
+    activeRange:OnSpawnGroup(
     function (spawnGroup)
       local rangeName = spawnGroup.GroupName
-      local rangePrefix = string.sub(rangeName, 8, 12)
-      addActiveRangeMenu(spawnGroup, rangePrefix)
-    end 
+      local rangePrefix = string.sub(rangeName, 8, 12) 
+      if refreshRange == nil then
+        addActiveRangeMenu(spawnGroup, rangePrefix)
+      end
+    end, refreshRange 
   )
   :Spawn()
+  return activeRange:GetLastAliveGroup()
   
 end
 
@@ -426,6 +419,72 @@ local SetInitActiveRangeGroups = SET_GROUP:New():FilterPrefixes("ACTIVE_"):Filte
 SetInitActiveRangeGroups:ForEachGroup(initActiveRange)
 
 --- END DYNAMIC RANGES
+
+-- BEGIN ELECTRONIC COMBAT SIMULATOR RANGE
+
+menuEcsTop = MENU_COALITION:New(coalition.side.BLUE, "EC SOUTH")
+
+templateEcs7769_Sa2 = "ECS_SA2"
+templateEcs7769_Sa3 = "ECS_SA3"
+templateEcs7769_Sa6 = "ECS_SA6"
+templateEcs7769_Sa8 = "ECS_SA8"
+templateEcs7769_Sa15 = "ECS_SA15"
+zoneEcs7769 = ZONE:FindByName("ZONE_7769")
+
+
+function activateEcsRange(samTemplate, samZone, activeSystem)
+
+  --menuEcs_7769:Remove()
+  commandActivateSa2:Remove()
+  commandActivateSa3:Remove()
+  commandActivateSa6:Remove()
+  commandActivateSa8:Remove()
+  commandActivateSa15:Remove()
+
+  local ecsSpawn = SPAWN:New(samTemplate)
+  ecsSpawn:OnSpawnGroup(
+      function (spawnGroup)
+        commandDeactivateEcs_7769 = MENU_COALITION_COMMAND:New(coalition.side.BLUE, "Deactivate 77-69", menuEcsTop, ecsReset, spawnGroup, ecsSpawn, activeSystem, false)
+        commandRefreshEcs_7769 = MENU_COALITION_COMMAND:New(coalition.side.BLUE, "Refresh 77-69", menuEcsTop, ecsReset, spawnGroup, ecsSpawn, activeSystem, true)
+        MESSAGE:New("EC South is active with " .. activeSystem):ToAll()
+      end, menuEcsTop, ecsReset, rangePrefix, ecsSpawn, activeSystem
+    )
+    ecsSpawn:SpawnInZone(samZone, true)
+
+
+end
+
+function ecsReset(spawnGroup, ecsSpawn, activeSystem, refreshEcs)
+
+   commandDeactivateEcs_7769:Remove()
+   commandRefreshEcs_7769:Remove()
+
+  if refreshEcs then
+    ecsSpawn:ReSpawn()
+  else
+    ecsGroup = ecsSpawn:GetLastAliveGroup()
+    ecsGroup:Destroy()
+    menuAddEcsActivate()
+    MESSAGE:New("EC South "  .. activeSystem .." has been deactived."):ToAll()
+  end    
+
+end
+
+function menuAddEcsActivate()
+
+  --menuEcs_7769 = MENU_COALITION:New(coalition.side.BLUE,"77-69", menuEcsTop)
+
+  commandActivateSa2 = MENU_COALITION_COMMAND:New(coalition.side.BLUE, "Activate SA-2", menuEcsTop ,activateEcsRange, templateEcs7769_Sa2, zoneEcs7769, "SA-2")
+  commandActivateSa3 = MENU_COALITION_COMMAND:New(coalition.side.BLUE, "Activate SA-3", menuEcsTop ,activateEcsRange, templateEcs7769_Sa3, zoneEcs7769, "SA-3")
+  commandActivateSa6 = MENU_COALITION_COMMAND:New(coalition.side.BLUE, "Activate SA-6", menuEcsTop ,activateEcsRange, templateEcs7769_Sa6, zoneEcs7769, "SA-6")
+  commandActivateSa8 = MENU_COALITION_COMMAND:New(coalition.side.BLUE, "Activate SA-8", menuEcsTop ,activateEcsRange, templateEcs7769_Sa8, zoneEcs7769, "SA-8")
+  commandActivateSa15 = MENU_COALITION_COMMAND:New(coalition.side.BLUE, "Activate SA-15", menuEcsTop ,activateEcsRange, templateEcs7769_Sa15, zoneEcs7769, "SA-15")
+
+end
+
+menuAddEcsActivate()
+
+-- END ELECTRONIC COMBAT SIMULATOR RANGE
 
 
 --- BEGIN MISSILE TRAINER
@@ -435,9 +494,16 @@ fox=FOX:New()
 
 -- Add training zones.
 fox:AddSafeZone(ZONE:FindByName("Zone_BfmAcmFox"))
-fox:AddSafeZone(ZONE:FindByName("ZONE_4807"))
 fox:AddLaunchZone(ZONE:FindByName("Zone_BfmAcmFox"))
-fox:AddLaunchZone(ZONE:FindByName("ZONE_4807"))
+
+fox:AddSafeZone(ZONE:FindByName("ZONE_4807_MT"))
+fox:AddLaunchZone(ZONE:FindByName("ZONE_4807_MT"))
+
+fox:AddSafeZone(ZONE:FindByName("ZONE_ECS_MT"))
+fox:AddLaunchZone(ZONE:FindByName("ZONE_ECS_MT"))
+
+
+-- FOX settings
 fox:SetExplosionDistance(300)
 fox:SetDisableF10Menu()
 fox:SetDebugOnOff()
