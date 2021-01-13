@@ -6,11 +6,6 @@ JtfAdmin = true --activate admin menu option in admin slots
 
 _SETTINGS:SetPlayerMenuOff()
 
--- BEGIN MENUS SECTION
-
--- END MENUS SECTION
-
-
 -- BEGIN FUNCTIONS SECTION
 
 function SpawnSupport (SupportSpawn) -- spawnobject, spawnzone
@@ -43,10 +38,7 @@ end -- function
 
 -- BEGIN SUPPORT AIRCRAFT SECTION
 
-----------------------------------------------------
---- define table of respawning support aircraft ---
-----------------------------------------------------
-
+-- define table of respawning support aircraft ---
 TableSpawnSupport = { -- {spawnobjectname, spawnzone, callsignName, callsignNumber}
 	{spawnobject = "AR230V_KC-135_01", spawnzone = ZONE:New("AR230V"), callsignName = 2, callsignNumber = 1},
   {spawnobject = "AR230V_KC-130_01", spawnzone = ZONE:New("AR230V"), callsignName = 2, callsignNumber = 3},
@@ -60,10 +52,7 @@ TableSpawnSupport = { -- {spawnobjectname, spawnzone, callsignName, callsignNumb
 	{spawnobject = "AWACS_DARKSTAR", spawnzone = ZONE:New("AWACS"), callsignName = 5, callsignNumber = 1},
 }
 
-------------------------------
---- spawn support aircraft ---
-------------------------------
-
+-- spawn support aircraft ---
 for i, v in ipairs( TableSpawnSupport ) do
 	SpawnSupport ( v )
 end
@@ -108,10 +97,9 @@ Range_R61:AddBombingTargets( bombtarget_R61B )
 
 Range_R61:Start()
 
--- END RANGE 61
+-- END R61
 
--- RANGE R62
-
+-- R62
 Range_R62 = RANGE:New("Range 62")
 Range_R62:DebugOFF()
 Range_R62:SetRangeZone(ZONE_POLYGON:FindByName("R62"))
@@ -181,10 +169,9 @@ MenuT6208_1 = MENU_COALITION_COMMAND:New( coalition.side.BLUE, "TGT 6208: Activa
 MenuT6208_2 = MENU_COALITION_COMMAND:New( coalition.side.BLUE, "TGT 6208: Activate  Truck (23 mph)", MenuT6208, function() trigger.action.setUserFlag(62082, 1) end) 
 MenuT6208_3 = MENU_COALITION_COMMAND:New( coalition.side.BLUE, "TGT 6208: Activate  T-55 (11 mph)", MenuT6208, function() trigger.action.setUserFlag(62083, 1) end) 
 
--- END RANGE R62
+-- END R62
 
--- RANGE R63 (CLASS A)
-
+-- R63
 Range_R63 = RANGE:New("Range 63")
 Range_R63:SetRangeZone(ZONE_POLYGON:FindByName("R63"))
 Range_R63:SetSoundfilesPath("Range Soundfiles/")
@@ -226,11 +213,10 @@ Range_R63:AddBombingTargets( bombtarget_R63B )
 
 Range_R63:Start()
 
--- END RANGE R63B
+-- ENDR63
 
 
--- RANGE R64
-
+-- R64
 Range_R64= RANGE:New("Range R64")
 Range_R64:SetRangeZone(ZONE_POLYGON:FindByName("R64"))
 Range_R64:SetSoundfilesPath("Range Soundfiles/")
@@ -285,10 +271,9 @@ Range_R64:AddStrafePit(Strafe_R64C_East, strafeBoxLength, strafeBoxWidth, nil, t
 
 Range_R64:Start()
 
--- END Range R64
+-- END R64
 
--- RANGE R65
-
+-- R65
 Range_R65 = RANGE:New("Range R65")
 Range_R65:SetRangeZone(ZONE_POLYGON:FindByName("R65"))
 Range_R65:SetSoundfilesPath("Range Soundfiles/")
@@ -310,17 +295,14 @@ Range_R65:AddBombingTargetGroup(GROUP:FindByName("65-10"))
 
 Range_R65:Start()
 
--- END RANGE R65D
+-- END R65
 
 -- RANGE DEBUG
-
 Range_R61:DebugOFF()
 Range_R62:DebugOFF()
 Range_R63:DebugOFF()
 Range_R64:DebugOFF()
 Range_R65:DebugOFF()
-
--- END RANGE DEBUG
 
 -- END STATIC RANGE SECTION
 
@@ -329,7 +311,6 @@ Range_R65:DebugOFF()
 MenuActiveRangesTop = MENU_COALITION:New(coalition.side.BLUE, "ACTIVE RANGES")
 
 function resetRangeTarget(rangeGroup, rangePrefix, rangeMenu, withSam, refreshRange)
-
 
   if rangeGroup:IsActive() then
     rangeGroup:Destroy(false)
@@ -354,15 +335,12 @@ function activateRangeTarget(rangeGroup, rangePrefix, rangeMenu, withSam, refres
     rangeMenu:Remove()
     _G["rangeMenu_" .. rangePrefix] = MENU_COALITION:New(coalition.side.BLUE, "Reset " .. rangePrefix, MenuActiveRangesTop)
   end
-  
   rangeGroup:SetAIOn()
   rangeGroup:OptionROE(ENUMS.ROE.WeaponFree)
   rangeGroup:OptionROTEvadeFire()
   rangeGroup:OptionAlarmStateRed()
-
   local deactivateText = "Deactivate " .. rangePrefix
   local refreshText = "Refresh " .. rangePrefix
-  
   if withSam then
     local samTemplate = "SAM_" .. rangePrefix
     local activateSam = SPAWN:New(samTemplate)
@@ -385,11 +363,9 @@ end
 function addActiveRangeMenu(rangeGroup, rangePrefix)
 
   local rangeIdent = string.sub(rangePrefix, 1, 2)
-  
   if _G["rangeMenuSub_" .. rangeIdent] == nil then
     _G["rangeMenuSub_" .. rangeIdent] = MENU_COALITION:New(coalition.side.BLUE, "R" .. rangeIdent, MenuActiveRangesTop)
   end
-  
   _G["rangeMenu_" .. rangePrefix] = MENU_COALITION:New(coalition.side.BLUE, rangePrefix, _G["rangeMenuSub_" .. rangeIdent])
   MENU_COALITION_COMMAND:New(coalition.side.BLUE, "Activate " .. rangePrefix .. " NO SAM", _G["rangeMenu_" .. rangePrefix], activateRangeTarget, rangeGroup, rangePrefix, _G["rangeMenu_" .. rangePrefix], false )
   MENU_COALITION_COMMAND:New(coalition.side.BLUE, "Activate " .. rangePrefix .. " with SAM" , _G["rangeMenu_" .. rangePrefix], activateRangeTarget, rangeGroup, rangePrefix, _G["rangeMenu_" .. rangePrefix], true )
@@ -424,65 +400,69 @@ SetInitActiveRangeGroups:ForEachGroup(initActiveRange)
 
 menuEcsTop = MENU_COALITION:New(coalition.side.BLUE, "EC SOUTH")
 
-templateEcs7769_Sa2 = "ECS_SA2"
-templateEcs7769_Sa3 = "ECS_SA3"
-templateEcs7769_Sa6 = "ECS_SA6"
-templateEcs7769_Sa8 = "ECS_SA8"
-templateEcs7769_Sa15 = "ECS_SA15"
-zoneEcs7769 = ZONE:FindByName("ZONE_7769")
+-- SAM spawn emplates
+templateEcs_Sa2 = "ECS_SA2"
+templateEcs_Sa3 = "ECS_SA3"
+templateEcs_Sa6 = "ECS_SA6"
+templateEcs_Sa8 = "ECS_SA8"
+templateEcs_Sa15 = "ECS_SA15"
+-- Zone in which threat will be spawned
+zoneEcs7769 = ZONE:FindByName("ECS_ZONE_7769")
 
+function activateEcsThreat(samTemplate, samZone, activeThreat, isReset)
 
-function activateEcsRange(samTemplate, samZone, activeSystem)
-
-  --menuEcs_7769:Remove()
-  commandActivateSa2:Remove()
-  commandActivateSa3:Remove()
-  commandActivateSa6:Remove()
-  commandActivateSa8:Remove()
-  commandActivateSa15:Remove()
-
+  -- remove threat selection menu options
+  if not isReset then
+    commandActivateSa2:Remove()
+    commandActivateSa3:Remove()
+    commandActivateSa6:Remove()
+    commandActivateSa8:Remove()
+    commandActivateSa15:Remove()
+  end
+  
+  -- spawn threat in ECS zone
   local ecsSpawn = SPAWN:New(samTemplate)
   ecsSpawn:OnSpawnGroup(
       function (spawnGroup)
-        commandDeactivateEcs_7769 = MENU_COALITION_COMMAND:New(coalition.side.BLUE, "Deactivate 77-69", menuEcsTop, ecsReset, spawnGroup, ecsSpawn, activeSystem, false)
-        commandRefreshEcs_7769 = MENU_COALITION_COMMAND:New(coalition.side.BLUE, "Refresh 77-69", menuEcsTop, ecsReset, spawnGroup, ecsSpawn, activeSystem, true)
-        MESSAGE:New("EC South is active with " .. activeSystem):ToAll()
-      end, menuEcsTop, ecsReset, rangePrefix, ecsSpawn, activeSystem
+        commandDeactivateEcs_7769 = MENU_COALITION_COMMAND:New(coalition.side.BLUE, "Deactivate 77-69", menuEcsTop, resetEcsThreat, spawnGroup, ecsSpawn, activeThreat, false)
+        commandRefreshEcs_7769 = MENU_COALITION_COMMAND:New(coalition.side.BLUE, "Reset 77-69", menuEcsTop, resetEcsThreat, spawnGroup, ecsSpawn, activeThreat, true, samZone)
+        MESSAGE:New("EC South is active with " .. activeThreat):ToAll()
+      end, menuEcsTop, rangePrefix, ecsSpawn, activeThreat, samZone
     )
-    ecsSpawn:SpawnInZone(samZone, true)
-
+    :SpawnInZone(samZone, true)
 
 end
 
-function ecsReset(spawnGroup, ecsSpawn, activeSystem, refreshEcs)
+function resetEcsThreat(spawnGroup, ecsSpawn, activeThreat, refreshEcs, samZone)
 
-   commandDeactivateEcs_7769:Remove()
-   commandRefreshEcs_7769:Remove()
+  commandDeactivateEcs_7769:Remove() -- remove ECS active menus
+  commandRefreshEcs_7769:Remove()
+
+  if spawnGroup:IsAlive() then
+    spawnGroup:Destroy()
+  end
 
   if refreshEcs then
-    ecsSpawn:ReSpawn()
+    ecsSpawn:SpawnInZone(samZone, true)
   else
-    ecsGroup = ecsSpawn:GetLastAliveGroup()
-    ecsGroup:Destroy()
-    menuAddEcsActivate()
-    MESSAGE:New("EC South "  .. activeSystem .." has been deactived."):ToAll()
+    addEcsThreatMenu()
+    MESSAGE:New("EC South "  .. activeThreat .." has been deactived."):ToAll()
   end    
 
 end
 
-function menuAddEcsActivate()
+function addEcsThreatMenu()
 
-  --menuEcs_7769 = MENU_COALITION:New(coalition.side.BLUE,"77-69", menuEcsTop)
-
-  commandActivateSa2 = MENU_COALITION_COMMAND:New(coalition.side.BLUE, "Activate SA-2", menuEcsTop ,activateEcsRange, templateEcs7769_Sa2, zoneEcs7769, "SA-2")
-  commandActivateSa3 = MENU_COALITION_COMMAND:New(coalition.side.BLUE, "Activate SA-3", menuEcsTop ,activateEcsRange, templateEcs7769_Sa3, zoneEcs7769, "SA-3")
-  commandActivateSa6 = MENU_COALITION_COMMAND:New(coalition.side.BLUE, "Activate SA-6", menuEcsTop ,activateEcsRange, templateEcs7769_Sa6, zoneEcs7769, "SA-6")
-  commandActivateSa8 = MENU_COALITION_COMMAND:New(coalition.side.BLUE, "Activate SA-8", menuEcsTop ,activateEcsRange, templateEcs7769_Sa8, zoneEcs7769, "SA-8")
-  commandActivateSa15 = MENU_COALITION_COMMAND:New(coalition.side.BLUE, "Activate SA-15", menuEcsTop ,activateEcsRange, templateEcs7769_Sa15, zoneEcs7769, "SA-15")
+  -- [threat template], [threat zone], [active threat]
+  commandActivateSa2 = MENU_COALITION_COMMAND:New(coalition.side.BLUE, "Activate SA-2", menuEcsTop ,activateEcsThreat, templateEcs_Sa2, zoneEcs7769, "SA-2")
+  commandActivateSa3 = MENU_COALITION_COMMAND:New(coalition.side.BLUE, "Activate SA-3", menuEcsTop ,activateEcsThreat, templateEcs_Sa3, zoneEcs7769, "SA-3")
+  commandActivateSa6 = MENU_COALITION_COMMAND:New(coalition.side.BLUE, "Activate SA-6", menuEcsTop ,activateEcsThreat, templateEcs_Sa6, zoneEcs7769, "SA-6")
+  commandActivateSa8 = MENU_COALITION_COMMAND:New(coalition.side.BLUE, "Activate SA-8", menuEcsTop ,activateEcsThreat, templateEcs_Sa8, zoneEcs7769, "SA-8")
+  commandActivateSa15 = MENU_COALITION_COMMAND:New(coalition.side.BLUE, "Activate SA-15", menuEcsTop ,activateEcsThreat, templateEcs_Sa15, zoneEcs7769, "SA-15")
 
 end
 
-menuAddEcsActivate()
+addEcsThreatMenu()
 
 -- END ELECTRONIC COMBAT SIMULATOR RANGE
 
@@ -501,7 +481,6 @@ fox:AddLaunchZone(ZONE:FindByName("ZONE_4807_MT"))
 
 fox:AddSafeZone(ZONE:FindByName("ZONE_ECS_MT"))
 fox:AddLaunchZone(ZONE:FindByName("ZONE_ECS_MT"))
-
 
 -- FOX settings
 fox:SetExplosionDistance(300)
