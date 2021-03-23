@@ -597,7 +597,7 @@ local function adminRestartMission(adminClientName, mapFlag)
 	if adminClientName then
 		env.info("ADMIN Restart player name: " ..adminClientName)
 	end
-	trigger.action.setUserFlag(mapFlag, true) -- 999 = NTTR Day, 998 = NTTR Night
+	trigger.action.setUserFlag(mapFlag, true) -- 999 = NTTR Day, 997 = NTTR Day Weather, 998 = NTTR Night, 996 = NTTR Night Weather, 995 = NTTR Night No Moon
 
 end
 
@@ -610,7 +610,10 @@ local function BuildAdminMenu(adminState)
 			if string.find(adminGroupName, "XX_ADMIN") then
 				adminMenu = MENU_GROUP:New(adminGroup, "ADMIN")
 				MENU_GROUP_COMMAND:New(adminGroup, "Load DAY NTTR", adminMenu, adminRestartMission, client:GetPlayerName(), 999 )
+				MENU_GROUP_COMMAND:New(adminGroup, "Load DAY NTTR - Weather", adminMenu, adminRestartMission, client:GetPlayerName(), 997 )
 				MENU_GROUP_COMMAND:New(adminGroup, "Load NIGHT NTTR", adminMenu, adminRestartMission, client:GetPlayerName(), 998 )
+				MENU_GROUP_COMMAND:New(adminGroup, "Load NIGHT NTTR - Weather", adminMenu, adminRestartMission, client:GetPlayerName(), 996 )
+				MENU_GROUP_COMMAND:New(adminGroup, "Load NIGHT NTTR - No Moon", adminMenu, adminRestartMission, client:GetPlayerName(), 995 )
 				env.info("ADMIN Player name: " ..client:GetPlayerName())
 			end
 		SetAdminClient:Remove(client:GetName(), true)
