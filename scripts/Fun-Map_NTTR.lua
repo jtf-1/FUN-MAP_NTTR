@@ -19,18 +19,18 @@ function SpawnSupport (SupportSpawn) -- spawnobject, spawnzone
         local SpawnIndex = SupportSpawnObject:GetSpawnIndexFromGroup( SpawnGroup )
         local CheckTanker = SCHEDULER:New( nil, 
         function ()
-    			if SpawnGroup then
-    				if SpawnGroup:IsNotInZone( SupportSpawn.spawnzone ) then
-    					SupportSpawnObject:ReSpawn( SpawnIndex )
-    				end
-    			end
+          if SpawnGroup then
+            if SpawnGroup:IsNotInZone( SupportSpawn.spawnzone ) then
+              SupportSpawnObject:ReSpawn( SpawnIndex )
+            end
+          end
         end,
         {}, 0, 60 )
       end
     )
     :InitRepeatOnLanding()
     :Spawn()
-
+ 
 end -- function
 
 -- END FUNCTIONS SECTION
@@ -40,21 +40,21 @@ end -- function
 
 -- define table of respawning support aircraft ---
 TableSpawnSupport = { -- {spawnobjectname, spawnzone, callsignName, callsignNumber}
-	{spawnobject = "AR230V_KC-135_01", spawnzone = ZONE:New("AR230V"), callsignName = 2, callsignNumber = 1},
+  {spawnobject = "AR230V_KC-135_01", spawnzone = ZONE:New("AR230V"), callsignName = 2, callsignNumber = 1},
   {spawnobject = "AR230V_KC-130_01", spawnzone = ZONE:New("AR230V"), callsignName = 2, callsignNumber = 3},
-	{spawnobject = "AR231V_KC-135_01", spawnzone = ZONE:New("AR231V"), callsignName = 2, callSignNumber = 2},
-	{spawnobject = "AR635_KC-135_01", spawnzone = ZONE:New("AR635"), callsignName = 1, callsignNumber = 2},
+  {spawnobject = "AR231V_KC-135_01", spawnzone = ZONE:New("AR231V"), callsignName = 2, callSignNumber = 2},
+  {spawnobject = "AR635_KC-135_01", spawnzone = ZONE:New("AR635"), callsignName = 1, callsignNumber = 2},
   {spawnobject = "AR625_KC-135_01", spawnzone = ZONE:New("AR625"), callsignName = 1, callsignNumber = 3},
-	{spawnobject = "AR641A_KC-135_01", spawnzone = ZONE:New("AR641A"), callsignName = 1, callsignNumber = 1},
-	{spawnobject = "AR635_KC-135MPRS_01", spawnzone = ZONE:New("AR635"), callsignName = 3, callsignNumber = 2},
+  {spawnobject = "AR641A_KC-135_01", spawnzone = ZONE:New("AR641A"), callsignName = 1, callsignNumber = 1},
+  {spawnobject = "AR635_KC-135MPRS_01", spawnzone = ZONE:New("AR635"), callsignName = 3, callsignNumber = 2},
   {spawnobject = "AR625_KC-135MPRS_01", spawnzone = ZONE:New("AR625"), callsignName = 3, callsignNumber = 3},
-	{spawnobject = "AR641A_KC-135MPRS_01", spawnzone = ZONE:New("AR641A"), callsignName = 3, callsignNumber = 1},
-	{spawnobject = "AWACS_DARKSTAR", spawnzone = ZONE:New("AWACS"), callsignName = 5, callsignNumber = 1},
+  {spawnobject = "AR641A_KC-135MPRS_01", spawnzone = ZONE:New("AR641A"), callsignName = 3, callsignNumber = 1},
+  {spawnobject = "AWACS_DARKSTAR", spawnzone = ZONE:New("AWACS"), callsignName = 5, callsignNumber = 1},
 }
 
 -- spawn support aircraft ---
 for i, v in ipairs( TableSpawnSupport ) do
-	SpawnSupport ( v )
+  SpawnSupport ( v )
 end
 
 -- END SUPPORT AIRCRAFT SECTION
@@ -69,15 +69,15 @@ local strafeGoodPass = 20 -- Min hits for a good pass.
 
 -- Range tactical frequencies
 local RadioRangeControl = {
-	{R61 = 341.925},
-	{R62 = 234.250},
-	{R63 = 361.600},
-	{R64 = 341.925},
-	{R65 = 225.450},
-	{R74 = 228.000},
+  {R61 = 341.925},
+  {R62 = 234.250},
+  {R63 = 361.600},
+  {R64 = 341.925},
+  {R65 = 225.450},
+  {R74 = 228.000},
   {ECS = 293.500},
- 	}
-	
+  }
+  
 -- RANGE R61
 
 Range_R61 = RANGE:New("Range 61")
@@ -90,8 +90,8 @@ Range_R61:AddBombingTargetGroup(GROUP:FindByName("61-01"))
 Range_R61:AddBombingTargetGroup(GROUP:FindByName("61-03"))
 
 local bombtarget_R61B = {
-	"61-01 Aircraft #001", 
-	"61-01 Aircraft #002", 
+  "61-01 Aircraft #001", 
+  "61-01 Aircraft #002", 
 }
 Range_R61:AddBombingTargets( bombtarget_R61B )
 
@@ -154,10 +154,10 @@ Range_R62:AddBombingTargetGroup(GROUP:FindByName("62-92"))
 Range_R62:AddBombingTargetGroup(GROUP:FindByName("62-93"))
 
 local bombtarget_R62 = {
-	"62-32-01", 
-	"62-32-02", 
-	"62-32-03",
-	"62-99",	
+  "62-32-01", 
+  "62-32-02", 
+  "62-32-03",
+  "62-99",  
 }
 Range_R62:AddBombingTargets( bombtarget_R62 )
 
@@ -192,22 +192,22 @@ Range_R63:AddBombingTargetGroup(GROUP:FindByName("R-63B Class A Range-02"))
 local FoulDist_R63B_Strafe = Range_R63:GetFoullineDistance("R63B Strafe Lane L1", "R63B Foul Line Left")
 
 local Strafe_R63B_West = {
-	"R63B Strafe Lane L2",
-	"R63B Strafe Lane L1",
-	"R63B Strafe Lane L3",
+  "R63B Strafe Lane L2",
+  "R63B Strafe Lane L1",
+  "R63B Strafe Lane L3",
 }
 Range_R63:AddStrafePit(Strafe_R63B_West, strafeBoxLength, strafeBoxWidth, nil, true, strafeGoodPass, FoulDist_R63B_Strafe)
 
 local Strafe_R63B_East = {
-	"R63B Strafe Lane R2",
-	"R63B Strafe Lane R1",
-	"R63B Strafe Lane R3",
+  "R63B Strafe Lane R2",
+  "R63B Strafe Lane R1",
+  "R63B Strafe Lane R3",
 }
 Range_R63:AddStrafePit(Strafe_R63B_East, strafeBoxLength, strafeBoxWidth, nil, true, strafeGoodPass, FoulDist_R63B_Strafe)
 
 local bombtarget_R63B = {
-	"R63BWC",
-	"R63BEC",	
+  "R63BWC",
+  "R63BEC", 
 }
 Range_R63:AddBombingTargets( bombtarget_R63B )
 
@@ -228,7 +228,7 @@ Range_R64:AddBombingTargetGroup(GROUP:FindByName("64-10"))
 Range_R64:AddBombingTargetGroup(GROUP:FindByName("64-11"))
 
 local bombtarget_R64A = {
-	"64-12-05", 
+  "64-12-05", 
 }
 Range_R64:AddBombingTargets( bombtarget_R64A )
 
@@ -256,16 +256,16 @@ Range_R64:AddBombingTargets( bombtarget_R64C )
 local FoulDist_R64C_Strafe = Range_R64:GetFoullineDistance("R64C Strafe Lane L1", "R64C Strafe Foul Line L1")
 
 local Strafe_R64C_West = {
-	"R64C Strafe Lane L2",
-	"R64C Strafe Lane L1",
-	"R64C Strafe Lane L3",
+  "R64C Strafe Lane L2",
+  "R64C Strafe Lane L1",
+  "R64C Strafe Lane L3",
 }
 Range_R64:AddStrafePit(Strafe_R64C_West, strafeBoxLength, strafeBoxWidth, nil, true, strafeGoodPass, FoulDist_R64C_Strafe)
 
 local Strafe_R64C_East = {
-	"R64C Strafe Lane R2",
-	"R64C Strafe Lane R1",
-	"R64C Strafe Lane R3",
+  "R64C Strafe Lane R2",
+  "R64C Strafe Lane R1",
+  "R64C Strafe Lane R3",
 }
 Range_R64:AddStrafePit(Strafe_R64C_East, strafeBoxLength, strafeBoxWidth, nil, true, strafeGoodPass, FoulDist_R64C_Strafe)
 
@@ -500,11 +500,12 @@ fox:Start()
 -- BFM/ACM Zones
 BoxZone = ZONE_POLYGON:New( "Polygon_Box", GROUP:FindByName("zone_box") )
 BfmAcmZoneMenu = ZONE_POLYGON:New( "Polygon_BFM_ACM", GROUP:FindByName("COYOTEABC") )
+BfmAcmExitZone = ZONE:FindByName("Zone_BfmAcmExit")
 BfmAcmZone = ZONE:FindByName("Zone_BfmAcmFox")
 
 -- Spawn Objects
-AdvA4 = SPAWN:New( "ADV_A4" )		
-Adv28 = SPAWN:New( "ADV_MiG28" )	
+AdvA4 = SPAWN:New( "ADV_A4" )   
+Adv28 = SPAWN:New( "ADV_MiG28" )  
 Adv27 = SPAWN:New( "ADV_Su27" )
 Adv23 = SPAWN:New( "ADV_MiG23" )
 Adv16 = SPAWN:New( "ADV_F16" )
@@ -512,40 +513,57 @@ Adv18 = SPAWN:New( "ADV_F18" )
 
 function SpawnAdv(adv,qty,group,rng)
 
-	range = rng * 1852
-	hdg = group:GetHeading()
-	pos = group:GetPointVec2()
-	spawnPt = pos:Translate(range, hdg, true)
-	spawnVec3 = spawnPt:GetVec3()
-	if BoxZone:IsVec3InZone(spawnVec3) then
-		MESSAGE:New("Cannot spawn adversary aircraft in The Box.\nChange course or increase your range from The Box, and try again."):ToGroup(group)
-	else
-		adv:InitGrouping(qty):InitHeading(hdg + 180):SpawnFromVec3(spawnVec3)
-		MESSAGE:New("Adversary spawned."):ToGroup(group)
-	end
+  range = rng * 1852
+  hdg = group:GetHeading()
+  pos = group:GetPointVec2()
+  spawnPt = pos:Translate(range, hdg, true)
+  spawnVec3 = spawnPt:GetVec3()
+  if BoxZone:IsVec3InZone(spawnVec3) then
+    MESSAGE:New("Cannot spawn adversary aircraft in The Box.\nChange course or increase your range from The Box, and try again."):ToGroup(group)
+  else
+    adv:InitGrouping(qty)
+      :InitHeading(hdg + 180)
+      :OnSpawnGroup(
+        function ( SpawnGroup )
+          local CheckAdversary = SCHEDULER:New( SpawnGroup, 
+          function (CheckAdversary)
+            if SpawnGroup then
+              if SpawnGroup:IsNotInZone( BfmAcmZoneMenu ) then
+                MESSAGE:New("Adversary left BFM Zone and was removed!"):ToAll()
+                SpawnGroup:Destroy()
+                SpawnGroup = nil
+              end
+            end
+          end,
+          {}, 0, 5 )
+        end
+      )
+      :SpawnFromVec3(spawnVec3)
+    MESSAGE:New("Adversary spawned."):ToGroup(group)
+  end
 
 end
 
 function BuildMenuCommands (AdvMenu, MenuGroup, MenuName, BfmMenu, AdvType, AdvQty)
 
-	_G[AdvMenu] = MENU_GROUP:New( MenuGroup, MenuName, BfmMenu)
-		_G[AdvMenu .. "_rng5"] = MENU_GROUP_COMMAND:New( MenuGroup, "5 nmi", _G[AdvMenu], SpawnAdv, AdvType, AdvQty, MenuGroup, 5)
-		_G[AdvMenu .. "_rng10"] = MENU_GROUP_COMMAND:New( MenuGroup, "10 nmi", _G[AdvMenu], SpawnAdv, AdvType, AdvQty, MenuGroup, 10)
-		_G[AdvMenu .. "_rng20"] = MENU_GROUP_COMMAND:New( MenuGroup, "20 nmi", _G[AdvMenu], SpawnAdv, AdvType, AdvQty, MenuGroup, 20)
+  _G[AdvMenu] = MENU_GROUP:New( MenuGroup, MenuName, BfmMenu)
+    _G[AdvMenu .. "_rng5"] = MENU_GROUP_COMMAND:New( MenuGroup, "5 nmi", _G[AdvMenu], SpawnAdv, AdvType, AdvQty, MenuGroup, 5)
+    _G[AdvMenu .. "_rng10"] = MENU_GROUP_COMMAND:New( MenuGroup, "10 nmi", _G[AdvMenu], SpawnAdv, AdvType, AdvQty, MenuGroup, 10)
+    _G[AdvMenu .. "_rng20"] = MENU_GROUP_COMMAND:New( MenuGroup, "20 nmi", _G[AdvMenu], SpawnAdv, AdvType, AdvQty, MenuGroup, 20)
 
 end
 
 function BuildMenus(AdvQty, MenuGroup, MenuName, SpawnBfmGroup)
 
-	local AdvSuffix = "_" .. tostring(AdvQty)
-	BfmMenu = MENU_GROUP:New(MenuGroup, MenuName, SpawnBfmGroup)
-		BuildMenuCommands("SpawnBfmA4menu" .. AdvSuffix, MenuGroup, "Adversary A-4", BfmMenu, AdvA4, AdvQty)
-		BuildMenuCommands("SpawnBfm28menu" .. AdvSuffix, MenuGroup, "Adversary MiG-28", BfmMenu, Adv28, AdvQty)
-		BuildMenuCommands("SpawnBfm23menu" .. AdvSuffix, MenuGroup, "Adversary MiG-23", BfmMenu, Adv23, AdvQty)
-		BuildMenuCommands("SpawnBfm27menu" .. AdvSuffix, MenuGroup, "Adversary Su-27", BfmMenu, Adv27, AdvQty)
-		BuildMenuCommands("SpawnBfm16menu" .. AdvSuffix, MenuGroup, "Adversary F-16", BfmMenu, Adv16, AdvQty)
-		BuildMenuCommands("SpawnBfm18menu" .. AdvSuffix, MenuGroup, "Adversary F-18", BfmMenu, Adv18, AdvQty)		
-			
+  local AdvSuffix = "_" .. tostring(AdvQty)
+  BfmMenu = MENU_GROUP:New(MenuGroup, MenuName, SpawnBfmGroup)
+    BuildMenuCommands("SpawnBfmA4menu" .. AdvSuffix, MenuGroup, "Adversary A-4", BfmMenu, AdvA4, AdvQty)
+    BuildMenuCommands("SpawnBfm28menu" .. AdvSuffix, MenuGroup, "Adversary MiG-28", BfmMenu, Adv28, AdvQty)
+    BuildMenuCommands("SpawnBfm23menu" .. AdvSuffix, MenuGroup, "Adversary MiG-23", BfmMenu, Adv23, AdvQty)
+    BuildMenuCommands("SpawnBfm27menu" .. AdvSuffix, MenuGroup, "Adversary Su-27", BfmMenu, Adv27, AdvQty)
+    BuildMenuCommands("SpawnBfm16menu" .. AdvSuffix, MenuGroup, "Adversary F-16", BfmMenu, Adv16, AdvQty)
+    BuildMenuCommands("SpawnBfm18menu" .. AdvSuffix, MenuGroup, "Adversary F-18", BfmMenu, Adv18, AdvQty)   
+      
 end
 -- CLIENTS
 BLUFOR = SET_GROUP:New():FilterCoalitions( "blue" ):FilterStart()
@@ -555,30 +573,32 @@ local SetClient = SET_CLIENT:New():FilterCoalitions("blue"):FilterStart() -- cre
 
 local function MENU()
 
-	SetClient:ForEachClient(function(client)
-		if (client ~= nil) and (client:IsAlive()) then 
-			local group = client:GetGroup()
-			local groupName = group:GetName()
-			if group:IsPartlyOrCompletelyInZone(BfmAcmZoneMenu) then
-				if _G["SpawnBfm" .. groupName] == nil then
-					MenuGroup = group
-					_G["SpawnBfm" .. groupName] = MENU_GROUP:New( MenuGroup, "AI BFM/ACM" )
-						BuildMenus(1, MenuGroup, "Single", _G["SpawnBfm" .. groupName])
-						BuildMenus(2, MenuGroup, "Pair", _G["SpawnBfm" .. groupName])
-					MESSAGE:New("You have entered the BFM/ACM zone.\nUse F10 menu to spawn adversaries."):ToGroup(group)
-					env.info("BFM/ACM entry Player name: " ..client:GetPlayerName())
-					env.info("BFM/ACM entry Group Name: " ..group:GetName())
-				end
-			elseif _G["SpawnBfm" .. groupName] ~= nil then
-				if group:IsNotInZone(BfmAcmZone) then
-					_G["SpawnBfm" .. groupName]:Remove()
-					_G["SpawnBfm" .. groupName] = nil
-					MESSAGE:New("You are outside the ACM/BFM zone."):ToGroup(group)
-					env.info("BFM/ACM exit Group Name: " ..group:GetName())
-				end
-			end
-		end
-	end)
+  local devMenuBfm = false -- if true, BFM menu available outside BFM zone
+
+  SetClient:ForEachClient(function(client)
+   if (client ~= nil) and (client:IsAlive()) then 
+      local group = client:GetGroup()
+      local groupName = group:GetName()
+      if (group:IsPartlyOrCompletelyInZone(BfmAcmZoneMenu) or devMenuBfm) then
+        if _G["SpawnBfm" .. groupName] == nil then
+          MenuGroup = group
+          _G["SpawnBfm" .. groupName] = MENU_GROUP:New( MenuGroup, "AI BFM/ACM" )
+            BuildMenus(1, MenuGroup, "Single", _G["SpawnBfm" .. groupName])
+            BuildMenus(2, MenuGroup, "Pair", _G["SpawnBfm" .. groupName])
+          MESSAGE:New("You have entered the BFM/ACM zone.\nUse F10 menu to spawn adversaries."):ToGroup(group)
+          env.info("BFM/ACM entry Player name: " ..client:GetPlayerName())
+          env.info("BFM/ACM entry Group Name: " ..group:GetName())
+        end
+      elseif _G["SpawnBfm" .. groupName] ~= nil then
+        if group:IsNotInZone(BfmAcmZoneMenu) then
+          _G["SpawnBfm" .. groupName]:Remove()
+          _G["SpawnBfm" .. groupName] = nil
+          MESSAGE:New("You are outside the ACM/BFM zone."):ToGroup(group)
+          env.info("BFM/ACM exit Group Name: " ..group:GetName())
+        end
+      end
+    end
+  end)
   timer.scheduleFunction(MENU,nil,timer.getTime() + 5)
 
 end
@@ -594,38 +614,38 @@ SetAdminClient = SET_CLIENT:New():FilterStart()
 
 local function adminRestartMission(adminClientName, mapFlag)
 
-	if adminClientName then
-		env.info("ADMIN Restart player name: " ..adminClientName)
-	end
-	trigger.action.setUserFlag(mapFlag, true) -- 999 = NTTR Day, 997 = NTTR Day Weather, 998 = NTTR Night, 996 = NTTR Night Weather, 995 = NTTR Night No Moon
+  if adminClientName then
+    env.info("ADMIN Restart player name: " ..adminClientName)
+  end
+  trigger.action.setUserFlag(mapFlag, true) -- 999 = NTTR Day, 997 = NTTR Day Weather, 998 = NTTR Night, 996 = NTTR Night Weather, 995 = NTTR Night No Moon
 
 end
 
 local function BuildAdminMenu(adminState)
 
-	SetAdminClient:ForEachClient(function(client)
-		if (client ~= nil) and (client:IsAlive()) then
-			adminGroup = client:GetGroup()
-			adminGroupName = adminGroup:GetName()
-			if string.find(adminGroupName, "XX_ADMIN") then
-				adminMenu = MENU_GROUP:New(adminGroup, "ADMIN")
-				MENU_GROUP_COMMAND:New(adminGroup, "Load DAY NTTR", adminMenu, adminRestartMission, client:GetPlayerName(), 999 )
-				MENU_GROUP_COMMAND:New(adminGroup, "Load DAY NTTR - Weather", adminMenu, adminRestartMission, client:GetPlayerName(), 997 )
-				MENU_GROUP_COMMAND:New(adminGroup, "Load NIGHT NTTR", adminMenu, adminRestartMission, client:GetPlayerName(), 998 )
-				MENU_GROUP_COMMAND:New(adminGroup, "Load NIGHT NTTR - Weather", adminMenu, adminRestartMission, client:GetPlayerName(), 996 )
-				MENU_GROUP_COMMAND:New(adminGroup, "Load NIGHT NTTR - No Moon", adminMenu, adminRestartMission, client:GetPlayerName(), 995 )
-				env.info("ADMIN Player name: " ..client:GetPlayerName())
-			end
-		SetAdminClient:Remove(client:GetName(), true)
-		end
-	end)
-	timer.scheduleFunction(BuildAdminMenu, nil, timer.getTime() + 10)
+  SetAdminClient:ForEachClient(function(client)
+    if (client ~= nil) and (client:IsAlive()) then
+      adminGroup = client:GetGroup()
+      adminGroupName = adminGroup:GetName()
+      if string.find(adminGroupName, "XX_ADMIN") then
+        adminMenu = MENU_GROUP:New(adminGroup, "ADMIN")
+        MENU_GROUP_COMMAND:New(adminGroup, "Load DAY NTTR", adminMenu, adminRestartMission, client:GetPlayerName(), 999 )
+        MENU_GROUP_COMMAND:New(adminGroup, "Load DAY NTTR - Weather", adminMenu, adminRestartMission, client:GetPlayerName(), 997 )
+        MENU_GROUP_COMMAND:New(adminGroup, "Load NIGHT NTTR", adminMenu, adminRestartMission, client:GetPlayerName(), 998 )
+        MENU_GROUP_COMMAND:New(adminGroup, "Load NIGHT NTTR - Weather", adminMenu, adminRestartMission, client:GetPlayerName(), 996 )
+        MENU_GROUP_COMMAND:New(adminGroup, "Load NIGHT NTTR - No Moon", adminMenu, adminRestartMission, client:GetPlayerName(), 995 )
+        env.info("ADMIN Player name: " ..client:GetPlayerName())
+      end
+    SetAdminClient:Remove(client:GetName(), true)
+    end
+  end)
+  timer.scheduleFunction(BuildAdminMenu, nil, timer.getTime() + 10)
 
 end
 
 if JtfAdmin then
-	env.info("ADMIN enabled")
-	BuildAdminMenu(true)
+  env.info("ADMIN enabled")
+  BuildAdminMenu(true)
 end
 
 --END ADMIN SECTION
