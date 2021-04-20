@@ -401,6 +401,7 @@ SetInitActiveRangeGroups:ForEachGroup(initActiveRange)
 menuEcsTop = MENU_COALITION:New(coalition.side.BLUE, "EC SOUTH")
 
 -- SAM spawn emplates
+templateEcs_Sa10 = "ECS_SA10"
 templateEcs_Sa2 = "ECS_SA2"
 templateEcs_Sa3 = "ECS_SA3"
 templateEcs_Sa6 = "ECS_SA6"
@@ -413,6 +414,7 @@ function activateEcsThreat(samTemplate, samZone, activeThreat, isReset)
 
   -- remove threat selection menu options
   if not isReset then
+    commandActivateSa10:Remove()
     commandActivateSa2:Remove()
     commandActivateSa3:Remove()
     commandActivateSa6:Remove()
@@ -454,6 +456,7 @@ end
 function addEcsThreatMenu()
 
   -- [threat template], [threat zone], [active threat]
+  commandActivateSa10 = MENU_COALITION_COMMAND:New(coalition.side.BLUE, "Activate SA-10", menuEcsTop ,activateEcsThreat, templateEcs_Sa10, zoneEcs7769, "SA-10")
   commandActivateSa2 = MENU_COALITION_COMMAND:New(coalition.side.BLUE, "Activate SA-2", menuEcsTop ,activateEcsThreat, templateEcs_Sa2, zoneEcs7769, "SA-2")
   commandActivateSa3 = MENU_COALITION_COMMAND:New(coalition.side.BLUE, "Activate SA-3", menuEcsTop ,activateEcsThreat, templateEcs_Sa3, zoneEcs7769, "SA-3")
   commandActivateSa6 = MENU_COALITION_COMMAND:New(coalition.side.BLUE, "Activate SA-6", menuEcsTop ,activateEcsThreat, templateEcs_Sa6, zoneEcs7769, "SA-6")
