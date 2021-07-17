@@ -62,248 +62,157 @@ end
 
 -- BEGIN STATIC RANGE SECTION
 
+-- Range Strafe target default parameters
 local strafeMaxAlt = 1530 -- [5000ft] in metres. Height of strafe box.
 local strafeBoxLength = 3000 -- [10000ft] in metres. Length of strafe box.
 local strafeBoxWidth = 300 -- [1000ft] in metres. Width of Strafe pit box (from 1st listed lane).
+local strafeFoullineDistance = 610 -- [2000ft] in metres. Min distance for from target for rounds to be counted.
 local strafeGoodPass = 20 -- Min hits for a good pass.
+local rangeSoundFilesPath = "Range Soundfiles/" -- Range sound files path in miz
 
--- Range tactical frequencies
-local RadioRangeControl = {
-  {R61 = 341.925},
-  {R62 = 234.250},
-  {R63 = 361.600},
-  {R64 = 341.925},
-  {R65 = 225.450},
-  {R74 = 228.000},
-  {ECS = 293.500},
-  }
+local TableRangeStatic = {
+  { --R61
+    rangeId = "R61",
+    rangeName = "Range 61",
+    rangeZone = "R61",
+    rangeControlFrequency = 341.925,
+    rangeControlRelayUnit = "R61_RangeControl",
+    groups = {
+      "61-01", "61-03",
+    },
+    units = {
+      "61-01 Aircraft #001", "61-01 Aircraft #002", 
+    },
+  },--R61 END
+  { --R62
+    rangeId = "R62",
+    rangeName = "Range 62",
+    rangeZone = "R62",
+    rangeControlFrequency = 234.250,
+    rangeControlRelayUnit = "R62_RangeControl",
+    groups = {
+      "62-01", "62-02", "62-04", "62-03", "62-08",
+      "62-09", "62-11", "62-12", "62-13", "62-14",
+      "62-21", "62-21-01", "62-22", "62-31", "62-32",
+      "62-41", "62-42", "62-43", "62-44", "62-45",
+      "62-51", "62-52", "62-53", "62-54", "62-55",
+      "62-56", "62-61", "62-62", "62-63", "62-71",
+      "62-72", "62-73", "62-74", "62-75", "62-76",
+      "62-77", "62-78", "62-79", "62-81", "62-83",
+      "62-91", "62-92", "62-93",
+    },
+    units = {
+      "62-32-01", "62-32-02", "62-32-03", "62-99",  
+    },
+  },--R62 END
+  { --R63
+    rangeId = "R63",
+    rangeName = "Range 63",
+    rangeZone = "R63",
+    rangeControlFrequency = 361.6,
+    rangeControlRelayUnit = "R63_RangeControl",
+    groups = {
+      "63-01", "63-02", "63-03", "63-05", "63-10",
+      "63-12", "63-15", "R-63B Class A Range-01", "R-63B Class A Range-02",    
+    },
+    units = {
+      "R63BWC", "R63BEC",
+    },
+    strafepits = {
+      { --West strafepit
+        "R63B Strafe Lane L2", 
+        "R63B Strafe Lane L1", 
+        "R63B Strafe Lane L3",
+      },
+      { --East strafepit 
+        "R63B Strafe Lane R2", 
+        "R63B Strafe Lane R1", 
+        "R63B Strafe Lane R3",
+      },
+    },
+  },--R63 END
+  { --R64
+    rangeId = "R64",
+    rangeName = "Range 64",
+    rangeZone = "R64",
+    rangeControlFrequency = 341.925,
+    rangeControlRelayUnit = "R64_RangeControl",
+    groups = {
+      "64-10", "64-11", "64-13", "64-14", "64-17",
+      "64-19", "64-15", "64-05", "64-08", "64-09",
+    },
+    units = {
+      "64-12-05", "R64CWC", "R64CEC", "R-64C Class A Range-01", "R-64C Class A Range-02", 
+    },
+    strafepits = {
+      {-- West strafepit
+        "R64C Strafe Lane L2", 
+        "R64C Strafe Lane L1", 
+        "R64C Strafe Lane L3",
+      },
+      {-- East strafepit
+        "R64C Strafe Lane R2", 
+        "R64C Strafe Lane R1", 
+        "R64C Strafe Lane R3",
+      },
+    },
+  },--R64 END
+  { --R65
+    rangeId = "R65",
+    rangeName = "Range 65",
+    rangeZone = "R65",
+    rangeControlFrequency = 225.450,
+    rangeControlRelayUnit = "R65_RangeControl",
+    groups = {
+      "65-01", "65-02", "65-03", "65-04", "65-05",
+      "65-06", "65-07", "65-08", "65-11",
+    },
+  },--R65 END
+}
+
+function AddRanges(TableRangeStatic)
+  for rangeIndex, rangeData in ipairs(TableRangeStatic) do
   
--- RANGE R61
+    local rangeId = rangeData.rangeId
+    
+    _G["Range_" .. rangeId] = RANGE:New(rangeData.rangeName)
+    _G["Range_" .. rangeId]:SetRangeZone(ZONE_POLYGON:FindByName(rangeData.rangeZone))
+    _G["Range_" .. rangeId]:SetSoundfilesPath(rangeSoundFilesPath)
+    _G["Range_" .. rangeId]:SetRangeControl(rangeData.rangeControlFrequency)
+ 
+    if rangeData.groups ~= nil then -- add groups of targets
+      for tgtIndex, tgtName in ipairs(rangeData.groups) do
+        _G["Range_" .. rangeId]:AddBombingTargetGroup(GROUP:FindByName(tgtName))
+      end
+    end
+    
+    if rangeData.units ~= nil then -- add individual targets
+      for tgtIndex, tgtName in ipairs(rangeData.units) do
+        _G["Range_" .. rangeId]:AddBombingTargets( tgtName )
+      end
+    end
+    
+    if rangeData.strafepits ~= nil then -- add strafe targets
+      for strafepitIndex, strafepit in ipairs(rangeData.strafepits) do
+        _G["Range_" .. rangeId]:AddStrafePit(strafepit, strafeBoxLength, strafeBoxWidth, nil, true, strafeGoodPass, strafeFoullineDistance)
+      end  
+    end
+    
+    _G["Range_" .. rangeId]:DebugOFF()  
+    _G["Range_" .. rangeId]:Start()
+  end
+end
 
-Range_R61 = RANGE:New("Range 61")
-Range_R61:SetRangeZone(ZONE_POLYGON:FindByName("R61"))
-Range_R61:SetSoundfilesPath("Range Soundfiles/")
-Range_R61:SetRangeControl(RadioRangeControl.R61)
+-- Create ranges
+AddRanges(TableRangeStatic)
 
--- R61B
-Range_R61:AddBombingTargetGroup(GROUP:FindByName("61-01"))
-Range_R61:AddBombingTargetGroup(GROUP:FindByName("61-03"))
-
-local bombtarget_R61B = {
-  "61-01 Aircraft #001", 
-  "61-01 Aircraft #002", 
-}
-Range_R61:AddBombingTargets( bombtarget_R61B )
-
-Range_R61:Start()
-
--- END R61
-
--- R62
-Range_R62 = RANGE:New("Range 62")
-Range_R62:DebugOFF()
-Range_R62:SetRangeZone(ZONE_POLYGON:FindByName("R62"))
-Range_R62:SetSoundfilesPath("Range Soundfiles/")
-Range_R62:SetRangeControl(RadioRangeControl.R62)
-
--- R62A
-Range_R62:AddBombingTargetGroup(GROUP:FindByName("62-01"))
-Range_R62:AddBombingTargetGroup(GROUP:FindByName("62-02"))
-Range_R62:AddBombingTargetGroup(GROUP:FindByName("62-04"))
-
--- R62B
-Range_R62:AddBombingTargetGroup(GROUP:FindByName("62-03"))
-Range_R62:AddBombingTargetGroup(GROUP:FindByName("62-08"))
-Range_R62:AddBombingTargetGroup(GROUP:FindByName("62-09"))
-Range_R62:AddBombingTargetGroup(GROUP:FindByName("62-11"))
-Range_R62:AddBombingTargetGroup(GROUP:FindByName("62-12"))
-Range_R62:AddBombingTargetGroup(GROUP:FindByName("62-13"))
-Range_R62:AddBombingTargetGroup(GROUP:FindByName("62-14"))
-Range_R62:AddBombingTargetGroup(GROUP:FindByName("62-21"))
-Range_R62:AddBombingTargetGroup(GROUP:FindByName("62-21-01"))
-Range_R62:AddBombingTargetGroup(GROUP:FindByName("62-22"))
-Range_R62:AddBombingTargetGroup(GROUP:FindByName("62-31"))
-Range_R62:AddBombingTargetGroup(GROUP:FindByName("62-32"))
-Range_R62:AddBombingTargetGroup(GROUP:FindByName("62-41"))
-Range_R62:AddBombingTargetGroup(GROUP:FindByName("62-42"))
-Range_R62:AddBombingTargetGroup(GROUP:FindByName("62-43"))
-Range_R62:AddBombingTargetGroup(GROUP:FindByName("62-44"))
-Range_R62:AddBombingTargetGroup(GROUP:FindByName("62-45"))
-Range_R62:AddBombingTargetGroup(GROUP:FindByName("62-51"))
-Range_R62:AddBombingTargetGroup(GROUP:FindByName("62-52"))
-Range_R62:AddBombingTargetGroup(GROUP:FindByName("62-53"))
-Range_R62:AddBombingTargetGroup(GROUP:FindByName("62-54"))
-Range_R62:AddBombingTargetGroup(GROUP:FindByName("62-55"))
-Range_R62:AddBombingTargetGroup(GROUP:FindByName("62-56"))
-Range_R62:AddBombingTargetGroup(GROUP:FindByName("62-61"))
-Range_R62:AddBombingTargetGroup(GROUP:FindByName("62-62"))
-Range_R62:AddBombingTargetGroup(GROUP:FindByName("62-63"))
-Range_R62:AddBombingTargetGroup(GROUP:FindByName("62-71"))
-Range_R62:AddBombingTargetGroup(GROUP:FindByName("62-72"))
-Range_R62:AddBombingTargetGroup(GROUP:FindByName("62-73"))
-Range_R62:AddBombingTargetGroup(GROUP:FindByName("62-74"))
-Range_R62:AddBombingTargetGroup(GROUP:FindByName("62-75"))
-Range_R62:AddBombingTargetGroup(GROUP:FindByName("62-76"))
-Range_R62:AddBombingTargetGroup(GROUP:FindByName("62-77"))
-Range_R62:AddBombingTargetGroup(GROUP:FindByName("62-78"))
-Range_R62:AddBombingTargetGroup(GROUP:FindByName("62-79"))
-Range_R62:AddBombingTargetGroup(GROUP:FindByName("62-81"))
-Range_R62:AddBombingTargetGroup(GROUP:FindByName("62-83"))
-Range_R62:AddBombingTargetGroup(GROUP:FindByName("62-91"))
-Range_R62:AddBombingTargetGroup(GROUP:FindByName("62-92"))
-Range_R62:AddBombingTargetGroup(GROUP:FindByName("62-93"))
-
-local bombtarget_R62 = {
-  "62-32-01", 
-  "62-32-02", 
-  "62-32-03",
-  "62-99",  
-}
-Range_R62:AddBombingTargets( bombtarget_R62 )
-
-Range_R62:Start()
-
--- T6208 moving strafe targets
+-- R62 T6208 moving strafe targets
 MenuT6208 = MENU_COALITION:New( coalition.side.BLUE, "Target 62-08" )
 MenuT6208_1 = MENU_COALITION_COMMAND:New( coalition.side.BLUE, "TGT 6208: Activate  4x4 (46 mph)", MenuT6208, function() trigger.action.setUserFlag(62081, 1) end) 
 MenuT6208_2 = MENU_COALITION_COMMAND:New( coalition.side.BLUE, "TGT 6208: Activate  Truck (23 mph)", MenuT6208, function() trigger.action.setUserFlag(62082, 1) end) 
 MenuT6208_3 = MENU_COALITION_COMMAND:New( coalition.side.BLUE, "TGT 6208: Activate  T-55 (11 mph)", MenuT6208, function() trigger.action.setUserFlag(62083, 1) end) 
 
--- END R62
-
--- R63
-Range_R63 = RANGE:New("Range 63")
-Range_R63:SetRangeZone(ZONE_POLYGON:FindByName("R63"))
-Range_R63:SetSoundfilesPath("Range Soundfiles/")
-Range_R63:SetRangeControl(RadioRangeControl.R63B)
-Range_R63:SetMaxStrafeAlt(strafeMaxAlt)
-
---R63B
-Range_R63:AddBombingTargetGroup(GROUP:FindByName("63-01"))
-Range_R63:AddBombingTargetGroup(GROUP:FindByName("63-02"))
-Range_R63:AddBombingTargetGroup(GROUP:FindByName("63-03"))
-Range_R63:AddBombingTargetGroup(GROUP:FindByName("63-05"))
-Range_R63:AddBombingTargetGroup(GROUP:FindByName("63-10"))
-Range_R63:AddBombingTargetGroup(GROUP:FindByName("63-12"))
-Range_R63:AddBombingTargetGroup(GROUP:FindByName("63-15"))
-Range_R63:AddBombingTargetGroup(GROUP:FindByName("R-63B Class A Range-01"))
-Range_R63:AddBombingTargetGroup(GROUP:FindByName("R-63B Class A Range-02"))
-
-local FoulDist_R63B_Strafe = Range_R63:GetFoullineDistance("R63B Strafe Lane L1", "R63B Foul Line Left")
-
-local Strafe_R63B_West = {
-  "R63B Strafe Lane L2",
-  "R63B Strafe Lane L1",
-  "R63B Strafe Lane L3",
-}
-Range_R63:AddStrafePit(Strafe_R63B_West, strafeBoxLength, strafeBoxWidth, nil, true, strafeGoodPass, FoulDist_R63B_Strafe)
-
-local Strafe_R63B_East = {
-  "R63B Strafe Lane R2",
-  "R63B Strafe Lane R1",
-  "R63B Strafe Lane R3",
-}
-Range_R63:AddStrafePit(Strafe_R63B_East, strafeBoxLength, strafeBoxWidth, nil, true, strafeGoodPass, FoulDist_R63B_Strafe)
-
-local bombtarget_R63B = {
-  "R63BWC",
-  "R63BEC", 
-}
-Range_R63:AddBombingTargets( bombtarget_R63B )
-
-Range_R63:Start()
-
--- ENDR63
-
-
--- R64
-Range_R64= RANGE:New("Range R64")
-Range_R64:SetRangeZone(ZONE_POLYGON:FindByName("R64"))
-Range_R64:SetSoundfilesPath("Range Soundfiles/")
-Range_R64:SetRangeControl(RadioRangeControl.R64C)
-Range_R64:SetMaxStrafeAlt(strafeMaxAlt)
-
--- R64A
-Range_R64:AddBombingTargetGroup(GROUP:FindByName("64-10"))
-Range_R64:AddBombingTargetGroup(GROUP:FindByName("64-11"))
-
-local bombtarget_R64A = {
-  "64-12-05", 
-}
-Range_R64:AddBombingTargets( bombtarget_R64A )
-
--- R64B
-Range_R64:AddBombingTargetGroup(GROUP:FindByName("64-13"))
-Range_R64:AddBombingTargetGroup(GROUP:FindByName("64-14"))
-Range_R64:AddBombingTargetGroup(GROUP:FindByName("64-17"))
-Range_R64:AddBombingTargetGroup(GROUP:FindByName("64-19"))
-Range_R64:AddBombingTargetGroup(GROUP:FindByName("64-15"))
-
--- R64C
-Range_R64:AddBombingTargetGroup(GROUP:FindByName("64-05"))
-Range_R64:AddBombingTargetGroup(GROUP:FindByName("64-08"))
-Range_R64:AddBombingTargetGroup(GROUP:FindByName("64-09"))
-
-local bombtarget_R64C = {
-  "R64CWC", 
-  "R64CEC", 
-  "R-64C Class A Range-01", 
-  "R-64C Class A Range-02", 
-}
-Range_R64:AddBombingTargets( bombtarget_R64C )
-
--- Strafe Pits
-local FoulDist_R64C_Strafe = Range_R64:GetFoullineDistance("R64C Strafe Lane L1", "R64C Strafe Foul Line L1")
-
-local Strafe_R64C_West = {
-  "R64C Strafe Lane L2",
-  "R64C Strafe Lane L1",
-  "R64C Strafe Lane L3",
-}
-Range_R64:AddStrafePit(Strafe_R64C_West, strafeBoxLength, strafeBoxWidth, nil, true, strafeGoodPass, FoulDist_R64C_Strafe)
-
-local Strafe_R64C_East = {
-  "R64C Strafe Lane R2",
-  "R64C Strafe Lane R1",
-  "R64C Strafe Lane R3",
-}
-Range_R64:AddStrafePit(Strafe_R64C_East, strafeBoxLength, strafeBoxWidth, nil, true, strafeGoodPass, FoulDist_R64C_Strafe)
-
-Range_R64:Start()
-
--- END R64
-
--- R65
-Range_R65 = RANGE:New("Range R65")
-Range_R65:SetRangeZone(ZONE_POLYGON:FindByName("R65"))
-Range_R65:SetSoundfilesPath("Range Soundfiles/")
-Range_R65:SetRangeControl(RadioRangeControl.R65)
-
---R65C
-Range_R65:AddBombingTargetGroup(GROUP:FindByName("65-01"))
-Range_R65:AddBombingTargetGroup(GROUP:FindByName("65-02"))
-Range_R65:AddBombingTargetGroup(GROUP:FindByName("65-03"))
-Range_R65:AddBombingTargetGroup(GROUP:FindByName("65-04"))
-Range_R65:AddBombingTargetGroup(GROUP:FindByName("65-05"))
-Range_R65:AddBombingTargetGroup(GROUP:FindByName("65-06"))
-Range_R65:AddBombingTargetGroup(GROUP:FindByName("65-07"))
-Range_R65:AddBombingTargetGroup(GROUP:FindByName("65-08"))
-Range_R65:AddBombingTargetGroup(GROUP:FindByName("65-11"))
-
---R65D
-Range_R65:AddBombingTargetGroup(GROUP:FindByName("65-10"))
-
-Range_R65:Start()
-
--- END R65
-
--- RANGE DEBUG
-Range_R61:DebugOFF()
-Range_R62:DebugOFF()
-Range_R63:DebugOFF()
-Range_R64:DebugOFF()
-Range_R65:DebugOFF()
-
+-- END R62 T6208
 -- END STATIC RANGE SECTION
 
 -- BEGIN DYNAMIC RANGES
@@ -569,7 +478,7 @@ function BuildMenus(AdvQty, MenuGroup, MenuName, SpawnBfmGroup)
       
 end
 -- CLIENTS
-BLUFOR = SET_GROUP:New():FilterCoalitions( "blue" ):FilterStart()
+-- BLUFOR = SET_GROUP:New():FilterCoalitions( "blue" ):FilterStart()
 
 -- SPAWN AIR MENU
 local SetClient = SET_CLIENT:New():FilterCoalitions("blue"):FilterStart() -- create a list of all clients
@@ -589,15 +498,15 @@ local function MENU()
             BuildMenus(1, MenuGroup, "Single", _G["SpawnBfm" .. groupName])
             BuildMenus(2, MenuGroup, "Pair", _G["SpawnBfm" .. groupName])
           MESSAGE:New("You have entered the BFM/ACM zone.\nUse F10 menu to spawn adversaries."):ToGroup(group)
-          env.info("BFM/ACM entry Player name: " ..client:GetPlayerName())
-          env.info("BFM/ACM entry Group Name: " ..group:GetName())
+          --env.info("BFM/ACM entry Player name: " ..client:GetPlayerName())
+          --env.info("BFM/ACM entry Group Name: " ..group:GetName())
         end
       elseif _G["SpawnBfm" .. groupName] ~= nil then
         if group:IsNotInZone(BfmAcmZoneMenu) then
           _G["SpawnBfm" .. groupName]:Remove()
           _G["SpawnBfm" .. groupName] = nil
           MESSAGE:New("You are outside the ACM/BFM zone."):ToGroup(group)
-          env.info("BFM/ACM exit Group Name: " ..group:GetName())
+          --env.info("BFM/ACM exit Group Name: " ..group:GetName())
         end
       end
     end
@@ -637,7 +546,7 @@ local function BuildAdminMenu(adminState)
         MENU_GROUP_COMMAND:New(adminGroup, "Load NIGHT NTTR", adminMenu, adminRestartMission, client:GetPlayerName(), 998 )
         MENU_GROUP_COMMAND:New(adminGroup, "Load NIGHT NTTR - Weather", adminMenu, adminRestartMission, client:GetPlayerName(), 996 )
         MENU_GROUP_COMMAND:New(adminGroup, "Load NIGHT NTTR - No Moon", adminMenu, adminRestartMission, client:GetPlayerName(), 995 )
-        env.info("ADMIN Player name: " ..client:GetPlayerName())
+        --env.info("ADMIN Player name: " ..client:GetPlayerName())
       end
     SetAdminClient:Remove(client:GetName(), true)
     end
