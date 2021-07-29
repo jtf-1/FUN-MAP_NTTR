@@ -3,10 +3,71 @@ env.info( '*** JTF-1 MOOSE MISSION SCRIPT START ***' )
 
 
 JtfAdmin = true --activate admin menu option in admin slots
+BASE:TraceOnOff(false) --debug on/off
 
 _SETTINGS:SetPlayerMenuOff()
 
--- BEGIN FUNCTIONS SECTION
+--SRSPath = "C:\\PROGRA~1\\DCS-SimpleRadio-Standalone" --Path to SRS install. No spaces 
+--SRSPort = "5004" --SRS server port
+--
+---- BEGIN ATIS SECTION
+--
+--atisCreech=ATIS:New(AIRBASE.Nevada.Creech_AFB, 290.450, radio.modulation.AM)
+--:SetSRS(SRSPath, "male", "en-US", nil, nil, SRSPort)
+--:SetTowerFrequencies({360.6, 118.3, 38.55})
+--:SetTACAN(87)
+--:Start()
+--
+--atisGroom=ATIS:New(AIRBASE.Nevada.Groom_Lake_AFB, 123.500, radio.modulation.AM)
+--:SetSRS(SRSPath, "male", "en-US", nil, nil, SRSPort)
+--:SetTowerFrequencies({250.050, 118.0, 38.6})
+--:SetTACAN(18)
+--:AddILS(109.3, "32R")
+--:Start()
+--
+--atisHenderson=ATIS:New(AIRBASE.Nevada.Henderson_Executive_Airport, 120.775, radio.modulation.AM)
+--:SetSRS(SRSPath, "female", "en-US", nil, nil, SRSPort)
+--:SetTowerFrequencies({250.1, 125.1, 38.75})
+--:Start()
+--
+--atisLaughlin=ATIS:New(AIRBASE.Nevada.Laughlin_Airport, 119.825, radio.modulation.AM)
+--:SetSRS(SRSPath, "female", "en-US", nil, nil, SRSPort)
+--:SetTowerFrequencies({250.0, 123.9, 38.4})
+--:Start()
+--
+--atisMcCarran=ATIS:New(AIRBASE.Nevada.McCarran_International_Airport, 132.400, radio.modulation.AM)
+--:SetSRS(SRSPath, "female", "en-US", nil, nil, SRSPort)
+--:SetTowerFrequencies({257.8, 119.9, 118.750, 38.65})
+--:SetTACAN(116)
+--:AddILS(111.8, "25L")
+--:AddILS(110.3, "25R")
+--:Start()
+--
+--atisNellis=ATIS:New(AIRBASE.Nevada.Nellis_AFB, 270.100, radio.modulation.AM)
+--:SetSRS(SRSPath, "male", "en-US", nil, nil, SRSPort)
+----:SetActiveRunway("21L")
+--:SetActiveRunway("03L")
+--:SetTowerFrequencies({327.0, 132.550, 38.7})
+--:SetTACAN(12)
+--:AddILS(109.1, "21L")
+--:Start()
+--
+--atisNLV=ATIS:New(AIRBASE.Nevada.North_Las_Vegas, 118.050, radio.modulation.AM)
+--:SetSRS(SRSPath, "female", "en-US", nil, nil, SRSPort)
+--:SetTowerFrequencies({360.750, 125.700, 38.45})
+--:AddILS(110.7, "12")
+--:Start()
+--
+--atisTonopahT=ATIS:New(AIRBASE.Nevada.Tonopah_Test_Range_Airfield, 113.000, radio.modulation.AM)
+--:SetSRS(SRSPath, "male", "en-US", nil, nil, SRSPort)
+--:SetTowerFrequencies({257.950, 124.750, 38.5})
+--:SetTACAN(77)
+--:AddILS(108.3, "14")
+--:AddILS(111.7, "32")
+--:Start()
+--
+---- END ATIS SECTION
+-- BEGIN SUPPORT AIRCRAFT SECTION
 
 function SpawnSupport (SupportSpawn) -- spawnobject, spawnzone
 
@@ -33,11 +94,6 @@ function SpawnSupport (SupportSpawn) -- spawnobject, spawnzone
  
 end -- function
 
--- END FUNCTIONS SECTION
-
-
--- BEGIN SUPPORT AIRCRAFT SECTION
-
 -- define table of respawning support aircraft ---
 TableSpawnSupport = { -- {spawnobjectname, spawnzone, callsignName, callsignNumber}
   {spawnobject = "AR230V_KC-135_01", spawnzone = ZONE:New("AR230V"), callsignName = 2, callsignNumber = 1},
@@ -59,8 +115,40 @@ end
 
 -- END SUPPORT AIRCRAFT SECTION
 
-
 -- BEGIN STATIC RANGE SECTION
+
+function AddRanges(TableRangeStatic)
+  for rangeIndex, rangeData in ipairs(TableRangeStatic) do
+  
+    local rangeObject = "Range_" .. rangeData.rangeId
+    
+    _G[rangeObject] = RANGE:New(rangeData.rangeName)
+    _G[rangeObject]:SetRangeZone(ZONE_POLYGON:FindByName(rangeData.rangeZone))
+    _G[rangeObject]:SetSoundfilesPath(rangeSoundFilesPath)
+    --_G["Range_" .. rangeId]:SetRangeControl(rangeData.rangeControlFrequency)
+ 
+    if rangeData.groups ~= nil then -- add groups of targets
+      for tgtIndex, tgtName in ipairs(rangeData.groups) do
+        _G[rangeObject]:AddBombingTargetGroup(GROUP:FindByName(tgtName))
+      end
+    end
+    
+    if rangeData.units ~= nil then -- add individual targets
+      for tgtIndex, tgtName in ipairs(rangeData.units) do
+        _G[rangeObject]:AddBombingTargets( tgtName )
+      end
+    end
+    
+    if rangeData.strafepits ~= nil then -- add strafe targets
+      for strafepitIndex, strafepit in ipairs(rangeData.strafepits) do
+        _G[rangeObject]:AddStrafePit(strafepit, strafeBoxLength, strafeBoxWidth, nil, true, strafeGoodPass, strafeFoullineDistance)
+      end  
+    end
+    
+    _G[rangeObject]:DebugOFF()  
+    _G[rangeObject]:Start()
+  end
+end
 
 -- Range Strafe target default parameters
 local strafeMaxAlt = 1530 -- [5000ft] in metres. Height of strafe box.
@@ -70,13 +158,13 @@ local strafeFoullineDistance = 610 -- [2000ft] in metres. Min distance for from 
 local strafeGoodPass = 20 -- Min hits for a good pass.
 local rangeSoundFilesPath = "Range Soundfiles/" -- Range sound files path in miz
 
+-- Range targets table
 local TableRangeStatic = {
   { --R61
     rangeId = "R61",
     rangeName = "Range 61",
     rangeZone = "R61",
     rangeControlFrequency = 341.925,
-    rangeControlRelayUnit = "R61_RangeControl",
     groups = {
       "61-01", "61-03",
     },
@@ -84,36 +172,45 @@ local TableRangeStatic = {
       "61-01 Aircraft #001", "61-01 Aircraft #002", 
     },
   },--R61 END
-  { --R62
-    rangeId = "R62",
-    rangeName = "Range 62",
-    rangeZone = "R62",
+  { --R62A
+    rangeId = "R62A",
+    rangeName = "Range 62A",
+    rangeZone = "R62A",
     rangeControlFrequency = 234.250,
-    rangeControlRelayUnit = "R62_RangeControl",
     groups = {
-      "62-01", "62-02", "62-04", "62-03", "62-08",
-      "62-09", "62-11", "62-12", "62-13", "62-14",
-      "62-21", "62-21-01", "62-22", "62-31", "62-32",
-      "62-41", "62-42", "62-43", "62-44", "62-45",
-      "62-51", "62-52", "62-53", "62-54", "62-55",
-      "62-56", "62-61", "62-62", "62-63", "62-71",
-      "62-72", "62-73", "62-74", "62-75", "62-76",
-      "62-77", "62-78", "62-79", "62-81", "62-83",
-      "62-91", "62-92", "62-93",
+      "62-01", "62-02", "62-04",
+    },
+  },--R62A END
+  { --R62B
+    rangeId = "R62B",
+    rangeName = "Range 62B",
+    rangeZone = "R62B",
+    rangeControlFrequency = 234.250,
+    groups = {
+      "62-03", "62-08", "62-09", "62-11", 
+      "62-12", "62-13", "62-14", "62-21", 
+      "62-21-01", "62-22", "62-31", "62-32",
+      "62-41", "62-42", "62-43", "62-44", 
+      "62-45", "62-51", "62-52", "62-53", 
+      "62-54", "62-55", "62-56", "62-61", 
+      "62-62", "62-63", "62-71", "62-72", 
+      "62-73", "62-74", "62-75", "62-76", 
+      "62-77", "62-78", "62-79", "62-81", 
+      "62-83", "62-91", "62-92", "62-93",
     },
     units = {
       "62-32-01", "62-32-02", "62-32-03", "62-99",  
     },
-  },--R62 END
+  },--R62B END
   { --R63
     rangeId = "R63",
     rangeName = "Range 63",
     rangeZone = "R63",
     rangeControlFrequency = 361.6,
-    rangeControlRelayUnit = "R63_RangeControl",
     groups = {
-      "63-01", "63-02", "63-03", "63-05", "63-10",
-      "63-12", "63-15", "R-63B Class A Range-01", "R-63B Class A Range-02",    
+      "63-01", "63-02", "63-03", "63-05", 
+      "63-10", "63-12", "63-15", "R-63B Class A Range-01", 
+      "R-63B Class A Range-02",    
     },
     units = {
       "R63BWC", "R63BEC",
@@ -136,13 +233,14 @@ local TableRangeStatic = {
     rangeName = "Range 64",
     rangeZone = "R64",
     rangeControlFrequency = 341.925,
-    rangeControlRelayUnit = "R64_RangeControl",
     groups = {
-      "64-10", "64-11", "64-13", "64-14", "64-17",
-      "64-19", "64-15", "64-05", "64-08", "64-09",
+      "64-10", "64-11", "64-13", "64-14", 
+      "64-17", "64-19", "64-15", "64-05", 
+      "64-08", "64-09",
     },
     units = {
-      "64-12-05", "R64CWC", "R64CEC", "R-64C Class A Range-01", "R-64C Class A Range-02", 
+      "64-12-05", "R64CWC", "R64CEC", "R-64C Class A Range-01", 
+      "R-64C Class A Range-02", 
     },
     strafepits = {
       {-- West strafepit
@@ -162,46 +260,14 @@ local TableRangeStatic = {
     rangeName = "Range 65",
     rangeZone = "R65",
     rangeControlFrequency = 225.450,
-    rangeControlRelayUnit = "R65_RangeControl",
     groups = {
-      "65-01", "65-02", "65-03", "65-04", "65-05",
-      "65-06", "65-07", "65-08", "65-11",
+      "65-01", "65-02", "65-03", "65-04", 
+      "65-05", "65-06", "65-07", "65-08", 
+      "65-11",
     },
   },--R65 END
 }
 
-function AddRanges(TableRangeStatic)
-  for rangeIndex, rangeData in ipairs(TableRangeStatic) do
-  
-    local rangeId = rangeData.rangeId
-    
-    _G["Range_" .. rangeId] = RANGE:New(rangeData.rangeName)
-    _G["Range_" .. rangeId]:SetRangeZone(ZONE_POLYGON:FindByName(rangeData.rangeZone))
-    _G["Range_" .. rangeId]:SetSoundfilesPath(rangeSoundFilesPath)
-    _G["Range_" .. rangeId]:SetRangeControl(rangeData.rangeControlFrequency)
- 
-    if rangeData.groups ~= nil then -- add groups of targets
-      for tgtIndex, tgtName in ipairs(rangeData.groups) do
-        _G["Range_" .. rangeId]:AddBombingTargetGroup(GROUP:FindByName(tgtName))
-      end
-    end
-    
-    if rangeData.units ~= nil then -- add individual targets
-      for tgtIndex, tgtName in ipairs(rangeData.units) do
-        _G["Range_" .. rangeId]:AddBombingTargets( tgtName )
-      end
-    end
-    
-    if rangeData.strafepits ~= nil then -- add strafe targets
-      for strafepitIndex, strafepit in ipairs(rangeData.strafepits) do
-        _G["Range_" .. rangeId]:AddStrafePit(strafepit, strafeBoxLength, strafeBoxWidth, nil, true, strafeGoodPass, strafeFoullineDistance)
-      end  
-    end
-    
-    _G["Range_" .. rangeId]:DebugOFF()  
-    _G["Range_" .. rangeId]:Start()
-  end
-end
 
 -- Create ranges
 AddRanges(TableRangeStatic)
