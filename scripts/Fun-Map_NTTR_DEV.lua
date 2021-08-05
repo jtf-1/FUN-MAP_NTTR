@@ -551,7 +551,7 @@ local SetClient = SET_CLIENT:New():FilterCoalitions("blue"):FilterStart() -- cre
 
 local function MENU()
 
-  local devMenuBfm = false -- if true, BFM menu available outside BFM zone
+  local devMenuBfm = true -- if true, BFM menu available outside BFM zone
 
   SetClient:ForEachClient(function(client)
    if (client ~= nil) and (client:IsAlive()) then 
