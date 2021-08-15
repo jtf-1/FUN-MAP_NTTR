@@ -30,7 +30,7 @@ function SpawnSupport (SupportSpawn) -- spawnobject, spawnzone
   SupportSpawnObject:InitLimit( 1, 50 )
     :OnSpawnGroup(
       function ( SpawnGroup )
-        SpawnGroup:CommandSetCallsign(SupportSpawn.callsignName, SupportSpawn.callsignNumber)
+        --SpawnGroup:CommandSetCallsign(SupportSpawn.callsignName, SupportSpawn.callsignNumber)
         local SpawnIndex = SupportSpawnObject:GetSpawnIndexFromGroup( SpawnGroup )
         local CheckTanker = SCHEDULER:New( nil, 
         function ()
