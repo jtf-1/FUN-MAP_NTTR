@@ -132,4 +132,6 @@ On-demand single or pair adversary spawns are available via the F10 menu while a
 AI BVR/GCI
 ==========
 
-On-demand pair or four-ship BVR adversary spawns are available via the F10 menu in the area to the West of the MOA. Adversaries will be spawned IVO MINA VORTAC, and will flow towards BEATTY VORTAC.
+On-demand pair or four-ship BVR adversary spawns are available via the F10 menu in an 80NM wide BVR training corridor. The corridor runs from BEATTY VORTAC [BTY] to MINA VORTAC [MVA], approx 140NM, along the Western edge of the MOA. Adversaries will be spawned IVO MVA, and will flow towards BTY.
+
+The menu is structured to allow selection of Altitude [High: 30k, Medium: 20k, Low: 10k], Formation/Spacing, and Adversary Aircraft Type. Adversaries will spawn in Wall, then manoeuvre into the selected formation. ROE is set to Return Fire, although adversaries should engage any training aircraft passing North-West of BTY. Adversary spawns can be removed via the F10 menu. They will also despawn if they are outside the BVR training corridor. The F10 menu is also available in GameMaster, Observer and JTAC slots.

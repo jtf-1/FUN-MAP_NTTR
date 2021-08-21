@@ -611,8 +611,13 @@ BVRGCI = {
     },
   Adversary = { 
     {"F4", "BVR_F4"},
-    {"MIG23", "BVR_MIG23"},
     {"F-14A", "BVR_F14A" },
+    {"MIG21", "BVR_MIG21"},
+    {"MIG23", "BVR_MIG23"},
+    {"MIG29A", "BVR_MIG29A"},
+    {"Su-25", "BVR_SU25"},
+    {"Su-27", "BVR_SU27"},
+    {"Su-34", "BVR_SU34"},
   },
   Destroy = false,
 }
@@ -655,7 +660,7 @@ function BVRGCI.SpawnType(typeName, typeSpawnTemplate, Qty, Altitude, Formation)
           if SpawnGroup then
             -- remove adversary group if it has left the BVR/GCI zone, or the remove all adversaries menu option has been selected
             if (SpawnGroup:IsNotInZone(BVRGCI.ZoneBvr) or (BVRGCI.Destroy)) then 
-              MESSAGE:New(BVRGCI.Destroy and "All BVR adversaries removed" or "BVR adversary left zone and was removed"):ToAll()
+              MESSAGE:New(BVRGCI.Destroy and "BVR adversaries removed" or "BVR adversary left zone and was removed"):ToAll()
               SpawnGroup:Destroy()
               SpawnGroup = nil
             end
