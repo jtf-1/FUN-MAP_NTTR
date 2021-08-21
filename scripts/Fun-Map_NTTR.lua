@@ -1,11 +1,21 @@
 env.info( '*** JTF-1 NTTR Fun Map MOOSE script ***' )
 env.info( '*** JTF-1 MOOSE MISSION SCRIPT START ***' )
 
+--activate admin menu option in admin slots if true
+local JtfAdmin = true 
 
-JtfAdmin = true --activate admin menu option in admin slots
-BASE:TraceOnOff(false) --debug on/off
+--debug on/off
+BASE:TraceOnOff(false) 
+
+if BASE:IsTrace() then
+  BASE:TraceLevel(1)
+  BASE:TraceClass("RANGE")
+end
 
 _SETTINGS:SetPlayerMenuOff()
+
+-- Dynamic list of all clients
+local SetClient = SET_CLIENT:New():FilterStart() 
 
 --- BEGIN SUPPORT AIRCRAFT SECTION
 
@@ -67,8 +77,20 @@ local rangeSoundFilesPath = "Range Soundfiles/" -- Range sound files path in miz
 
 -- STATIC RANGES
 
+-- @field #STATICRANGES
+local RANGESNTTR = {}
+
+RANGESNTTR.Defaults = {
+  strafeMaxAlt                = 1530, -- [5000ft] in metres. Height of strafe box.
+  strafeBoxLength             = 3000, -- [10000ft] in metres. Length of strafe box.
+  strafeBoxWidth              = 300, -- [1000ft] in metres. Width of Strafe pit box (from 1st listed lane).
+  strafeFoullineDistance      = 610, -- [2000ft] in metres. Min distance for from target for rounds to be counted.
+  strafeGoodPass              = 20, -- Min hits for a good pass.
+  rangeSoundFilesPath         = "Range Soundfiles/" -- Range sound files path in miz
+}
+
 -- Range targets table
-local TableRangeStatic = {
+RANGESNTTR.RangeStatic = {
   { --R61
     rangeId = "R61",
     rangeName = "Range 61",
@@ -189,44 +211,45 @@ local TableRangeStatic = {
   },--R65 END
 }
 
-function AddRanges(TableRangeStatic)
+
+function RANGESNTTR:AddStaticRanges(TableRangeStatic)
 
   for rangeIndex, rangeData in ipairs(TableRangeStatic) do
   
     local rangeObject = "Range_" .. rangeData.rangeId
     
-    _G[rangeObject] = RANGE:New(rangeData.rangeName)
-      _G[rangeObject]:DebugOFF()  
-      _G[rangeObject]:SetRangeZone(ZONE_POLYGON:FindByName(rangeData.rangeZone))
-      _G[rangeObject]:SetMaxStrafeAlt(strafeMaxAlt)
-      _G[rangeObject]:SetDefaultPlayerSmokeBomb(false)
+    self[rangeObject] = RANGE:New(rangeData.rangeName)
+      self[rangeObject]:DebugOFF()  
+      self[rangeObject]:SetRangeZone(ZONE_POLYGON:FindByName(rangeData.rangeZone))
+      self[rangeObject]:SetMaxStrafeAlt(strafeMaxAlt)
+      self[rangeObject]:SetDefaultPlayerSmokeBomb(false)
       --_G["Range_" .. rangeId]:SetRangeControl(rangeData.rangeControlFrequency)
  
     if rangeData.groups ~= nil then -- add groups of targets
       for tgtIndex, tgtName in ipairs(rangeData.groups) do
-        _G[rangeObject]:AddBombingTargetGroup(GROUP:FindByName(tgtName))
+        self[rangeObject]:AddBombingTargetGroup(GROUP:FindByName(tgtName))
       end
     end
     
     if rangeData.units ~= nil then -- add individual targets
       for tgtIndex, tgtName in ipairs(rangeData.units) do
-        _G[rangeObject]:AddBombingTargets( tgtName )
+        self[rangeObject]:AddBombingTargets( tgtName )
       end
     end
     
     if rangeData.strafepits ~= nil then -- add strafe targets
       for strafepitIndex, strafepit in ipairs(rangeData.strafepits) do
-        _G[rangeObject]:AddStrafePit(strafepit, strafeBoxLength, strafeBoxWidth, nil, true, strafeGoodPass, strafeFoullineDistance)
+        self[rangeObject]:AddStrafePit(strafepit, strafeBoxLength, strafeBoxWidth, nil, true, strafeGoodPass, strafeFoullineDistance)
       end  
     end
     
-    _G[rangeObject]:Start()
+    self[rangeObject]:Start()
   end
 
 end
 
 -- Create ranges
-AddRanges(TableRangeStatic)
+RANGESNTTR:AddStaticRanges(RANGESNTTR.RangeStatic)
 
 -- R62 T6208 moving strafe targets
 MenuT6208 = MENU_COALITION:New( coalition.side.BLUE, "Target 62-08" )
@@ -428,31 +451,35 @@ fox:Start()
 
 -- BEGIN ACM/BFM SECTION
 
+BfmAcm = {}
+BfmAcm.Menu = {}
+
 --local SpawnBfm.groupName = nil
 
 -- BFM/ACM Zones
-BoxZone = ZONE_POLYGON:New( "Polygon_Box", GROUP:FindByName("zone_box") )
-BfmAcmZoneMenu = ZONE_POLYGON:New( "Polygon_BFM_ACM", GROUP:FindByName("COYOTEABC") )
-BfmAcmExitZone = ZONE:FindByName("Zone_BfmAcmExit")
-BfmAcmZone = ZONE:FindByName("Zone_BfmAcmFox")
+BfmAcm.BoxZone = ZONE_POLYGON:New( "Polygon_Box", GROUP:FindByName("zone_box") )
+BfmAcm.ZoneMenu = ZONE_POLYGON:New( "Polygon_BFM_ACM", GROUP:FindByName("COYOTEABC") )
+BfmAcm.ExitZone = ZONE:FindByName("Zone_BfmAcmExit")
+BfmAcm.Zone = ZONE:FindByName("Zone_BfmAcmFox")
 
 -- Spawn Objects
-AdvA4 = SPAWN:New( "ADV_A4" )   
+AdvF4 = SPAWN:New( "ADV_F4" )   
 Adv28 = SPAWN:New( "ADV_MiG28" )  
 Adv27 = SPAWN:New( "ADV_Su27" )
 Adv23 = SPAWN:New( "ADV_MiG23" )
 Adv16 = SPAWN:New( "ADV_F16" )
 Adv18 = SPAWN:New( "ADV_F18" )
 
-function SpawnAdv(adv,qty,group,rng)
+function BfmSpawnAdv(adv,qty,group,rng,unit)
 
+  playerName = (unit:GetPlayerName() and unit:GetPlayerName() or "Unknown") 
   range = rng * 1852
-  hdg = group:GetHeading()
-  pos = group:GetPointVec2()
+  hdg = unit:GetHeading()
+  pos = unit:GetPointVec2()
   spawnPt = pos:Translate(range, hdg, true)
   spawnVec3 = spawnPt:GetVec3()
-  if BoxZone:IsVec3InZone(spawnVec3) then
-    MESSAGE:New("Cannot spawn adversary aircraft in The Box.\nChange course or increase your range from The Box, and try again."):ToGroup(group)
+  if BfmAcm.BoxZone:IsVec3InZone(spawnVec3) then
+    MESSAGE:New(playerName .. " - Cannot spawn adversary aircraft in The Box.\nChange course or increase your range from The Box, and try again."):ToGroup(group)
   else
     adv:InitGrouping(qty)
       :InitHeading(hdg + 180)
@@ -461,7 +488,7 @@ function SpawnAdv(adv,qty,group,rng)
           local CheckAdversary = SCHEDULER:New( SpawnGroup, 
           function (CheckAdversary)
             if SpawnGroup then
-              if SpawnGroup:IsNotInZone( BfmAcmZoneMenu ) then
+              if SpawnGroup:IsNotInZone( BfmAcm.ZoneMenu ) then
                 MESSAGE:New("Adversary left BFM Zone and was removed!"):ToAll()
                 SpawnGroup:Destroy()
                 SpawnGroup = nil
@@ -472,39 +499,38 @@ function SpawnAdv(adv,qty,group,rng)
         end
       )
       :SpawnFromVec3(spawnVec3)
-    MESSAGE:New("Adversary spawned."):ToGroup(group)
+    MESSAGE:New(playerName .. " has spawned Adversary."):ToGroup(group)
   end
 
 end
 
-function BuildMenuCommands (AdvMenu, MenuGroup, MenuName, BfmMenu, AdvType, AdvQty)
+function BfmBuildMenuCommands (AdvMenu, MenuGroup, MenuName, BfmMenu, AdvType, AdvQty, unit)
 
   _G[AdvMenu] = MENU_GROUP:New( MenuGroup, MenuName, BfmMenu)
-    _G[AdvMenu .. "_rng5"] = MENU_GROUP_COMMAND:New( MenuGroup, "5 nmi", _G[AdvMenu], SpawnAdv, AdvType, AdvQty, MenuGroup, 5)
-    _G[AdvMenu .. "_rng10"] = MENU_GROUP_COMMAND:New( MenuGroup, "10 nmi", _G[AdvMenu], SpawnAdv, AdvType, AdvQty, MenuGroup, 10)
-    _G[AdvMenu .. "_rng20"] = MENU_GROUP_COMMAND:New( MenuGroup, "20 nmi", _G[AdvMenu], SpawnAdv, AdvType, AdvQty, MenuGroup, 20)
+    _G[AdvMenu .. "_rng5"] = MENU_GROUP_COMMAND:New( MenuGroup, "5 nmi", _G[AdvMenu], BfmSpawnAdv, AdvType, AdvQty, MenuGroup, 5, unit)
+    _G[AdvMenu .. "_rng10"] = MENU_GROUP_COMMAND:New( MenuGroup, "10 nmi", _G[AdvMenu], BfmSpawnAdv, AdvType, AdvQty, MenuGroup, 10, unit)
+    _G[AdvMenu .. "_rng20"] = MENU_GROUP_COMMAND:New( MenuGroup, "20 nmi", _G[AdvMenu], BfmSpawnAdv, AdvType, AdvQty, MenuGroup, 20, unit)
 
 end
 
-function BuildMenus(AdvQty, MenuGroup, MenuName, SpawnBfmGroup)
+function BfmBuildMenus(AdvQty, MenuGroup, MenuName, SpawnBfmGroup, unit)
 
   local AdvSuffix = "_" .. tostring(AdvQty)
   BfmMenu = MENU_GROUP:New(MenuGroup, MenuName, SpawnBfmGroup)
-    BuildMenuCommands("SpawnBfmA4menu" .. AdvSuffix, MenuGroup, "Adversary A-4", BfmMenu, AdvA4, AdvQty)
-    BuildMenuCommands("SpawnBfm28menu" .. AdvSuffix, MenuGroup, "Adversary MiG-28", BfmMenu, Adv28, AdvQty)
-    BuildMenuCommands("SpawnBfm23menu" .. AdvSuffix, MenuGroup, "Adversary MiG-23", BfmMenu, Adv23, AdvQty)
-    BuildMenuCommands("SpawnBfm27menu" .. AdvSuffix, MenuGroup, "Adversary Su-27", BfmMenu, Adv27, AdvQty)
-    BuildMenuCommands("SpawnBfm16menu" .. AdvSuffix, MenuGroup, "Adversary F-16", BfmMenu, Adv16, AdvQty)
-    BuildMenuCommands("SpawnBfm18menu" .. AdvSuffix, MenuGroup, "Adversary F-18", BfmMenu, Adv18, AdvQty)   
+    BfmBuildMenuCommands("SpawnBfmA4menu" .. AdvSuffix, MenuGroup, "Adversary A-4", BfmMenu, AdvF4, AdvQty, unit)
+    BfmBuildMenuCommands("SpawnBfm28menu" .. AdvSuffix, MenuGroup, "Adversary MiG-28", BfmMenu, Adv28, AdvQty, unit)
+    BfmBuildMenuCommands("SpawnBfm23menu" .. AdvSuffix, MenuGroup, "Adversary MiG-23", BfmMenu, Adv23, AdvQty, unit)
+    BfmBuildMenuCommands("SpawnBfm27menu" .. AdvSuffix, MenuGroup, "Adversary Su-27", BfmMenu, Adv27, AdvQty, unit)
+    BfmBuildMenuCommands("SpawnBfm16menu" .. AdvSuffix, MenuGroup, "Adversary F-16", BfmMenu, Adv16, AdvQty, unit)
+    BfmBuildMenuCommands("SpawnBfm18menu" .. AdvSuffix, MenuGroup, "Adversary F-18", BfmMenu, Adv18, AdvQty, unit)   
       
 end
 -- CLIENTS
 -- BLUFOR = SET_GROUP:New():FilterCoalitions( "blue" ):FilterStart()
 
 -- SPAWN AIR MENU
-local SetClient = SET_CLIENT:New():FilterCoalitions("blue"):FilterStart() -- create a list of all clients
 
-local function MENU()
+local function BfmAddMenu()
 
   local devMenuBfm = false -- if true, BFM menu available outside BFM zone
 
@@ -512,52 +538,253 @@ local function MENU()
    if (client ~= nil) and (client:IsAlive()) then 
       local group = client:GetGroup()
       local groupName = group:GetName()
-      if (group:IsPartlyOrCompletelyInZone(BfmAcmZoneMenu) or devMenuBfm) then
+      local unit = client:GetClientGroupUnit()
+      local playerName = client:GetPlayer()
+      
+      if (unit:IsInZone(BfmAcm.ZoneMenu) or devMenuBfm) then
         if _G["SpawnBfm" .. groupName] == nil then
           MenuGroup = group
           _G["SpawnBfm" .. groupName] = MENU_GROUP:New( MenuGroup, "AI BFM/ACM" )
-            BuildMenus(1, MenuGroup, "Single", _G["SpawnBfm" .. groupName])
-            BuildMenus(2, MenuGroup, "Pair", _G["SpawnBfm" .. groupName])
-          MESSAGE:New("You have entered the BFM/ACM zone.\nUse F10 menu to spawn adversaries."):ToGroup(group)
+            BfmBuildMenus(1, MenuGroup, "Single", _G["SpawnBfm" .. groupName], unit)
+            BfmBuildMenus(2, MenuGroup, "Pair", _G["SpawnBfm" .. groupName], unit)
+          MESSAGE:New(playerName .. " has entered the BFM/ACM zone.\nUse F10 menu to spawn adversaries."):ToGroup(group)
           --env.info("BFM/ACM entry Player name: " ..client:GetPlayerName())
           --env.info("BFM/ACM entry Group Name: " ..group:GetName())
         end
       elseif _G["SpawnBfm" .. groupName] ~= nil then
-        if group:IsNotInZone(BfmAcmZoneMenu) then
+        if unit:IsNotInZone(BfmAcm.ZoneMenu) then
           _G["SpawnBfm" .. groupName]:Remove()
           _G["SpawnBfm" .. groupName] = nil
-          MESSAGE:New("You are outside the ACM/BFM zone."):ToGroup(group)
+          MESSAGE:New(playerName .. " has left the ACM/BFM zone."):ToGroup(group)
           --env.info("BFM/ACM exit Group Name: " ..group:GetName())
         end
       end
     end
   end)
-  timer.scheduleFunction(MENU,nil,timer.getTime() + 5)
+  timer.scheduleFunction(BfmAddMenu,nil,timer.getTime() + 5)
 
 end
 
-MENU()
+BfmAddMenu()
 
--- END ACM/BFM SECTION
+--- END ACMBFM SECTION
 
+--- BEGIN BVRGCI SECTION
+--
+-- Each Menu level has an associated function which;
+-- 1) adds the menu item for the level
+-- 2) calls the function for the next level
+--
+-- Functions fit into the following menu map;
+--
+-- AI BVRGCI (menu root)
+--   |_Group Size (menu level 1)
+--     |_Altitude (menu level 2)
+--       |_Formation (menu level 3)
+--         |_Spacing (menu level 4)
+--           |_Aircraft Type (command level 4) 
+--   |_Remove Adversaries (command level 2)
 
--- ADMIN SECTION
+--- BVRGCI table - settings, defaults and spawnable adversaries
+-- @field BVRGCI
+-- @field #table Menu root BVRGCI F10 menu.
+-- @field #table SubMenu BVRGCI submenus.
+-- @field #string ZoneBvr ME Zone object for BVRGCI area boundary.
+-- @field #string ZoneBvrSpawn ME Zone object for adversary spawn point.
+-- @field #string ZoneWp1 ME Zone object for adversary spawn waypoint 1.
+-- @field #table Altitude Altitude name, Altitude in metres for adversary spawns.
+-- @field #table Adversary Adversary text name, adversary spawn template.
+-- @field #boolean Destroy switch to activate Destroy() method for all spawned BVRGCI adversaries.
+BVRGCI = {
+  ZoneBvr = ZONE:FindByName("ZONE_BVR"),
+  ZoneBvrSpawn = ZONE:FindByName("ZONE_BVR_SPAWN"),
+  ZoneBvrWp1 = ZONE:FindByName("ZONE_BVR_WP1"),
+  headingDefault = 150,
+  Size = {
+    Pair = 2,
+    Four = 4,
+  },
+  Altitude = {
+    High = 9144, -- 30,000ft
+    Medium = 6096, -- 20,000ft
+    Low = 3048, -- 10,000ft
+    },
+  Adversary = { 
+    {"F4", "BVR_F4"},
+    {"MIG23", "BVR_MIG23"},
+    {"F-14A", "BVR_F14A" },
+  },
+  Destroy = false,
+}
 
-SetAdminClient = SET_CLIENT:New():FilterStart()
+BVRGCI.Menu = {}
+BVRGCI.SubMenu = {}
 
-local function adminRestartMission(adminClientName, mapFlag)
+-- Vec3 coordinates for spawnpoint from ZoneBvrSpawn
+BVRGCI.BvrSpawnVec3 = COORDINATE:NewFromVec3(BVRGCI.ZoneBvrSpawn:GetPointVec3())
+-- Vec3 coordintates for waypoint 1 from ZoneBvrWp1
+BVRGCI.BvrWp1Vec3 = COORDINATE:NewFromVec3(BVRGCI.ZoneBvrWp1:GetPointVec3())
+-- Vec3 direction from ZoneBvrSpawn to ZoneBvrWp1
+local spawnDirectionVec3 = BVRGCI.BvrSpawnVec3:GetDirectionVec3(BVRGCI.BvrWp1Vec3)
+-- Heading from spawnDirectionVec3
+BVRGCI.Heading = COORDINATE:GetAngleDegrees(spawnDirectionVec3)
+
+--- Spawn adversary aircraft with menu tree selected parameters.
+-- @param #string typeName Aircraft type name.
+-- @param #string typeSpawnTemplate Airctraft type spawn template.
+-- @param #number Qty Quantity to spawn.
+-- @param #number Altitude Alititude at which to spawn adversary group.
+-- @param #number Formation ID for Formation, and spacing, in which to spawn adversary group.
+function BVRGCI.SpawnType(typeName, typeSpawnTemplate, Qty, Altitude, Formation) 
+  --local spawnHeading = BVRGCI.Heading and BVRGCI.Heading or BVRGCI.HeadingDefault
+  local spawnHeading = BVRGCI.Heading
+  local spawnVec3 = BVRGCI.BvrSpawnVec3
+  spawnVec3.y = Altitude
+  local spawnAdversary = SPAWN:New(typeSpawnTemplate)
+  spawnAdversary:InitGrouping(Qty) 
+  spawnAdversary:InitHeading(spawnHeading)
+  spawnAdversary:OnSpawnGroup(
+      function ( SpawnGroup, Formation )
+        -- reset despawn flag
+        BVRGCI.Destroy = false
+        -- set formation for spawned AC
+        SpawnGroup:SetOption(AI.Option.Air.id.FORMATION, Formation)
+        -- add scheduled funtion, 5 sec interval
+        local CheckAdversary = SCHEDULER:New( SpawnGroup, 
+        function (CheckAdversary)
+          if SpawnGroup then
+            -- remove adversary group if it has left the BVR/GCI zone, or the remove all adversaries menu option has been selected
+            if (SpawnGroup:IsNotInZone(BVRGCI.ZoneBvr) or (BVRGCI.Destroy)) then 
+              MESSAGE:New(BVRGCI.Destroy and "All BVR adversaries removed" or "BVR adversary left zone and was removed"):ToAll()
+              SpawnGroup:Destroy()
+              SpawnGroup = nil
+            end
+          end
+        end,
+        {}, 0, 5 )
+      end,
+      Formation
+    )
+  spawnAdversary:SpawnFromVec3(spawnVec3)
+  local _msg = "Group of " .. tostring(Qty) .. " " .. typeName .. " BVR Adversary spawned."
+  MESSAGE:New(_msg):ToAll()
+end
+
+--- Remove all spawned BVRGCI adversaries
+function BVRGCI.RemoveAdversaries()
+  BVRGCI.Destroy = true
+end
+
+--- Add BVR/GCI aircraft type menu.
+-- @param #object ParentMenu Parent menu with which each commdnshould be associated.
+function BVRGCI.BuildMenuType(ParentMenu)
+  for i, v in ipairs(BVRGCI.Adversary) do
+    local typeName = v[1]
+    local typeSpawnTemplate = v[2]
+    -- add Type spawn commands if spawn template exists, else send message that it doesn't
+    if GROUP:FindByName(typeSpawnTemplate) ~= nil then
+        MENU_COALITION_COMMAND:New(coalition.side.BLUE, typeName, ParentMenu, BVRGCI.SpawnType, typeName, typeSpawnTemplate, BVRGCI.SubMenu.Qty, BVRGCI.SubMenu.Level, ENUMS.Formation.FixedWing[BVRGCI.SubMenu.Formation][BVRGCI.SubMenu.Spacing])
+    else
+      _msg = "Spawn template " .. typeName .. " was not found and could not be added to menu."
+      MESSAGE:New(_msg):ToAll()
+    end
+  end
+end
+
+--- Add BVR/GCI formation spacing menu.
+-- @param #string Spacing Spacing to apply to adversary group formation.
+-- @param #string MenuText Text to display for menu option.
+-- @param #object ParentMenu Parent menu with which this menu should be associated.
+function BVRGCI.BuildMenuSpacing(Spacing, ParentMenu)
+  local MenuName = Spacing
+  local MenuText = Spacing
+  BVRGCI.SubMenu[MenuName] = MENU_COALITION:New(coalition.side.BLUE, MenuText, ParentMenu)
+  BVRGCI.SubMenu.Spacing = Spacing
+  -- Build Type menus
+  BVRGCI.BuildMenuType(BVRGCI.SubMenu[MenuName])
+end
+
+--- Add BVR/GCI formation menu.
+-- @param #string Formation Name of formation in which adversary group should fly.
+-- @param #string MenuText Text to display for menu option.
+-- @param #object ParentMenu Parent menu with which this menus should be associated.
+function BVRGCI.BuildMenuFormation(Formation, MenuText, ParentMenu)
+  local MenuName = Formation
+  BVRGCI.SubMenu[MenuName] = MENU_COALITION:New(coalition.side.BLUE, MenuText, ParentMenu)
+  BVRGCI.SubMenu.Formation = Formation
+  -- Build formation spacing menus
+  BVRGCI.BuildMenuSpacing("Group", BVRGCI.SubMenu[MenuName])
+  BVRGCI.BuildMenuSpacing("Close", BVRGCI.SubMenu[MenuName])
+  BVRGCI.BuildMenuSpacing("Open", BVRGCI.SubMenu[MenuName])
+end
+
+--- Add BVR/GCI level menu.
+-- @param #number Altitude Altitude, in metres, at which to adversary group should spawn
+-- @param #string MenuName
+function BVRGCI.BuildMenuLevel(Altitude, MenuName, MenuText, ParentMenu)
+  BVRGCI.SubMenu[MenuName] = MENU_COALITION:New(coalition.side.BLUE, MenuText, ParentMenu)
+  BVRGCI.SubMenu.Level = Altitude
+  --Build Formation menus
+  BVRGCI.BuildMenuFormation("LineAbreast", "Line Abreast", BVRGCI.SubMenu[MenuName])
+  BVRGCI.BuildMenuFormation("Trail", "Trail", BVRGCI.SubMenu[MenuName])
+  BVRGCI.BuildMenuFormation("Wedge", "Wedge", BVRGCI.SubMenu[MenuName])
+  BVRGCI.BuildMenuFormation("EchelonRight", "Echelon Right", BVRGCI.SubMenu[MenuName])
+  BVRGCI.BuildMenuFormation("EchelonLeft", "Echelon Left", BVRGCI.SubMenu[MenuName])
+  BVRGCI.BuildMenuFormation("FingerFour", "Finger Four", BVRGCI.SubMenu[MenuName])
+  BVRGCI.BuildMenuFormation("Spread", "Spread", BVRGCI.SubMenu[MenuName])
+  BVRGCI.BuildMenuFormation("BomberElement", "Diamond", BVRGCI.SubMenu[MenuName])
+end
+
+--- Add BVR/GCI group size menu
+function BVRGCI.BuildMenuQty(Qty, MenuName, ParentMenu)
+  MenuText = MenuName
+  BVRGCI.SubMenu[MenuName] = MENU_COALITION:New(coalition.side.BLUE, MenuText, ParentMenu)
+  BVRGCI.SubMenu.Qty = Qty
+  -- Build Level menus
+  BVRGCI.BuildMenuLevel(BVRGCI.Altitude.High, "High", "High Level",  BVRGCI.SubMenu[MenuName])
+  BVRGCI.BuildMenuLevel(BVRGCI.Altitude.Medium, "Medium", "Medium Level",  BVRGCI.SubMenu[MenuName])
+  BVRGCI.BuildMenuLevel(BVRGCI.Altitude.Low, "Low", "Low Level",  BVRGCI.SubMenu[MenuName])
+end
+
+--- Add BVRGCI root menu
+function BVRGCI.BuildMenuRoot()
+  BVRGCI.Menu = MENU_COALITION:New(coalition.side.BLUE, "AI BVR/GCI")
+    -- Build group size menus
+    BVRGCI.BuildMenuQty(2, "Pair", BVRGCI.Menu)
+    BVRGCI.BuildMenuQty(4, "Four", BVRGCI.Menu)
+    -- level 2 command
+    BVRGCI.MenuRemoveAdversaries = MENU_COALITION_COMMAND:New(coalition.side.BLUE, "Remove BVR Adversaries", BVRGCI.Menu, BVRGCI.RemoveAdversaries)
+end
+
+BVRGCI.BuildMenuRoot()
+
+--- END BVRGCI SECTION
+
+--- BEGIN ADMIN MENU SECTION
+
+--- Set mission flag to load a new mission.
+-- 999 = NTTR Day,
+-- 997 = NTTR Day IFR,
+-- 998 = NTTR Night,
+-- 996 = NTTR Night Weather,
+-- 995 = NTTR Night No Moon.
+-- @param #string adminClientName Name of client calling restart command
+-- @param #number mapFlag Mission flag to set to true
+function adminRestartMission(adminClientName, mapFlag)
 
   if adminClientName then
     env.info("ADMIN Restart player name: " ..adminClientName)
   end
-  trigger.action.setUserFlag(mapFlag, true) -- 999 = NTTR Day, 997 = NTTR Day IFR, 998 = NTTR Night, 996 = NTTR Night Weather, 995 = NTTR Night No Moon
+  trigger.action.setUserFlag(mapFlag, true) 
 
 end
 
-local function BuildAdminMenu(adminState)
+--- Add admin menu and commands if client is in an ADMIN spawn
+-- 
+function BuildAdminMenu(adminState)
 
-  SetAdminClient:ForEachClient(function(client)
-    if (client ~= nil) and (client:IsAlive()) then
+  SetClient:ForEachClient(function(client)
+    if (client ~= nil) and (client:IsAlive()) and (adminMenu == nil) then
       adminGroup = client:GetGroup()
       adminGroupName = adminGroup:GetName()
       if string.find(adminGroupName, "XX_ADMIN") then
@@ -569,7 +796,6 @@ local function BuildAdminMenu(adminState)
         MENU_GROUP_COMMAND:New(adminGroup, "Load NIGHT NTTR - No Moon", adminMenu, adminRestartMission, client:GetPlayerName(), 995 )
         --env.info("ADMIN Player name: " ..client:GetPlayerName())
       end
-    SetAdminClient:Remove(client:GetName(), true)
     end
   end)
   timer.scheduleFunction(BuildAdminMenu, nil, timer.getTime() + 10)
@@ -581,6 +807,6 @@ if JtfAdmin then
   BuildAdminMenu(true)
 end
 
---END ADMIN SECTION
+--END ADMIN MENU SECTION
 
 env.info( '*** JTF-1 MOOSE MISSION SCRIPT END ***' )

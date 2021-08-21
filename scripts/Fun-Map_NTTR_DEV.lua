@@ -701,7 +701,7 @@ function BVRGCI.BuildMenuSpacing(Spacing, ParentMenu)
   BVRGCI.SubMenu[MenuName] = MENU_COALITION:New(coalition.side.BLUE, MenuText, ParentMenu)
   BVRGCI.SubMenu.Spacing = Spacing
   -- Build Type menus
-  BVRGCI.BuildmenuType(BVRGCI.SubMenu[MenuName])
+  BVRGCI.BuildMenuType(BVRGCI.SubMenu[MenuName])
 end
 
 --- Add BVR/GCI formation menu.

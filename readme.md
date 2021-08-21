@@ -127,4 +127,9 @@ Missile Trainer will be active while inside the Range.
 AI BFM/ACM
 ==========
 
-On-demand single or pair adversary spawns are available via the F10 menu while aircraft are within ranges Coyote Alpha, Bravo and Charlie. Adversaries will be spawned ahead of you at the selected distance (5NM, 10NM, 20NM). Missile trainer will be active while inside this area. Guns are not included in the missile trainer protection. 
+On-demand single or pair adversary spawns are available via the F10 menu while aircraft are within ranges Coyote Alpha, Bravo and Charlie. Adversaries will be spawned ahead of you at the selected distance (5NM, 10NM, 20NM). Missile trainer will be active while inside this area. Guns are not included in the missile trainer protection.
+
+AI BVR/GCI
+==========
+
+On-demand pair or four-ship BVR adversary spawns are available via the F10 menu in the area to the West of the MOA. Adversaries will be spawned IVO MINA VORTAC, and will flow towards BEATTY VORTAC.
