@@ -9,17 +9,32 @@ BASE:TraceOnOff(false)
 
 if BASE:IsTrace() then
   BASE:TraceLevel(1)
-  BASE:TraceClass("RANGE")
+  --BASE:TraceAll(true)
+  BASE:TraceClass("setGroupGroundActive")
 end
 
 _SETTINGS:SetPlayerMenuOff()
 
+-- Disable AI for ground targets and FAC
+local setGroupGroundActive = SET_GROUP:New():FilterActive():FilterCategoryGround():FilterOnce()
+  
+setGroupGroundActive:ForEachGroup(
+  function(activeGroup)
+    activeGroup:SetAIOff()
+  end
+)
+  
+  
+--function _temp(groupGroundActive)
+--  GroundGroupActive:SetAIOff()
+--  env.info("JTF-DEBUG - " .. "AI Disabled for: " .. GroupGroundActive.GroupName)
+--end
+  
+  
 -- Dynamic list of all clients
 local SetClient = SET_CLIENT:New():FilterStart()
 
-
 --- BEGIN SUPPORT AIRCRAFT SECTION
-
 -- define table of respawning support aircraft ---
 TableSpawnSupport = { -- {spawnobjectname, spawnzone, callsignName, callsignNumber}
   {spawnobject = "AR230V_KC-135_01", spawnzone = ZONE:New("AR230V"), callsignName = 2, callsignNumber = 1},
@@ -535,33 +550,35 @@ local function BfmAddMenu()
 
   local devMenuBfm = false -- if true, BFM menu available outside BFM zone
 
-  SetClient:ForEachClient(function(client)
-   if (client ~= nil) and (client:IsAlive()) then 
-      local group = client:GetGroup()
-      local groupName = group:GetName()
-      local unit = client:GetClientGroupUnit()
-      local playerName = client:GetPlayer()
-      
-      if (unit:IsInZone(BfmAcm.ZoneMenu) or devMenuBfm) then
-        if _G["SpawnBfm" .. groupName] == nil then
-          MenuGroup = group
-          _G["SpawnBfm" .. groupName] = MENU_GROUP:New( MenuGroup, "AI BFM/ACM" )
-            BfmBuildMenus(1, MenuGroup, "Single", _G["SpawnBfm" .. groupName], unit)
-            BfmBuildMenus(2, MenuGroup, "Pair", _G["SpawnBfm" .. groupName], unit)
-          MESSAGE:New(playerName .. " has entered the BFM/ACM zone.\nUse F10 menu to spawn adversaries."):ToGroup(group)
-          --env.info("BFM/ACM entry Player name: " ..client:GetPlayerName())
-          --env.info("BFM/ACM entry Group Name: " ..group:GetName())
-        end
-      elseif _G["SpawnBfm" .. groupName] ~= nil then
-        if unit:IsNotInZone(BfmAcm.ZoneMenu) then
-          _G["SpawnBfm" .. groupName]:Remove()
-          _G["SpawnBfm" .. groupName] = nil
-          MESSAGE:New(playerName .. " has left the ACM/BFM zone."):ToGroup(group)
-          --env.info("BFM/ACM exit Group Name: " ..group:GetName())
+  SetClient:ForEachClient(
+    function(client)
+     if (client ~= nil) and (client:IsAlive()) then 
+        local group = client:GetGroup()
+        local groupName = group:GetName()
+        local unit = client:GetClientGroupUnit()
+        local playerName = client:GetPlayer()
+        
+        if (unit:IsInZone(BfmAcm.ZoneMenu) or devMenuBfm) then
+          if _G["SpawnBfm" .. groupName] == nil then
+            MenuGroup = group
+            _G["SpawnBfm" .. groupName] = MENU_GROUP:New( MenuGroup, "AI BFM/ACM" )
+              BfmBuildMenus(1, MenuGroup, "Single", _G["SpawnBfm" .. groupName], unit)
+              BfmBuildMenus(2, MenuGroup, "Pair", _G["SpawnBfm" .. groupName], unit)
+            MESSAGE:New(playerName .. " has entered the BFM/ACM zone.\nUse F10 menu to spawn adversaries."):ToGroup(group)
+            --env.info("BFM/ACM entry Player name: " ..client:GetPlayerName())
+            --env.info("BFM/ACM entry Group Name: " ..group:GetName())
+          end
+        elseif _G["SpawnBfm" .. groupName] ~= nil then
+          if unit:IsNotInZone(BfmAcm.ZoneMenu) then
+            _G["SpawnBfm" .. groupName]:Remove()
+            _G["SpawnBfm" .. groupName] = nil
+            MESSAGE:New(playerName .. " has left the ACM/BFM zone."):ToGroup(group)
+            --env.info("BFM/ACM exit Group Name: " ..group:GetName())
+          end
         end
       end
     end
-  end)
+  )
   timer.scheduleFunction(BfmAddMenu,nil,timer.getTime() + 5)
 
 end
@@ -802,29 +819,28 @@ end
 -- 
 function BuildAdminMenu(adminState)
 
-  SetClient:ForEachClient(function(client)
-    if (client ~= nil) and (client:IsAlive()) and (adminMenu == nil) then
-      adminGroup = client:GetGroup()
-      adminGroupName = adminGroup:GetName()
-      if string.find(adminGroupName, "XX_ADMIN") then
-        adminMenu = MENU_GROUP:New(adminGroup, "ADMIN")
-        MENU_GROUP_COMMAND:New(adminGroup, "Load DAY NTTR", adminMenu, adminRestartMission, client:GetPlayerName(), 999 )
-        MENU_GROUP_COMMAND:New(adminGroup, "Load DAY NTTR - IFR", adminMenu, adminRestartMission, client:GetPlayerName(), 997 )
-        MENU_GROUP_COMMAND:New(adminGroup, "Load NIGHT NTTR", adminMenu, adminRestartMission, client:GetPlayerName(), 998 )
-        MENU_GROUP_COMMAND:New(adminGroup, "Load NIGHT NTTR - Weather", adminMenu, adminRestartMission, client:GetPlayerName(), 996 )
-        MENU_GROUP_COMMAND:New(adminGroup, "Load NIGHT NTTR - No Moon", adminMenu, adminRestartMission, client:GetPlayerName(), 995 )
-        --env.info("ADMIN Player name: " ..client:GetPlayerName())
+  SetClient:ForEachClient(
+    function(client)
+      if (client ~= nil) and (client:IsAlive()) and (adminMenu == nil) then
+        adminGroup = client:GetGroup()
+        adminGroupName = adminGroup:GetName()
+        if string.find(adminGroupName, "XX_ADMIN") then
+          adminMenu = MENU_GROUP:New(adminGroup, "ADMIN")
+          MENU_GROUP_COMMAND:New(adminGroup, "Load DAY NTTR", adminMenu, adminRestartMission, client:GetPlayerName(), 999 )
+          MENU_GROUP_COMMAND:New(adminGroup, "Load DAY NTTR - IFR", adminMenu, adminRestartMission, client:GetPlayerName(), 997 )
+          MENU_GROUP_COMMAND:New(adminGroup, "Load NIGHT NTTR", adminMenu, adminRestartMission, client:GetPlayerName(), 998 )
+          MENU_GROUP_COMMAND:New(adminGroup, "Load NIGHT NTTR - Weather", adminMenu, adminRestartMission, client:GetPlayerName(), 996 )
+          MENU_GROUP_COMMAND:New(adminGroup, "Load NIGHT NTTR - No Moon", adminMenu, adminRestartMission, client:GetPlayerName(), 995 )
+          --env.info("ADMIN Player name: " ..client:GetPlayerName())
+        end
       end
     end
-  end)
+  )
   timer.scheduleFunction(BuildAdminMenu, nil, timer.getTime() + 10)
 
 end
 
-if JtfAdmin then
-  env.info("ADMIN enabled")
-  BuildAdminMenu(true)
-end
+BuildAdminMenu(true)
 
 --END ADMIN MENU SECTION
 
