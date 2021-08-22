@@ -15,7 +15,8 @@ end
 _SETTINGS:SetPlayerMenuOff()
 
 -- Dynamic list of all clients
-local SetClient = SET_CLIENT:New():FilterStart() 
+local SetClient = SET_CLIENT:New():FilterStart()
+
 
 --- BEGIN SUPPORT AIRCRAFT SECTION
 
@@ -569,7 +570,7 @@ BfmAddMenu()
 
 --- END ACMBFM SECTION
 
---- BEGIN BVRGCI SECTION
+--- BEGIN BVRGCI SECTION.
 --
 -- Each Menu level has an associated function which;
 -- 1) adds the menu item for the level
@@ -585,49 +586,65 @@ BfmAddMenu()
 --           |_Aircraft Type (command level 4) 
 --   |_Remove Adversaries (command level 2)
 
---- BVRGCI table - settings, defaults and spawnable adversaries
--- @field BVRGCI
--- @field #table Menu root BVRGCI F10 menu.
--- @field #table SubMenu BVRGCI submenus.
--- @field #string ZoneBvr ME Zone object for BVRGCI area boundary.
--- @field #string ZoneBvrSpawn ME Zone object for adversary spawn point.
--- @field #string ZoneWp1 ME Zone object for adversary spawn waypoint 1.
--- @field #table Altitude Altitude name, Altitude in metres for adversary spawns.
--- @field #table Adversary Adversary text name, adversary spawn template.
--- @field #boolean Destroy switch to activate Destroy() method for all spawned BVRGCI adversaries.
+--- BVRGCI default settings and values.
+-- @type BVRGCI
+-- @field #table Menu root BVRGCI F10 menu
+-- @field #table SubMenu BVRGCI submenus
+-- @field #string ZoneBvr ME Zone object for BVRGCI area boundary
+-- @field #string ZoneBvrSpawn ME Zone object for adversary spawn point
+-- @field #string ZoneBvrWp1 ME Zone object for adversary spawn waypoint 1
+-- @field #number headingDefault Default heading for adversary spawns
+-- @field #boolean Destroy When set to true, spawned adversary groups will be removed
 BVRGCI = {
-  ZoneBvr = ZONE:FindByName("ZONE_BVR"),
-  ZoneBvrSpawn = ZONE:FindByName("ZONE_BVR_SPAWN"),
-  ZoneBvrWp1 = ZONE:FindByName("ZONE_BVR_WP1"),
-  headingDefault = 150,
-  Size = {
-    Pair = 2,
-    Four = 4,
-  },
-  Altitude = {
-    High = 9144, -- 30,000ft
-    Medium = 6096, -- 20,000ft
-    Low = 3048, -- 10,000ft
-    },
-  Adversary = { 
-    {"F4", "BVR_F4"},
-    {"MIG23", "BVR_MIG23"},
-    {"F-14A", "BVR_F14A" },
-  },
-  Destroy = false,
+  Menu            = {},
+  SubMenu         = {},
+  ZoneBvr         = ZONE:FindByName("ZONE_BVR"),
+  ZoneBvrSpawn    = ZONE:FindByName("ZONE_BVR_SPAWN"),
+  ZoneBvrWp1      = ZONE:FindByName("ZONE_BVR_WP1"),
+  headingDefault  = 150,
+  Destroy         = false,
+ }
+
+--- Sizes of adversary groups
+-- @type BVRGCI.Size
+-- @field #number Pair Section size group.
+-- @field #number Four Flight size group.
+BVRGCI.Size = {
+  Pair = 2,
+  Four = 4,
 }
 
-BVRGCI.Menu = {}
-BVRGCI.SubMenu = {}
+--- Levels at which adversary groups may be spawned
+-- @type BVRGCI.Altitude Altitude name, Altitude in metres for adversary spawns.
+-- @field #number High Altitude, in metres, for High Level spawn.
+-- @field #number Medium Altitude, in metres, for Medium Level spawns.
+-- @field #number Low Altitude, in metres, for Low Level spawns.
+BVRGCI.Altitude = {
+  High = 9144, -- 30,000ft
+  Medium = 6096, -- 20,000ft
+  Low = 3048, -- 10,000ft
+}
+    
+--- Adversary types
+-- @type BVRGCI.Adversary 
+-- @list <#string> Display name for adversary type.
+-- @list <#string> Name of spawn template for adversary type.
+BVRGCI.Adversary = { 
+  {"F-4", "BVR_F4"},
+  {"F-14A", "BVR_F14A" },
+  {"MiG-21", "BVR_MIG21"},
+  {"MiG-23", "BVR_MIG23"},
+  {"MiG-29A", "BVR_MIG29A"},
+  {"Su-25", "BVR_SU25"},
+  {"Su-34", "BVR_SU34"},
+}
 
--- Vec3 coordinates for spawnpoint from ZoneBvrSpawn
+-- @field #table BVRGCI.BvrSpawnVec3 Vec3 coordinates for spawnpoint.
 BVRGCI.BvrSpawnVec3 = COORDINATE:NewFromVec3(BVRGCI.ZoneBvrSpawn:GetPointVec3())
--- Vec3 coordintates for waypoint 1 from ZoneBvrWp1
+-- @field #table BvrWp1Vec3 Vec3 coordintates for wp1.
 BVRGCI.BvrWp1Vec3 = COORDINATE:NewFromVec3(BVRGCI.ZoneBvrWp1:GetPointVec3())
--- Vec3 direction from ZoneBvrSpawn to ZoneBvrWp1
-local spawnDirectionVec3 = BVRGCI.BvrSpawnVec3:GetDirectionVec3(BVRGCI.BvrWp1Vec3)
--- Heading from spawnDirectionVec3
-BVRGCI.Heading = COORDINATE:GetAngleDegrees(spawnDirectionVec3)
+-- @field #number Heading Heading from spawn point to wp1.
+BVRGCI.Heading = COORDINATE:GetAngleDegrees(BVRGCI.BvrSpawnVec3:GetDirectionVec3(BVRGCI.BvrWp1Vec3))
 
 --- Spawn adversary aircraft with menu tree selected parameters.
 -- @param #string typeName Aircraft type name.
@@ -636,7 +653,6 @@ BVRGCI.Heading = COORDINATE:GetAngleDegrees(spawnDirectionVec3)
 -- @param #number Altitude Alititude at which to spawn adversary group.
 -- @param #number Formation ID for Formation, and spacing, in which to spawn adversary group.
 function BVRGCI.SpawnType(typeName, typeSpawnTemplate, Qty, Altitude, Formation) 
-  --local spawnHeading = BVRGCI.Heading and BVRGCI.Heading or BVRGCI.HeadingDefault
   local spawnHeading = BVRGCI.Heading
   local spawnVec3 = BVRGCI.BvrSpawnVec3
   spawnVec3.y = Altitude
@@ -644,7 +660,7 @@ function BVRGCI.SpawnType(typeName, typeSpawnTemplate, Qty, Altitude, Formation)
   spawnAdversary:InitGrouping(Qty) 
   spawnAdversary:InitHeading(spawnHeading)
   spawnAdversary:OnSpawnGroup(
-      function ( SpawnGroup, Formation )
+      function ( SpawnGroup, Formation, typeName )
         -- reset despawn flag
         BVRGCI.Destroy = false
         -- set formation for spawned AC
@@ -655,18 +671,21 @@ function BVRGCI.SpawnType(typeName, typeSpawnTemplate, Qty, Altitude, Formation)
           if SpawnGroup then
             -- remove adversary group if it has left the BVR/GCI zone, or the remove all adversaries menu option has been selected
             if (SpawnGroup:IsNotInZone(BVRGCI.ZoneBvr) or (BVRGCI.Destroy)) then 
-              MESSAGE:New(BVRGCI.Destroy and "All BVR adversaries removed" or "BVR adversary left zone and was removed"):ToAll()
+              local groupName = SpawnGroup.GroupName
+              local msgDestroy = "BVR adversary group " .. groupName .. " removed."
+              local msgLeftZone = "BVR adversary group " .. groupName .. " left zone and was removed."
               SpawnGroup:Destroy()
               SpawnGroup = nil
+              MESSAGE:New(BVRGCI.Destroy and msgDestroy or msgLeftZone):ToAll()
             end
           end
         end,
         {}, 0, 5 )
       end,
-      Formation
+      Formation, typeName
     )
   spawnAdversary:SpawnFromVec3(spawnVec3)
-  local _msg = "Group of " .. tostring(Qty) .. " " .. typeName .. " BVR Adversary spawned."
+  local _msg = "BVR Adversary group spawned."
   MESSAGE:New(_msg):ToAll()
 end
 
@@ -675,8 +694,8 @@ function BVRGCI.RemoveAdversaries()
   BVRGCI.Destroy = true
 end
 
---- Add BVR/GCI aircraft type menu.
--- @param #object ParentMenu Parent menu with which each commdnshould be associated.
+--- Add BVR/GCI MENU Adversary Type.
+-- @param #table ParentMenu Parent menu with which each command should be associated.
 function BVRGCI.BuildMenuType(ParentMenu)
   for i, v in ipairs(BVRGCI.Adversary) do
     local typeName = v[1]
@@ -691,7 +710,7 @@ function BVRGCI.BuildMenuType(ParentMenu)
   end
 end
 
---- Add BVR/GCI formation spacing menu.
+--- Add BVR/GCI MENU Formation Spacing.
 -- @param #string Spacing Spacing to apply to adversary group formation.
 -- @param #string MenuText Text to display for menu option.
 -- @param #object ParentMenu Parent menu with which this menu should be associated.
@@ -704,7 +723,7 @@ function BVRGCI.BuildMenuSpacing(Spacing, ParentMenu)
   BVRGCI.BuildMenuType(BVRGCI.SubMenu[MenuName])
 end
 
---- Add BVR/GCI formation menu.
+--- Add BVR/GCI MENU Formation.
 -- @param #string Formation Name of formation in which adversary group should fly.
 -- @param #string MenuText Text to display for menu option.
 -- @param #object ParentMenu Parent menu with which this menus should be associated.
@@ -713,12 +732,12 @@ function BVRGCI.BuildMenuFormation(Formation, MenuText, ParentMenu)
   BVRGCI.SubMenu[MenuName] = MENU_COALITION:New(coalition.side.BLUE, MenuText, ParentMenu)
   BVRGCI.SubMenu.Formation = Formation
   -- Build formation spacing menus
-  BVRGCI.BuildMenuSpacing("Group", BVRGCI.SubMenu[MenuName])
-  BVRGCI.BuildMenuSpacing("Close", BVRGCI.SubMenu[MenuName])
   BVRGCI.BuildMenuSpacing("Open", BVRGCI.SubMenu[MenuName])
+  BVRGCI.BuildMenuSpacing("Close", BVRGCI.SubMenu[MenuName])
+  BVRGCI.BuildMenuSpacing("Group", BVRGCI.SubMenu[MenuName])
 end
 
---- Add BVR/GCI level menu.
+--- Add BVR/GCI MENU Level.
 -- @param #number Altitude Altitude, in metres, at which to adversary group should spawn
 -- @param #string MenuName
 function BVRGCI.BuildMenuLevel(Altitude, MenuName, MenuText, ParentMenu)
@@ -735,7 +754,7 @@ function BVRGCI.BuildMenuLevel(Altitude, MenuName, MenuText, ParentMenu)
   BVRGCI.BuildMenuFormation("BomberElement", "Diamond", BVRGCI.SubMenu[MenuName])
 end
 
---- Add BVR/GCI group size menu
+--- Add BVR/GCI MENU Group Size.
 function BVRGCI.BuildMenuQty(Qty, MenuName, ParentMenu)
   MenuText = MenuName
   BVRGCI.SubMenu[MenuName] = MENU_COALITION:New(coalition.side.BLUE, MenuText, ParentMenu)
@@ -746,7 +765,7 @@ function BVRGCI.BuildMenuQty(Qty, MenuName, ParentMenu)
   BVRGCI.BuildMenuLevel(BVRGCI.Altitude.Low, "Low", "Low Level",  BVRGCI.SubMenu[MenuName])
 end
 
---- Add BVRGCI root menu
+--- Add BVRGCI MENU Root.
 function BVRGCI.BuildMenuRoot()
   BVRGCI.Menu = MENU_COALITION:New(coalition.side.BLUE, "AI BVR/GCI")
     -- Build group size menus
