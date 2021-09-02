@@ -1,40 +1,94 @@
 env.info( '*** JTF-1 NTTR Fun Map MOOSE script ***' )
 env.info( '*** JTF-1 MOOSE MISSION SCRIPT START ***' )
 
---activate admin menu option in admin slots if true
+--- check mission admin flag state
+-- if flag is true, mission will use assert(loadfile) to load mission lua file
+devState = trigger.misc.getUserFlag(8888)
+if devState then
+  env.warning('*** JTF-1 - DEV flag is ON! ***')
+else
+  env.info('*** JTF-1 - DEV flag is OFF. ***')
+end
+
+--- activate admin menu option in admin slots if true
 local JtfAdmin = true 
 
---debug on/off
-BASE:TraceOnOff(false) 
+--- remove default MOOSE player menu
+_SETTINGS:SetPlayerMenuOff()
 
+--- Name of client unit used for admin control
+local adminUnitName = "XX_ADMIN"
+
+--- Dynamic list of all clients
+local SetClient = SET_CLIENT:New():FilterStart()
+
+--- debug on/off
+BASE:TraceOnOff(false) 
 if BASE:IsTrace() then
   BASE:TraceLevel(1)
   --BASE:TraceAll(true)
   BASE:TraceClass("setGroupGroundActive")
 end
 
-_SETTINGS:SetPlayerMenuOff()
-
--- Disable AI for ground targets and FAC
+--- Disable AI for ground targets and FAC
 local setGroupGroundActive = SET_GROUP:New():FilterActive():FilterCategoryGround():FilterOnce()
-  
-setGroupGroundActive:ForEachGroup(
-  function(activeGroup)
-    activeGroup:SetAIOff()
-  end
-)
-  
-  
---function _temp(groupGroundActive)
---  GroundGroupActive:SetAIOff()
---  env.info("JTF-DEBUG - " .. "AI Disabled for: " .. GroupGroundActive.GroupName)
---end
-  
-  
--- Dynamic list of all clients
-local SetClient = SET_CLIENT:New():FilterStart()
+  setGroupGroundActive:ForEachGroup(
+    function(activeGroup)
+      activeGroup:SetAIOff()
+    end
+  )
 
+-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+--- BEGIN MISSION EVENT HANDLERS
+-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+local MissionEventHandler = EVENTHANDLER:New() -- new eventhandler object
+MissionEventHandler:HandleEvent(EVENTS.Birth) -- subscribe to BIRTH event
+
+--- Returns the unit of a player and the player name. If the unit does not belong to a player, nil is returned.
+-- @param #string unitName Name of the player unit.
+-- @return #Wrapper.Unit unit object occupied by player.
+-- @return #string Name of the player.
+-- @return nil If player does not exist.
+function GetPlayerUnitAndName(unitName)
+  if unitName ~= nil then
+    -- Get DCS unit from its name.
+    local DCSunit = Unit.getByName(unitName)
+    if DCSunit then
+      local playername=DCSunit:getPlayerName()
+      local unit = UNIT:Find(DCSunit)
+      if DCSunit and unit and playername then
+        return unit, playername
+      end
+    end
+  end
+  -- Return nil if we could not find a player.
+  return nil,nil
+end
+
+--- OnBirth event handler for all spawned units.
+-- @param #MissionEventHandler self.
+-- @param Core.Event#EVENTDATA EventData Data for unit birth event.
+function MissionEventHandler:OnEventBirth(EventData)
+  local unitName = EventData.IniUnitName
+  local unit, playername = GetPlayerUnitAndName(unitName)
+  if unit and playername then -- unit is occupied by a client
+    --- add missile trainer menu
+    SCHEDULER:New(nil, MissileTrainer.AddMenu, {MissileTrainer,unit,unitName}, 0.1) -- delay MissileTrainer.AddMenu() call to ensure client has properly entered unit
+    --- if player is in an admin slot, add mission restart menu 
+    if unitName == adminUnitName then 
+      SCHEDULER:New(nil, BuildAdminMenu, {unit}, 0.1) -- delay BuildAdminMenu() call to ensure client has properly entered unit
+      --BuildAdminMenu(unit)
+    end
+  end
+end
+
+--END MISSION EVENT HANDLERS
+
+-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 --- BEGIN SUPPORT AIRCRAFT SECTION
+-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
 -- define table of respawning support aircraft ---
 TableSpawnSupport = { -- {spawnobjectname, spawnzone, callsignName, callsignNumber}
   {spawnobject = "AR230V_KC-135_01", spawnzone = ZONE:New("AR230V"), callsignName = 2, callsignNumber = 1},
@@ -81,15 +135,18 @@ end
 
 --- END SUPPORT AIRCRAFT SECTION
 
+-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 --- BEGIN RANGE SECTION
+-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
--- Range Strafe target default parameters
-local strafeMaxAlt = 1530 -- [5000ft] in metres. Height of strafe box.
-local strafeBoxLength = 3000 -- [10000ft] in metres. Length of strafe box.
-local strafeBoxWidth = 300 -- [1000ft] in metres. Width of Strafe pit box (from 1st listed lane).
-local strafeFoullineDistance = 610 -- [2000ft] in metres. Min distance for from target for rounds to be counted.
-local strafeGoodPass = 20 -- Min hits for a good pass.
-local rangeSoundFilesPath = "Range Soundfiles/" -- Range sound files path in miz
+-- R62 T6208 MOVING TARGETS
+
+MenuT6208 = MENU_COALITION:New( coalition.side.BLUE, "Target 62-08" )
+MenuT6208_1 = MENU_COALITION_COMMAND:New( coalition.side.BLUE, "TGT 6208: Activate  4x4 (46 mph)", MenuT6208, function() trigger.action.setUserFlag(62081, 1) end) 
+MenuT6208_2 = MENU_COALITION_COMMAND:New( coalition.side.BLUE, "TGT 6208: Activate  Truck (23 mph)", MenuT6208, function() trigger.action.setUserFlag(62082, 1) end) 
+MenuT6208_3 = MENU_COALITION_COMMAND:New( coalition.side.BLUE, "TGT 6208: Activate  T-55 (11 mph)", MenuT6208, function() trigger.action.setUserFlag(62083, 1) end) 
+
+-- END R62 T6208
 
 -- STATIC RANGES
 
@@ -97,12 +154,12 @@ local rangeSoundFilesPath = "Range Soundfiles/" -- Range sound files path in miz
 local RANGESNTTR = {}
 
 RANGESNTTR.Defaults = {
-  strafeMaxAlt                = 1530, -- [5000ft] in metres. Height of strafe box.
-  strafeBoxLength             = 3000, -- [10000ft] in metres. Length of strafe box.
-  strafeBoxWidth              = 300, -- [1000ft] in metres. Width of Strafe pit box (from 1st listed lane).
-  strafeFoullineDistance      = 610, -- [2000ft] in metres. Min distance for from target for rounds to be counted.
-  strafeGoodPass              = 20, -- Min hits for a good pass.
-  rangeSoundFilesPath         = "Range Soundfiles/" -- Range sound files path in miz
+  strafeMaxAlt             = 1530, -- [5000ft] in metres. Height of strafe box.
+  strafeBoxLength          = 3000, -- [10000ft] in metres. Length of strafe box.
+  strafeBoxWidth           = 300, -- [1000ft] in metres. Width of Strafe pit box (from 1st listed lane).
+  strafeFoullineDistance   = 610, -- [2000ft] in metres. Min distance for from target for rounds to be counted.
+  strafeGoodPass           = 20, -- Min hits for a good pass.
+  rangeSoundFilesPath      = "Range Soundfiles/" -- Range sound files path in miz
 }
 
 -- Range targets table
@@ -237,9 +294,8 @@ function RANGESNTTR:AddStaticRanges(TableRangeStatic)
     self[rangeObject] = RANGE:New(rangeData.rangeName)
       self[rangeObject]:DebugOFF()  
       self[rangeObject]:SetRangeZone(ZONE_POLYGON:FindByName(rangeData.rangeZone))
-      self[rangeObject]:SetMaxStrafeAlt(strafeMaxAlt)
+      self[rangeObject]:SetMaxStrafeAlt(self.Defaults.strafeMaxAlt)
       self[rangeObject]:SetDefaultPlayerSmokeBomb(false)
-      --_G["Range_" .. rangeId]:SetRangeControl(rangeData.rangeControlFrequency)
  
     if rangeData.groups ~= nil then -- add groups of targets
       for tgtIndex, tgtName in ipairs(rangeData.groups) do
@@ -255,7 +311,7 @@ function RANGESNTTR:AddStaticRanges(TableRangeStatic)
     
     if rangeData.strafepits ~= nil then -- add strafe targets
       for strafepitIndex, strafepit in ipairs(rangeData.strafepits) do
-        self[rangeObject]:AddStrafePit(strafepit, strafeBoxLength, strafeBoxWidth, nil, true, strafeGoodPass, strafeFoullineDistance)
+        self[rangeObject]:AddStrafePit(strafepit, self.Defaults.strafeBoxLength, self.Defaults.strafeBoxWidth, nil, true, self.Defaults.strafeGoodPass, self.Defaults.strafeFoullineDistance)
       end  
     end
     
@@ -267,17 +323,10 @@ end
 -- Create ranges
 RANGESNTTR:AddStaticRanges(RANGESNTTR.RangeStatic)
 
--- R62 T6208 moving strafe targets
-MenuT6208 = MENU_COALITION:New( coalition.side.BLUE, "Target 62-08" )
-MenuT6208_1 = MENU_COALITION_COMMAND:New( coalition.side.BLUE, "TGT 6208: Activate  4x4 (46 mph)", MenuT6208, function() trigger.action.setUserFlag(62081, 1) end) 
-MenuT6208_2 = MENU_COALITION_COMMAND:New( coalition.side.BLUE, "TGT 6208: Activate  Truck (23 mph)", MenuT6208, function() trigger.action.setUserFlag(62082, 1) end) 
-MenuT6208_3 = MENU_COALITION_COMMAND:New( coalition.side.BLUE, "TGT 6208: Activate  T-55 (11 mph)", MenuT6208, function() trigger.action.setUserFlag(62083, 1) end) 
 
--- END R62 T6208
+-- ACTIVE RANGES
 
--- DYNAMIC RANGES
-
-MenuActiveRangesTop = MENU_COALITION:New(coalition.side.BLUE, "ACTIVE RANGES")
+MenuActiveRangesTop = MENU_COALITION:New(coalition.side.BLUE, "Active Ranges")
 
 function resetRangeTarget(rangeGroup, rangePrefix, rangeMenu, withSam, refreshRange)
 
@@ -365,9 +414,55 @@ SetInitActiveRangeGroups:ForEachGroup(initActiveRange)
 
 --- END RANGES
 
--- BEGIN ELECTRONIC COMBAT SIMULATOR RANGE
+-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+--- BEGIN MISSILE TRAINER
+-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
-menuEcsTop = MENU_COALITION:New(coalition.side.BLUE, "EC SOUTH")
+-- Create a new missile trainer object.
+MissileTrainer = {
+  menuadded = {},
+  MenuF10 = {},
+}
+
+MissileTrainer.fox = FOX:New() -- add new FOX class to the Missile Trainer
+
+--- FOX Default Settings
+MissileTrainer.fox:SetDefaultLaunchAlerts(false) -- launcher alerts OFF
+  :SetDefaultLaunchMarks(false) -- launch marks OFF
+  :SetDefaultMissileDestruction(false) -- missile destruction off
+  :SetExplosionDistance(300) -- distance from uit at which to destroy incoming missiles
+  :SetDebugOnOff() -- set debug on if true
+  :SetDisableF10Menu() -- remove default F10 menu as a custom menu will be used
+  :Start() -- start the missile trainer
+
+--- Toggle Launch Alerts and Destroy Missiles on/off
+-- @param #MissileTrainer self
+-- @param #string unitName name of client unit
+function MissileTrainer:ToggleMissileTrainer(unitName)
+  self.fox:_ToggleLaunchAlert(unitName)
+  self.fox:_ToggleDestroyMissiles(unitName)
+end
+
+--- Add Missile Trainer F10 root menu
+-- @param #MissileTrainer self
+-- @param #wrapper.Unit unit Unit object occupied by client
+-- @param #string unitName Name of unit occupied by client
+function MissileTrainer:AddMenu(unit, unitName)
+  local group = unit:GetGroup()
+  local gid = group:GetID()
+
+  self.MenuF10[gid] = missionCommands.addSubMenuForGroup(gid, "Missile Trainer")
+  rootPath = self.MenuF10[gid]
+  missionCommands.addCommandForGroup(gid, "Missile Trainer On/Off", rootPath, self.ToggleMissileTrainer, MissileTrainer, unitName)
+end
+
+--- END MISSILE TRAINER
+
+-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+--- BEGIN ELECTRONIC COMBAT SIMULATOR RANGE
+-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+menuEcsTop = MENU_COALITION:New(coalition.side.BLUE, "EC South")
 
 -- SAM spawn emplates
 templateEcs_Sa10 = "ECS_SA10"
@@ -378,6 +473,11 @@ templateEcs_Sa8 = "ECS_SA8"
 templateEcs_Sa15 = "ECS_SA15"
 -- Zone in which threat will be spawned
 zoneEcs7769 = ZONE:FindByName("ECS_ZONE_7769")
+
+ECS = {}
+ECS.ActiveSite = {}
+ECS.rIADS = nil
+
 
 function activateEcsThreat(samTemplate, samZone, activeThreat, isReset)
 
@@ -398,16 +498,27 @@ function activateEcsThreat(samTemplate, samZone, activeThreat, isReset)
         commandDeactivateEcs_7769 = MENU_COALITION_COMMAND:New(coalition.side.BLUE, "Deactivate 77-69", menuEcsTop, resetEcsThreat, spawnGroup, ecsSpawn, activeThreat, false)
         commandRefreshEcs_7769 = MENU_COALITION_COMMAND:New(coalition.side.BLUE, "Reset 77-69", menuEcsTop, resetEcsThreat, spawnGroup, ecsSpawn, activeThreat, true, samZone)
         MESSAGE:New("EC South is active with " .. activeThreat):ToAll()
-      end, menuEcsTop, rangePrefix, ecsSpawn, activeThreat, samZone
+        ECS.rIADS = SkynetIADS:create("ECSOUTH")
+        ECS.rIADS:setUpdateInterval(5)
+        ECS.rIADS:addEarlyWarningRadar("GCI2")
+        ECS.rIADS:addSAMSite(spawnGroup.GroupName)
+        ECS.rIADS:getSAMSiteByGroupName(spawnGroup.GroupName):setGoLiveRangeInPercent(80)
+        ECS.rIADS:activate()        
+      end
+      , menuEcsTop, rangePrefix, ecsSpawn, activeThreat, samZone
     )
     :SpawnInZone(samZone, true)
-
 end
 
 function resetEcsThreat(spawnGroup, ecsSpawn, activeThreat, refreshEcs, samZone)
 
   commandDeactivateEcs_7769:Remove() -- remove ECS active menus
   commandRefreshEcs_7769:Remove()
+  
+  if ECS.rIADS ~= nil then
+    ECS.rIADS:deactivate()
+    ECS.rIADS = nil
+  end
 
   if spawnGroup:IsAlive() then
     spawnGroup:Destroy()
@@ -439,33 +550,9 @@ addEcsThreatMenu()
 -- END ELECTRONIC COMBAT SIMULATOR RANGE
 
 
---- BEGIN MISSILE TRAINER
-
--- Create a new missile trainer object.
-fox=FOX:New()
-
--- Add training zones.
-fox:AddSafeZone(ZONE:FindByName("Zone_BfmAcmFox"))
-fox:AddLaunchZone(ZONE:FindByName("Zone_BfmAcmFox"))
-
-fox:AddSafeZone(ZONE:FindByName("ZONE_4807_MT"))
-fox:AddLaunchZone(ZONE:FindByName("ZONE_4807_MT"))
-
-fox:AddSafeZone(ZONE:FindByName("ZONE_ECS_MT"))
-fox:AddLaunchZone(ZONE:FindByName("ZONE_ECS_MT"))
-
--- FOX settings
-fox:SetExplosionDistance(300)
-fox:SetDisableF10Menu()
-fox:SetDebugOnOff()
-
--- Start missile trainer.
-fox:Start()
-
---- END MISSILE TRAINER
-
-
--- BEGIN ACM/BFM SECTION
+-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+--- BEGIN ACM/BFM SECTION
+-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
 BfmAcm = {}
 BfmAcm.Menu = {}
@@ -587,7 +674,9 @@ BfmAddMenu()
 
 --- END ACMBFM SECTION
 
+-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 --- BEGIN BVRGCI SECTION.
+-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 --
 -- Each Menu level has an associated function which;
 -- 1) adds the menu item for the level
@@ -796,52 +885,41 @@ BVRGCI.BuildMenuRoot()
 
 --- END BVRGCI SECTION
 
+-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 --- BEGIN ADMIN MENU SECTION
+-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
 --- Set mission flag to load a new mission.
--- 999 = NTTR Day,
--- 997 = NTTR Day IFR,
--- 998 = NTTR Night,
--- 996 = NTTR Night Weather,
--- 995 = NTTR Night No Moon.
--- @param #string adminClientName Name of client calling restart command
--- @param #number mapFlag Mission flag to set to true
-function adminRestartMission(adminClientName, mapFlag)
+--- 1 = NTTR Day.
+--- 2 = NTTR Day IFR.
+--- 3 = NTTR Night.
+--- 4 = NTTR Night Weather.
+--- 5 = NTTR Night No Moon.
+-- @param #string playerName Name of client calling restart command
+-- @param #number mapFlagValue Mission flag to set to true
+function LoadMission(playerName, mapFlagValue)
 
   if adminClientName then
-    env.info("ADMIN Restart player name: " ..adminClientName)
+    env.info("ADMIN Restart player name: " .. playerName)
   end
-  trigger.action.setUserFlag(mapFlag, true) 
+  trigger.action.setUserFlag(9999, mapFlagValue) 
 
 end
 
 --- Add admin menu and commands if client is in an ADMIN spawn
--- 
-function BuildAdminMenu(adminState)
-
-  SetClient:ForEachClient(
-    function(client)
-      if (client ~= nil) and (client:IsAlive()) and (adminMenu == nil) then
-        adminGroup = client:GetGroup()
-        adminGroupName = adminGroup:GetName()
-        if string.find(adminGroupName, "XX_ADMIN") then
-          adminMenu = MENU_GROUP:New(adminGroup, "ADMIN")
-          MENU_GROUP_COMMAND:New(adminGroup, "Load DAY NTTR", adminMenu, adminRestartMission, client:GetPlayerName(), 999 )
-          MENU_GROUP_COMMAND:New(adminGroup, "Load DAY NTTR - IFR", adminMenu, adminRestartMission, client:GetPlayerName(), 997 )
-          MENU_GROUP_COMMAND:New(adminGroup, "Load NIGHT NTTR", adminMenu, adminRestartMission, client:GetPlayerName(), 998 )
-          MENU_GROUP_COMMAND:New(adminGroup, "Load NIGHT NTTR - Weather", adminMenu, adminRestartMission, client:GetPlayerName(), 996 )
-          MENU_GROUP_COMMAND:New(adminGroup, "Load NIGHT NTTR - No Moon", adminMenu, adminRestartMission, client:GetPlayerName(), 995 )
-          --env.info("ADMIN Player name: " ..client:GetPlayerName())
-        end
-      end
-    end
-  )
-  timer.scheduleFunction(BuildAdminMenu, nil, timer.getTime() + 10)
-
+-- @param #object unit Wrapper.Unit#UNIT Unit of player.
+function BuildAdminMenu(unit)
+  local adminGroup = unit:GetGroup()
+  local adminGroupName = adminGroup:GetName()
+  local adminMenu = MENU_GROUP:New(adminGroup, "Admin")
+  MENU_GROUP_COMMAND:New(adminGroup, "Load DAY NTTR", adminMenu, LoadMission, unit:GetPlayerName(), 1 )
+  MENU_GROUP_COMMAND:New(adminGroup, "Load DAY NTTR - IFR", adminMenu, LoadMission, unit:GetPlayerName(), 2 )
+  MENU_GROUP_COMMAND:New(adminGroup, "Load NIGHT NTTR", adminMenu, LoadMission, unit:GetPlayerName(), 3 )
+  MENU_GROUP_COMMAND:New(adminGroup, "Load NIGHT NTTR - Weather", adminMenu, LoadMission, unit:GetPlayerName(), 4 )
+  MENU_GROUP_COMMAND:New(adminGroup, "Load NIGHT NTTR - No Moon", adminMenu, LoadMission, unit:GetPlayerName(), 5 )
 end
 
-BuildAdminMenu(true)
+--- END ADMIN MENU SECTION
 
---END ADMIN MENU SECTION
 
 env.info( '*** JTF-1 MOOSE MISSION SCRIPT END ***' )

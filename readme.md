@@ -1,9 +1,6 @@
 Welcome to the JTF-1 NTTR Fun Map!
 Range template from 476th vFG
 
-Please make yourself aware of the following information:
-
-***MISSION BRIEF IS WIP***
 
 Radio presets are per NELLISAFBI-11-250
 
@@ -83,6 +80,19 @@ AR-230V
 AR-231V
 - ARCO 2-1 [KC-135] 13Y, 323.200, FL150 [215kts IAS]
  
+MISSILE TRAINER
+===============
+
+A missile trainer is available to assist training in A/S and A/A missile evasion without being destroyed. By default, the missile trainer is disabled, but may be enabled for your aircraft via the F10 menu
+
+While enabled, the missile trainer will;
+
+- Alert on missile launch
+- Provide evasion advice
+- Destroy incoming missiles prior to impact
+
+NOTE: At very high closure rates it may not be possible to destroy the incoming missile without causing (potentially catastrophic) damage to your aircraft. The missile trainer will not protect against cannon rounds or other balistic weapons.
+
 STATIC RANGES
 =============
 
@@ -107,8 +117,6 @@ R75W
 
 Two activation options are available for each Active Target; Activate or Active with SAM. Activated targets will engage with firearms, AAA. If the SAM option is selected, SAM and MANPAD assets at or IVO the target will also engage.
 
-Missile Trainer will be active while inside the Range.
-
 ELECTRONIC COMBAT SIMULATION RANGE
 ==================================
 
@@ -122,12 +130,10 @@ The following SAM threats can be activated IVO target 77-69;
 - SA-8
 - SA-15
 
-Missile Trainer will be active while inside the Range.
-
 AI BFM/ACM
 ==========
 
-On-demand single or pair adversary spawns are available via the F10 menu while aircraft are within ranges Coyote Alpha, Bravo and Charlie. Adversaries will be spawned ahead of you at the selected distance (5NM, 10NM, 20NM). Missile trainer will be active while inside this area. Guns are not included in the missile trainer protection.
+On-demand single or pair adversary spawns are available via the F10 menu while aircraft are within ranges Coyote Alpha, Bravo and Charlie. Adversaries will be spawned ahead of you at the selected distance (5NM, 10NM, 20NM).
 
 AI BVR/GCI
 ==========
