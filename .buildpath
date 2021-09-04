@@ -1,5 +1,4 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <buildpath>
-	<buildpathentry combineaccessrules="false" exported="true" kind="prj" path="/Moose_Framework"/>
-	<buildpathentry kind="src" path="MOOSE-develop"/>
+	<buildpathentry combineaccessrules="false" kind="prj" path="/Moose_Framework"/>
 </buildpath>

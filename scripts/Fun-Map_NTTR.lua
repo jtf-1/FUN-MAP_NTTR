@@ -10,17 +10,8 @@ else
   env.info('*** JTF-1 - DEV flag is OFF. ***')
 end
 
---- activate admin menu option in admin slots if true
-local JtfAdmin = true 
-
 --- remove default MOOSE player menu
 _SETTINGS:SetPlayerMenuOff()
-
---- Name of client unit used for admin control
-local adminUnitName = "XX_ADMIN"
-
---- Dynamic list of all clients
-local SetClient = SET_CLIENT:New():FilterStart()
 
 --- debug on/off
 BASE:TraceOnOff(false) 
@@ -30,7 +21,19 @@ if BASE:IsTrace() then
   BASE:TraceClass("setGroupGroundActive")
 end
 
+--- activate admin menu option in admin slots if true
+local JtfAdmin = true 
+
+--- Name of client unit used for admin control
+local adminUnitName = "XX_ADMIN"
+
+--- Dynamic list of all clients
+local SetClient = SET_CLIENT:New():FilterStart()
+
+-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 --- Disable AI for ground targets and FAC
+-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
 local setGroupGroundActive = SET_GROUP:New():FilterActive():FilterCategoryGround():FilterOnce()
   setGroupGroundActive:ForEachGroup(
     function(activeGroup)
@@ -39,18 +42,19 @@ local setGroupGroundActive = SET_GROUP:New():FilterActive():FilterCategoryGround
   )
 
 -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
---- BEGIN MISSION EVENT HANDLERS
+--- BEGIN MISSILE TRAINER
 -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
-local MissionEventHandler = EVENTHANDLER:New() -- new eventhandler object
-MissionEventHandler:HandleEvent(EVENTS.Birth) -- subscribe to BIRTH event
+-- Create a new missile trainer object.
+MissileTrainer = {
+  menuadded = {},
+  MenuF10 = {},
+}
 
---- Returns the unit of a player and the player name. If the unit does not belong to a player, nil is returned.
--- @param #string unitName Name of the player unit.
--- @return #Wrapper.Unit unit object occupied by player.
--- @return #string Name of the player.
--- @return nil If player does not exist.
-function GetPlayerUnitAndName(unitName)
+MissileTrainer.eventhandler = EVENTHANDLER:New()
+MissileTrainer.eventhandler:HandleEvent(EVENTS.Birth)
+
+function MissileTrainer:GetPlayerUnitAndName(unitName)
   if unitName ~= nil then
     -- Get DCS unit from its name.
     local DCSunit = Unit.getByName(unitName)
@@ -66,24 +70,113 @@ function GetPlayerUnitAndName(unitName)
   return nil,nil
 end
 
---- OnBirth event handler for all spawned units.
--- @param #MissionEventHandler self.
--- @param Core.Event#EVENTDATA EventData Data for unit birth event.
-function MissionEventHandler:OnEventBirth(EventData)
+function MissileTrainer.eventhandler:OnEventBirth(EventData)
   local unitName = EventData.IniUnitName
-  local unit, playername = GetPlayerUnitAndName(unitName)
-  if unit and playername then -- unit is occupied by a client
-    --- add missile trainer menu
-    SCHEDULER:New(nil, MissileTrainer.AddMenu, {MissileTrainer,unit,unitName}, 0.1) -- delay MissileTrainer.AddMenu() call to ensure client has properly entered unit
-    --- if player is in an admin slot, add mission restart menu 
-    if unitName == adminUnitName then 
-      SCHEDULER:New(nil, BuildAdminMenu, {unit}, 0.1) -- delay BuildAdminMenu() call to ensure client has properly entered unit
-      --BuildAdminMenu(unit)
-    end
+  local unit, playername = MissileTrainer:GetPlayerUnitAndName(unitName)
+  
+  if unit and playername then
+    SCHEDULER:New(nil, MissileTrainer.AddMenu, {MissileTrainer, unit, unitName},0.1)
   end
 end
 
---END MISSION EVENT HANDLERS
+MissileTrainer.fox = FOX:New() -- add new FOX class to the Missile Trainer
+
+--- FOX Default Settings
+MissileTrainer.fox:SetDefaultLaunchAlerts(false) -- launcher alerts OFF
+  :SetDefaultMissileDestruction(false) -- missile destruction off
+  :SetDefaultLaunchMarks(false) -- launch map marks OFF
+  :SetExplosionDistance(300) -- distance from uit at which to destroy incoming missiles
+  :SetDebugOnOff() -- set debug on if true
+  :SetDisableF10Menu() -- remove default F10 menu as a custom menu will be used
+  :Start() -- start the missile trainer
+
+--- Toggle Launch Alerts and Destroy Missiles on/off
+-- @param #MissileTrainer self
+-- @param #string unitName name of client unit
+function MissileTrainer:ToggleMissileTrainer(unitName)
+  self.fox:_ToggleLaunchAlert(unitName)
+  self.fox:_ToggleDestroyMissiles(unitName)
+end
+
+--- Add Missile Trainer F10 root menu
+-- @param #MissileTrainer self
+-- @param #wrapper.Unit unit Unit object occupied by client
+-- @param #string unitName Name of unit occupied by client
+function MissileTrainer:AddMenu(unit, unitName)
+  local group = unit:GetGroup()
+  local gid = group:GetID()
+
+  self.MenuF10[gid] = missionCommands.addSubMenuForGroup(gid, "Missile Trainer")
+  rootPath = self.MenuF10[gid]
+  missionCommands.addCommandForGroup(gid, "Missile Trainer On/Off", rootPath, self.ToggleMissileTrainer, MissileTrainer, unitName)
+end
+
+--- END MISSILE TRAINER
+
+-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+--- BEGIN ADMIN MENU SECTION
+-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+Admin = {
+flagLoadMission = 9999, -- mission flag for triggering reload/loading of missions
+}
+
+Admin.eventhandler = EVENTHANDLER:New()
+Admin.eventhandler:HandleEvent(EVENTS.Birth)
+
+function Admin:GetPlayerUnitAndName(unitName)
+  if unitName ~= nil then
+    -- Get DCS unit from its name.
+    local DCSunit = Unit.getByName(unitName)
+    if DCSunit then
+      local playername=DCSunit:getPlayerName()
+      local unit = UNIT:Find(DCSunit)
+      if DCSunit and unit and playername then
+        return unit, playername
+      end
+    end
+  end
+  -- Return nil if we could not find a player.
+  return nil,nil
+end
+
+function Admin.eventhandler:OnEventBirth(EventData)
+  local unitName = EventData.IniUnitName
+  local unit, playername = Admin:GetPlayerUnitAndName(unitName)
+  if unit and playername then
+    SCHEDULER:New(nil, Admin.BuildAdminMenu, {Admin, unit, playername}, 0.1)
+  end
+end
+
+--- Set mission flag to load a new mission.
+--- 1 = PG Day.
+--- 2 = PG Night.
+--- 3 = PG Weather.
+--- 4 = PG Weather + Night.
+-- @param #string playerName Name of client calling restart command
+-- @param #number mapFlagValue Mission number to which flag should be set
+function Admin:LoadMission(playerName, mapFlagValue)
+  if adminClientName then
+    env.info("ADMIN Restart player name: " .. playerName)
+  end
+  trigger.action.setUserFlag(self.flagLoadMission, mapFlagValue) 
+end
+
+--- Add admin menu and commands if client is in an ADMIN spawn
+-- @param #object unit Unit of player.
+-- @param #string playername Name of player
+function Admin:BuildAdminMenu(unit,playername)
+  local adminGroup = unit:GetGroup()
+  local adminGroupName = adminGroup:GetName()
+  local adminMenu = MENU_GROUP:New(adminGroup, "Admin")
+  MENU_GROUP_COMMAND:New(adminGroup, "Load DAY NTTR", adminMenu, self.LoadMission, self, playername, 1 )
+  MENU_GROUP_COMMAND:New(adminGroup, "Load DAY NTTR - IFR", adminMenu, self.LoadMission, self, playername, 2 )
+  MENU_GROUP_COMMAND:New(adminGroup, "Load NIGHT NTTR", adminMenu, self.LoadMission, self, playername, 3 )
+  MENU_GROUP_COMMAND:New(adminGroup, "Load NIGHT NTTR - Weather", adminMenu, self.LoadMission, self, playername, 4 )
+  MENU_GROUP_COMMAND:New(adminGroup, "Load NIGHT NTTR - No Moon", adminMenu, self.LoadMission, self, playername, 5 )
+end
+
+--- END ADMIN MENU SECTION
 
 -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 --- BEGIN SUPPORT AIRCRAFT SECTION
@@ -91,16 +184,65 @@ end
 
 -- define table of respawning support aircraft ---
 TableSpawnSupport = { -- {spawnobjectname, spawnzone, callsignName, callsignNumber}
-  {spawnobject = "AR230V_KC-135_01", spawnzone = ZONE:New("AR230V"), callsignName = 2, callsignNumber = 1},
-  {spawnobject = "AR230V_KC-130_01", spawnzone = ZONE:New("AR230V"), callsignName = 2, callsignNumber = 3},
-  {spawnobject = "AR231V_KC-135_01", spawnzone = ZONE:New("AR231V"), callsignName = 2, callSignNumber = 2},
-  {spawnobject = "AR635_KC-135_01", spawnzone = ZONE:New("AR635"), callsignName = 1, callsignNumber = 2},
-  {spawnobject = "AR625_KC-135_01", spawnzone = ZONE:New("AR625"), callsignName = 1, callsignNumber = 3},
-  {spawnobject = "AR641A_KC-135_01", spawnzone = ZONE:New("AR641A"), callsignName = 1, callsignNumber = 1},
-  {spawnobject = "AR635_KC-135MPRS_01", spawnzone = ZONE:New("AR635"), callsignName = 3, callsignNumber = 2},
-  {spawnobject = "AR625_KC-135MPRS_01", spawnzone = ZONE:New("AR625"), callsignName = 3, callsignNumber = 3},
-  {spawnobject = "AR641A_KC-135MPRS_01", spawnzone = ZONE:New("AR641A"), callsignName = 3, callsignNumber = 1},
-  {spawnobject = "AWACS_DARKSTAR", spawnzone = ZONE:New("AWACS"), callsignName = 5, callsignNumber = 1},
+  {
+    spawnobject = "AR230V_KC-135_01", 
+    spawnzone = ZONE:New("AR230V"), 
+    callsignName = 2, 
+    callsignNumber = 1
+   },
+  {
+    spawnobject = "AR230V_KC-130_01", 
+    spawnzone = ZONE:New("AR230V"), 
+    callsignName = 2, 
+    callsignNumber = 3
+  },
+    {spawnobject = "AR231V_KC-135_01", 
+    spawnzone = ZONE:New("AR231V"), 
+    callsignName = 2, 
+    callSignNumber = 2
+  },
+  {
+    spawnobject = "AR635_KC-135_01", 
+    spawnzone = ZONE:New("AR635"), 
+    callsignName = 1, 
+    callsignNumber = 2
+  },
+  {
+    spawnobject = "AR625_KC-135_01", 
+    spawnzone = ZONE:New("AR625"), 
+    callsignName = 1, 
+    callsignNumber = 3
+  },
+  {
+    spawnobject = "AR641A_KC-135_01", 
+    spawnzone = ZONE:New("AR641A"), 
+    callsignName = 1, 
+    callsignNumber = 1
+  },
+  {
+    spawnobject = "AR635_KC-135MPRS_01", 
+    spawnzone = ZONE:New("AR635"), 
+    callsignName = 3, 
+    callsignNumber = 2
+  },
+  {
+    spawnobject = "AR625_KC-135MPRS_01", 
+    spawnzone = ZONE:New("AR625"), 
+    callsignName = 3, 
+    callsignNumber = 3
+  },
+  {
+    spawnobject = "AR641A_KC-135MPRS_01", 
+    spawnzone = ZONE:New("AR641A"), 
+    callsignName = 3, 
+    callsignNumber = 1
+  },
+  {
+    spawnobject = "AWACS_DARKSTAR", 
+    spawnzone = ZONE:New("AWACS"), 
+    callsignName = 5, 
+    callsignNumber = 1
+  },
 }
 
 function SpawnSupport (SupportSpawn) -- spawnobject, spawnzone
@@ -414,49 +556,6 @@ SetInitActiveRangeGroups:ForEachGroup(initActiveRange)
 
 --- END RANGES
 
--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
---- BEGIN MISSILE TRAINER
--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-
--- Create a new missile trainer object.
-MissileTrainer = {
-  menuadded = {},
-  MenuF10 = {},
-}
-
-MissileTrainer.fox = FOX:New() -- add new FOX class to the Missile Trainer
-
---- FOX Default Settings
-MissileTrainer.fox:SetDefaultLaunchAlerts(false) -- launcher alerts OFF
-  :SetDefaultLaunchMarks(false) -- launch marks OFF
-  :SetDefaultMissileDestruction(false) -- missile destruction off
-  :SetExplosionDistance(300) -- distance from uit at which to destroy incoming missiles
-  :SetDebugOnOff() -- set debug on if true
-  :SetDisableF10Menu() -- remove default F10 menu as a custom menu will be used
-  :Start() -- start the missile trainer
-
---- Toggle Launch Alerts and Destroy Missiles on/off
--- @param #MissileTrainer self
--- @param #string unitName name of client unit
-function MissileTrainer:ToggleMissileTrainer(unitName)
-  self.fox:_ToggleLaunchAlert(unitName)
-  self.fox:_ToggleDestroyMissiles(unitName)
-end
-
---- Add Missile Trainer F10 root menu
--- @param #MissileTrainer self
--- @param #wrapper.Unit unit Unit object occupied by client
--- @param #string unitName Name of unit occupied by client
-function MissileTrainer:AddMenu(unit, unitName)
-  local group = unit:GetGroup()
-  local gid = group:GetID()
-
-  self.MenuF10[gid] = missionCommands.addSubMenuForGroup(gid, "Missile Trainer")
-  rootPath = self.MenuF10[gid]
-  missionCommands.addCommandForGroup(gid, "Missile Trainer On/Off", rootPath, self.ToggleMissileTrainer, MissileTrainer, unitName)
-end
-
---- END MISSILE TRAINER
 
 -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 --- BEGIN ELECTRONIC COMBAT SIMULATOR RANGE
@@ -885,41 +984,6 @@ BVRGCI.BuildMenuRoot()
 
 --- END BVRGCI SECTION
 
--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
---- BEGIN ADMIN MENU SECTION
--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-
---- Set mission flag to load a new mission.
---- 1 = NTTR Day.
---- 2 = NTTR Day IFR.
---- 3 = NTTR Night.
---- 4 = NTTR Night Weather.
---- 5 = NTTR Night No Moon.
--- @param #string playerName Name of client calling restart command
--- @param #number mapFlagValue Mission flag to set to true
-function LoadMission(playerName, mapFlagValue)
-
-  if adminClientName then
-    env.info("ADMIN Restart player name: " .. playerName)
-  end
-  trigger.action.setUserFlag(9999, mapFlagValue) 
-
-end
-
---- Add admin menu and commands if client is in an ADMIN spawn
--- @param #object unit Wrapper.Unit#UNIT Unit of player.
-function BuildAdminMenu(unit)
-  local adminGroup = unit:GetGroup()
-  local adminGroupName = adminGroup:GetName()
-  local adminMenu = MENU_GROUP:New(adminGroup, "Admin")
-  MENU_GROUP_COMMAND:New(adminGroup, "Load DAY NTTR", adminMenu, LoadMission, unit:GetPlayerName(), 1 )
-  MENU_GROUP_COMMAND:New(adminGroup, "Load DAY NTTR - IFR", adminMenu, LoadMission, unit:GetPlayerName(), 2 )
-  MENU_GROUP_COMMAND:New(adminGroup, "Load NIGHT NTTR", adminMenu, LoadMission, unit:GetPlayerName(), 3 )
-  MENU_GROUP_COMMAND:New(adminGroup, "Load NIGHT NTTR - Weather", adminMenu, LoadMission, unit:GetPlayerName(), 4 )
-  MENU_GROUP_COMMAND:New(adminGroup, "Load NIGHT NTTR - No Moon", adminMenu, LoadMission, unit:GetPlayerName(), 5 )
-end
-
---- END ADMIN MENU SECTION
 
 
 env.info( '*** JTF-1 MOOSE MISSION SCRIPT END ***' )
