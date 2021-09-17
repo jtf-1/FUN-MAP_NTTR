@@ -213,12 +213,12 @@ TableSpawnSupport = { -- {spawnobjectname, spawnzone, callsignName, callsignNumb
     callsignName = 1, 
     callsignNumber = 2
   },
-  {
-    spawnobject = "AR625_KC-135_01", 
-    spawnzone = ZONE:New("AR625"), 
-    callsignName = 1, 
-    callsignNumber = 3
-  },
+--  {
+--    spawnobject = "AR625_KC-135_01", 
+--    spawnzone = ZONE:New("AR625"), 
+--    callsignName = 1, 
+--    callsignNumber = 3
+--  },
   {
     spawnobject = "AR641A_KC-135_01", 
     spawnzone = ZONE:New("AR641A"), 
@@ -231,12 +231,12 @@ TableSpawnSupport = { -- {spawnobjectname, spawnzone, callsignName, callsignNumb
     callsignName = 3, 
     callsignNumber = 2
   },
-  {
-    spawnobject = "AR625_KC-135MPRS_01", 
-    spawnzone = ZONE:New("AR625"), 
-    callsignName = 3, 
-    callsignNumber = 3
-  },
+--  {
+--    spawnobject = "AR625_KC-135MPRS_01", 
+--    spawnzone = ZONE:New("AR625"), 
+--    callsignName = 3, 
+--    callsignNumber = 3
+--  },
   {
     spawnobject = "AR641A_KC-135MPRS_01", 
     spawnzone = ZONE:New("AR641A"), 
@@ -806,6 +806,7 @@ BfmAddMenu()
 BVRGCI = {
   Menu            = {},
   SubMenu         = {},
+  Spawn           = {},
   headingDefault  = 150,
   Destroy         = false,
 }
@@ -917,7 +918,7 @@ function BVRGCI.BuildMenuType(ParentMenu)
     local typeSpawnTemplate = v[2]
     -- add Type spawn commands if spawn template exists, else send message that it doesn't
     if GROUP:FindByName(typeSpawnTemplate) ~= nil then
-        MENU_COALITION_COMMAND:New(coalition.side.BLUE, typeName, ParentMenu, BVRGCI.SpawnType, typeName, typeSpawnTemplate, BVRGCI.SubMenu.Qty, BVRGCI.SubMenu.Level, ENUMS.Formation.FixedWing[BVRGCI.SubMenu.Formation][BVRGCI.SubMenu.Spacing])
+        MENU_COALITION_COMMAND:New(coalition.side.BLUE, typeName, ParentMenu, BVRGCI.SpawnType, typeName, typeSpawnTemplate, BVRGCI.Spawn.Qty, BVRGCI.Spawn.Level, ENUMS.Formation.FixedWing[BVRGCI.Spawn.Formation][BVRGCI.Spawn.Spacing])
     else
       _msg = "Spawn template " .. typeName .. " was not found and could not be added to menu."
       MESSAGE:New(_msg):ToAll()
@@ -933,7 +934,7 @@ function BVRGCI.BuildMenuSpacing(Spacing, ParentMenu)
   local MenuName = Spacing
   local MenuText = Spacing
   BVRGCI.SubMenu[MenuName] = MENU_COALITION:New(coalition.side.BLUE, MenuText, ParentMenu)
-  BVRGCI.SubMenu.Spacing = Spacing
+  BVRGCI.Spawn.Spacing = Spacing
   -- Build Type menus
   BVRGCI.BuildMenuType(BVRGCI.SubMenu[MenuName])
 end
@@ -945,7 +946,7 @@ end
 function BVRGCI.BuildMenuFormation(Formation, MenuText, ParentMenu)
   local MenuName = Formation
   BVRGCI.SubMenu[MenuName] = MENU_COALITION:New(coalition.side.BLUE, MenuText, ParentMenu)
-  BVRGCI.SubMenu.Formation = Formation
+  BVRGCI.Spawn.Formation = Formation
   -- Build formation spacing menus
   BVRGCI.BuildMenuSpacing("Open", BVRGCI.SubMenu[MenuName])
   BVRGCI.BuildMenuSpacing("Close", BVRGCI.SubMenu[MenuName])
@@ -957,7 +958,7 @@ end
 -- @param #string MenuName
 function BVRGCI.BuildMenuLevel(Altitude, MenuName, MenuText, ParentMenu)
   BVRGCI.SubMenu[MenuName] = MENU_COALITION:New(coalition.side.BLUE, MenuText, ParentMenu)
-  BVRGCI.SubMenu.Level = Altitude
+  BVRGCI.Spawn.Level = Altitude
   --Build Formation menus
   BVRGCI.BuildMenuFormation("LineAbreast", "Line Abreast", BVRGCI.SubMenu[MenuName])
   BVRGCI.BuildMenuFormation("Trail", "Trail", BVRGCI.SubMenu[MenuName])
@@ -973,7 +974,7 @@ end
 function BVRGCI.BuildMenuQty(Qty, MenuName, ParentMenu)
   MenuText = MenuName
   BVRGCI.SubMenu[MenuName] = MENU_COALITION:New(coalition.side.BLUE, MenuText, ParentMenu)
-  BVRGCI.SubMenu.Qty = Qty
+  BVRGCI.Spawn.Qty = Qty
   -- Build Level menus
   BVRGCI.BuildMenuLevel(BVRGCI.Altitude.High, "High", "High Level",  BVRGCI.SubMenu[MenuName])
   BVRGCI.BuildMenuLevel(BVRGCI.Altitude.Medium, "Medium", "Medium Level",  BVRGCI.SubMenu[MenuName])
