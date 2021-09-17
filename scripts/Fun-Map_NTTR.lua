@@ -1,16 +1,7 @@
 env.info( '*** JTF-1 NTTR Fun Map MOOSE script ***' )
 env.info( '*** JTF-1 MOOSE MISSION SCRIPT START ***' )
 
---- check mission admin flag state
--- if flag is true, mission will use assert(loadfile) to load mission lua file
-devState = trigger.misc.getUserFlag(8888)
-if devState then
-  env.warning('*** JTF-1 - DEV flag is ON! ***')
-else
-  env.info('*** JTF-1 - DEV flag is OFF. ***')
-end
-
---- remove default MOOSE player menu
+---- remove default MOOSE player menu
 _SETTINGS:SetPlayerMenuOff()
 
 --- debug on/off
@@ -31,6 +22,21 @@ local adminUnitName = "XX_ADMIN"
 local SetClient = SET_CLIENT:New():FilterStart()
 
 -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+--- Check for Static or Dynamic mission file loading flag
+-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+-- mission flag for setting dev mode
+local devFlag = 8888
+-- If missionflag is true, mission file will load from filesystem with an assert
+devState = trigger.misc.getUserFlag(devFlag)
+if devState then
+  env.warning('*** JTF-1 - DEV flag is ON! ***')
+  MESSAGE:New("Dev Mode is ON!"):ToAll()
+else
+  env.info('*** JTF-1 - DEV flag is OFF. ***')
+end
+
+-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 --- Disable AI for ground targets and FAC
 -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
@@ -48,7 +54,7 @@ local setGroupGroundActive = SET_GROUP:New():FilterActive():FilterCategoryGround
 -- Create a new missile trainer object.
 MissileTrainer = {
   menuadded = {},
-  MenuF10 = {},
+  MenuF10   = {},
 }
 
 MissileTrainer.eventhandler = EVENTHANDLER:New()
@@ -118,7 +124,7 @@ end
 -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
 Admin = {
-flagLoadMission = 9999, -- mission flag for triggering reload/loading of missions
+  flagLoadMission = 9999, -- mission flag for triggering reload/loading of missions
 }
 
 Admin.eventhandler = EVENTHANDLER:New()
@@ -290,7 +296,7 @@ MenuT6208_3 = MENU_COALITION_COMMAND:New( coalition.side.BLUE, "TGT 6208: Activa
 
 -- END R62 T6208
 
--- STATIC RANGES
+--- STATIC RANGES
 
 -- @field #STATICRANGES
 local RANGESNTTR = {}
@@ -466,7 +472,7 @@ end
 RANGESNTTR:AddStaticRanges(RANGESNTTR.RangeStatic)
 
 
--- ACTIVE RANGES
+--- ACTIVE RANGES
 
 MenuActiveRangesTop = MENU_COALITION:New(coalition.side.BLUE, "Active Ranges")
 
@@ -795,20 +801,24 @@ BfmAddMenu()
 -- @type BVRGCI
 -- @field #table Menu root BVRGCI F10 menu
 -- @field #table SubMenu BVRGCI submenus
--- @field #string ZoneBvr ME Zone object for BVRGCI area boundary
--- @field #string ZoneBvrSpawn ME Zone object for adversary spawn point
--- @field #string ZoneBvrWp1 ME Zone object for adversary spawn waypoint 1
 -- @field #number headingDefault Default heading for adversary spawns
 -- @field #boolean Destroy When set to true, spawned adversary groups will be removed
 BVRGCI = {
   Menu            = {},
   SubMenu         = {},
-  ZoneBvr         = ZONE:FindByName("ZONE_BVR"),
-  ZoneBvrSpawn    = ZONE:FindByName("ZONE_BVR_SPAWN"),
-  ZoneBvrWp1      = ZONE:FindByName("ZONE_BVR_WP1"),
   headingDefault  = 150,
   Destroy         = false,
- }
+}
+ 
+--- ME Zone object for BVRGCI area boundary
+-- @field #string ZoneBvr 
+BVRGCI.ZoneBvr = ZONE:FindByName("ZONE_BVR")
+--- ME Zone object for adversary spawn point
+-- @field #string ZoneBvrSpawn 
+BVRGCI.ZoneBvrSpawn = ZONE:FindByName("ZONE_BVR_SPAWN")
+--- ME Zone object for adversary spawn waypoint 1
+-- @field #string ZoneBvrWp1 
+BVRGCI.ZoneBvrWp1 = ZONE:FindByName("ZONE_BVR_WP1")
 
 --- Sizes of adversary groups
 -- @type BVRGCI.Size
@@ -825,9 +835,9 @@ BVRGCI.Size = {
 -- @field #number Medium Altitude, in metres, for Medium Level spawns.
 -- @field #number Low Altitude, in metres, for Low Level spawns.
 BVRGCI.Altitude = {
-  High = 9144, -- 30,000ft
-  Medium = 6096, -- 20,000ft
-  Low = 3048, -- 10,000ft
+  High    = 9144, -- 30,000ft
+  Medium  = 6096, -- 20,000ft
+  Low     = 3048, -- 10,000ft
 }
     
 --- Adversary types
@@ -872,19 +882,19 @@ function BVRGCI.SpawnType(typeName, typeSpawnTemplate, Qty, Altitude, Formation)
         SpawnGroup:SetOption(AI.Option.Air.id.FORMATION, Formation)
         -- add scheduled funtion, 5 sec interval
         local CheckAdversary = SCHEDULER:New( SpawnGroup, 
-        function (CheckAdversary)
-          if SpawnGroup then
-            -- remove adversary group if it has left the BVR/GCI zone, or the remove all adversaries menu option has been selected
-            if (SpawnGroup:IsNotInZone(BVRGCI.ZoneBvr) or (BVRGCI.Destroy)) then 
-              local groupName = SpawnGroup.GroupName
-              local msgDestroy = "BVR adversary group " .. groupName .. " removed."
-              local msgLeftZone = "BVR adversary group " .. groupName .. " left zone and was removed."
-              SpawnGroup:Destroy()
-              SpawnGroup = nil
-              MESSAGE:New(BVRGCI.Destroy and msgDestroy or msgLeftZone):ToAll()
+          function (CheckAdversary)
+            if SpawnGroup then
+              -- remove adversary group if it has left the BVR/GCI zone, or the remove all adversaries menu option has been selected
+              if (SpawnGroup:IsNotInZone(BVRGCI.ZoneBvr) or (BVRGCI.Destroy)) then 
+                local groupName = SpawnGroup.GroupName
+                local msgDestroy = "BVR adversary group " .. groupName .. " removed."
+                local msgLeftZone = "BVR adversary group " .. groupName .. " left zone and was removed."
+                SpawnGroup:Destroy()
+                SpawnGroup = nil
+                MESSAGE:New(BVRGCI.Destroy and msgDestroy or msgLeftZone):ToAll()
+              end
             end
-          end
-        end,
+          end,
         {}, 0, 5 )
       end,
       Formation, typeName
