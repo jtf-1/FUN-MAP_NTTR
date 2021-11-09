@@ -29,7 +29,8 @@ local SetClient = SET_CLIENT:New():FilterStart()
 local devFlag = 8888
 -- If missionflag is true, mission file will load from filesystem with an assert
 devState = trigger.misc.getUserFlag(devFlag)
-if devState then
+
+if devState ~= 0 then
   env.warning('*** JTF-1 - DEV flag is ON! ***')
   MESSAGE:New("Dev Mode is ON!"):ToAll()
 else
@@ -559,10 +560,15 @@ SetInitActiveRangeGroups:ForEachGroup(initActiveRange)
 
 -- R62 T6208 MOVING TARGETS
 
+function rangeMovingTarget(targetId)
+	spawnMovingTarget = SPAWN:New( targetId )
+	spawnMovingTarget:Spawn()
+end
+
 MenuT6208 = MENU_COALITION:New( coalition.side.BLUE, "Target 62-08" )
-MenuT6208_1 = MENU_COALITION_COMMAND:New( coalition.side.BLUE, "TGT 6208: Activate  4x4 (46 mph)", MenuT6208, function() trigger.action.setUserFlag(62081, 1) end) 
-MenuT6208_2 = MENU_COALITION_COMMAND:New( coalition.side.BLUE, "TGT 6208: Activate  Truck (23 mph)", MenuT6208, function() trigger.action.setUserFlag(62082, 1) end) 
-MenuT6208_3 = MENU_COALITION_COMMAND:New( coalition.side.BLUE, "TGT 6208: Activate  T-55 (11 mph)", MenuT6208, function() trigger.action.setUserFlag(62083, 1) end) 
+MenuT6208_1 = MENU_COALITION_COMMAND:New( coalition.side.BLUE, "TGT 6208: Activate  4x4 (46 mph)", MenuT6208, rangeMovingTarget, "Vehicle6208-1") 
+MenuT6208_2 = MENU_COALITION_COMMAND:New( coalition.side.BLUE, "TGT 6208: Activate  Truck (23 mph)", MenuT6208, rangeMovingTarget, "Vehicle6208-2") 
+MenuT6208_3 = MENU_COALITION_COMMAND:New( coalition.side.BLUE, "TGT 6208: Activate  T-55 (11 mph)", MenuT6208, rangeMovingTarget, "Vehicle6208-3") 
 
 -- END R62 T6208
 

@@ -29,7 +29,9 @@ local SetClient = SET_CLIENT:New():FilterStart()
 local devFlag = 8888
 -- If missionflag is true, mission file will load from filesystem with an assert
 devState = trigger.misc.getUserFlag(devFlag)
-if devState then
+env.info('Dev flag = ' .. devState)
+
+if devState ~= 0 then
   env.warning('*** JTF-1 - DEV flag is ON! ***')
   MESSAGE:New("Dev Mode is ON!"):ToAll()
 else
@@ -191,63 +193,63 @@ end
 -- define table of respawning support aircraft ---
 TableSpawnSupport = { -- {spawnobjectname, spawnzone, callsignName, callsignNumber}
   {
-    spawnobject = "AR230V_KC-135_01", 
-    spawnzone = ZONE:New("AR230V"), 
-    callsignName = 2, 
-    callsignNumber = 1
+    spawnobject     = "AR230V_KC-135_01", 
+    spawnzone       = ZONE:New("AR230V"), 
+    callsignName    = 2, 
+    callsignNumber  = 1
    },
   {
-    spawnobject = "AR230V_KC-130_01", 
-    spawnzone = ZONE:New("AR230V"), 
-    callsignName = 2, 
-    callsignNumber = 3
+    spawnobject     = "AR230V_KC-130_01", 
+    spawnzone       = ZONE:New("AR230V"), 
+    callsignName    = 2, 
+    callsignNumber  = 3
   },
-    {spawnobject = "AR231V_KC-135_01", 
-    spawnzone = ZONE:New("AR231V"), 
-    callsignName = 2, 
-    callSignNumber = 2
+    {spawnobject    = "AR231V_KC-135_01", 
+    spawnzone       = ZONE:New("AR231V"), 
+    callsignName    = 2, 
+    callSignNumber  = 2
   },
   {
-    spawnobject = "AR635_KC-135_01", 
-    spawnzone = ZONE:New("AR635"), 
-    callsignName = 1, 
-    callsignNumber = 2
+    spawnobject     = "AR635_KC-135_01", 
+    spawnzone       = ZONE:New("AR635"), 
+    callsignName    = 1, 
+    callsignNumber  = 2
   },
 --  {
---    spawnobject = "AR625_KC-135_01", 
---    spawnzone = ZONE:New("AR625"), 
---    callsignName = 1, 
---    callsignNumber = 3
+--    spawnobject     = "AR625_KC-135_01", 
+--    spawnzone       = ZONE:New("AR625"), 
+--    callsignName    = 1, 
+--    callsignNumber  = 3
 --  },
   {
-    spawnobject = "AR641A_KC-135_01", 
-    spawnzone = ZONE:New("AR641A"), 
-    callsignName = 1, 
-    callsignNumber = 1
+    spawnobject     = "AR641A_KC-135_01", 
+    spawnzone       = ZONE:New("AR641A"), 
+    callsignName    = 1, 
+    callsignNumber  = 1
   },
   {
-    spawnobject = "AR635_KC-135MPRS_01", 
-    spawnzone = ZONE:New("AR635"), 
-    callsignName = 3, 
-    callsignNumber = 2
+    spawnobject     = "AR635_KC-135MPRS_01", 
+    spawnzone       = ZONE:New("AR635"), 
+    callsignName    = 3, 
+    callsignNumber  = 2
   },
 --  {
---    spawnobject = "AR625_KC-135MPRS_01", 
---    spawnzone = ZONE:New("AR625"), 
---    callsignName = 3, 
---    callsignNumber = 3
+--    spawnobject     = "AR625_KC-135MPRS_01", 
+--    spawnzone       = ZONE:New("AR625"), 
+--    callsignName    = 3, 
+--    callsignNumber  = 3
 --  },
   {
-    spawnobject = "AR641A_KC-135MPRS_01", 
-    spawnzone = ZONE:New("AR641A"), 
-    callsignName = 3, 
-    callsignNumber = 1
+    spawnobject     = "AR641A_KC-135MPRS_01", 
+    spawnzone       = ZONE:New("AR641A"), 
+    callsignName    = 3, 
+    callsignNumber  = 1
   },
   {
-    spawnobject = "AWACS_DARKSTAR", 
-    spawnzone = ZONE:New("AWACS"), 
-    callsignName = 5, 
-    callsignNumber = 1
+    spawnobject     = "AWACS_DARKSTAR", 
+    spawnzone       = ZONE:New("AWACS"), 
+    callsignName    = 5, 
+    callsignNumber  = 1
   },
 }
 
@@ -287,21 +289,12 @@ end
 --- BEGIN RANGE SECTION
 -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
--- R62 T6208 MOVING TARGETS
-
-MenuT6208 = MENU_COALITION:New( coalition.side.BLUE, "Target 62-08" )
-MenuT6208_1 = MENU_COALITION_COMMAND:New( coalition.side.BLUE, "TGT 6208: Activate  4x4 (46 mph)", MenuT6208, function() trigger.action.setUserFlag(62081, 1) end) 
-MenuT6208_2 = MENU_COALITION_COMMAND:New( coalition.side.BLUE, "TGT 6208: Activate  Truck (23 mph)", MenuT6208, function() trigger.action.setUserFlag(62082, 1) end) 
-MenuT6208_3 = MENU_COALITION_COMMAND:New( coalition.side.BLUE, "TGT 6208: Activate  T-55 (11 mph)", MenuT6208, function() trigger.action.setUserFlag(62083, 1) end) 
-
--- END R62 T6208
-
 --- STATIC RANGES
 
 -- @field #STATICRANGES
-local RANGESNTTR = {}
+local STATICRANGES = {}
 
-RANGESNTTR.Defaults = {
+STATICRANGES.Defaults = {
   strafeMaxAlt             = 1530, -- [5000ft] in metres. Height of strafe box.
   strafeBoxLength          = 3000, -- [10000ft] in metres. Length of strafe box.
   strafeBoxWidth           = 300, -- [1000ft] in metres. Width of Strafe pit box (from 1st listed lane).
@@ -311,11 +304,11 @@ RANGESNTTR.Defaults = {
 }
 
 -- Range targets table
-RANGESNTTR.RangeStatic = {
+STATICRANGES.Ranges = {
   { --R61
-    rangeId = "R61",
-    rangeName = "Range 61",
-    rangeZone = "R61",
+    rangeId               = "R61",
+    rangeName             = "Range 61",
+    rangeZone             = "R61",
     rangeControlFrequency = 341.925,
     groups = {
       "61-01", "61-03",
@@ -327,9 +320,9 @@ RANGESNTTR.RangeStatic = {
     },
   },--R61 END
   { --R62A
-    rangeId = "R62A",
-    rangeName = "Range 62A",
-    rangeZone = "R62A",
+    rangeId               = "R62A",
+    rangeName             = "Range 62A",
+    rangeZone             = "R62A",
     rangeControlFrequency = 234.250,
     groups = {
       "62-01", "62-02", "62-04",
@@ -340,9 +333,9 @@ RANGESNTTR.RangeStatic = {
     },
   },--R62A END
   { --R62B
-    rangeId = "R62B",
-    rangeName = "Range 62B",
-    rangeZone = "R62B",
+    rangeId               = "R62B",
+    rangeName             = "Range 62B",
+    rangeZone             = "R62B",
     rangeControlFrequency = 234.250,
     groups = {
       "62-03", "62-08", "62-09", "62-11", 
@@ -363,9 +356,9 @@ RANGESNTTR.RangeStatic = {
     },
   },--R62B END
   { --R63
-    rangeId = "R63",
-    rangeName = "Range 63",
-    rangeZone = "R63",
+    rangeId               = "R63",
+    rangeName             = "Range 63",
+    rangeZone             = "R63",
     rangeControlFrequency = 361.6,
     groups = {
       "63-01", "63-02", "63-03", "63-05", 
@@ -389,9 +382,9 @@ RANGESNTTR.RangeStatic = {
     },
   },--R63 END
   { --R64
-    rangeId = "R64",
-    rangeName = "Range 64",
-    rangeZone = "R64",
+    rangeId               = "R64",
+    rangeName             = "Range 64",
+    rangeZone             = "R64",
     rangeControlFrequency = 341.925,
     groups = {
       "64-10", "64-11", "64-13", "64-14", 
@@ -416,9 +409,9 @@ RANGESNTTR.RangeStatic = {
     },
   },--R64 END
   { --R65
-    rangeId = "R65",
-    rangeName = "Range 65",
-    rangeZone = "R65",
+    rangeId               = "R65",
+    rangeName             = "Range 65",
+    rangeZone             = "R65",
     rangeControlFrequency = 225.450,
     groups = {
       "65-01", "65-02", "65-03", "65-04", 
@@ -433,9 +426,9 @@ RANGESNTTR.RangeStatic = {
 }
 
 
-function RANGESNTTR:AddStaticRanges(TableRangeStatic)
+function STATICRANGES:AddStaticRanges(TableRanges)
 
-  for rangeIndex, rangeData in ipairs(TableRangeStatic) do
+  for rangeIndex, rangeData in ipairs(TableRanges) do
   
     local rangeObject = "Range_" .. rangeData.rangeId
     
@@ -469,7 +462,7 @@ function RANGESNTTR:AddStaticRanges(TableRangeStatic)
 end
 
 -- Create ranges
-RANGESNTTR:AddStaticRanges(RANGESNTTR.RangeStatic)
+STATICRANGES:AddStaticRanges(STATICRANGES.Ranges)
 
 
 --- ACTIVE RANGES
@@ -562,6 +555,25 @@ SetInitActiveRangeGroups:ForEachGroup(initActiveRange)
 
 --- END RANGES
 
+-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+--- BEGIN MOVING TARGETS
+-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+-- R62 T6208 MOVING TARGETS
+
+function rangeMovingTarget(targetId)
+	spawnMovingTarget = SPAWN:New( targetId )
+	spawnMovingTarget:Spawn()
+end
+
+MenuT6208 = MENU_COALITION:New( coalition.side.BLUE, "Target 62-08" )
+MenuT6208_1 = MENU_COALITION_COMMAND:New( coalition.side.BLUE, "TGT 6208: Activate  4x4 (46 mph)", MenuT6208, rangeMovingTarget, "Vehicle6208-1") 
+MenuT6208_2 = MENU_COALITION_COMMAND:New( coalition.side.BLUE, "TGT 6208: Activate  Truck (23 mph)", MenuT6208, rangeMovingTarget, "Vehicle6208-2") 
+MenuT6208_3 = MENU_COALITION_COMMAND:New( coalition.side.BLUE, "TGT 6208: Activate  T-55 (11 mph)", MenuT6208, rangeMovingTarget, "Vehicle6208-3") 
+
+-- END R62 T6208
+
+--- END MOVING TARGETS 
 
 -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 --- BEGIN ELECTRONIC COMBAT SIMULATOR RANGE
@@ -570,12 +582,12 @@ SetInitActiveRangeGroups:ForEachGroup(initActiveRange)
 menuEcsTop = MENU_COALITION:New(coalition.side.BLUE, "EC South")
 
 -- SAM spawn emplates
-templateEcs_Sa10 = "ECS_SA10"
-templateEcs_Sa2 = "ECS_SA2"
-templateEcs_Sa3 = "ECS_SA3"
-templateEcs_Sa6 = "ECS_SA6"
-templateEcs_Sa8 = "ECS_SA8"
-templateEcs_Sa15 = "ECS_SA15"
+templateEcs_Sa10  = "ECS_SA10"
+templateEcs_Sa2   = "ECS_SA2"
+templateEcs_Sa3   = "ECS_SA3"
+templateEcs_Sa6   = "ECS_SA6"
+templateEcs_Sa8   = "ECS_SA8"
+templateEcs_Sa15  = "ECS_SA15"
 -- Zone in which threat will be spawned
 zoneEcs7769 = ZONE:FindByName("ECS_ZONE_7769")
 
@@ -665,10 +677,10 @@ BfmAcm.Menu = {}
 --local SpawnBfm.groupName = nil
 
 -- BFM/ACM Zones
-BfmAcm.BoxZone = ZONE_POLYGON:New( "Polygon_Box", GROUP:FindByName("zone_box") )
+BfmAcm.BoxZone  = ZONE_POLYGON:New( "Polygon_Box", GROUP:FindByName("zone_box") )
 BfmAcm.ZoneMenu = ZONE_POLYGON:New( "Polygon_BFM_ACM", GROUP:FindByName("COYOTEABC") )
 BfmAcm.ExitZone = ZONE:FindByName("Zone_BfmAcmExit")
-BfmAcm.Zone = ZONE:FindByName("Zone_BfmAcmFox")
+BfmAcm.Zone     = ZONE:FindByName("Zone_BfmAcmFox")
 
 -- Spawn Objects
 AdvF4 = SPAWN:New( "ADV_F4" )   
