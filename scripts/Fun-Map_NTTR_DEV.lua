@@ -16,7 +16,7 @@ end
 local JtfAdmin = true 
 
 --- Name of client unit used for admin control
-local adminUnitName = "XX_ADMIN"
+local adminUnitName = "XX_ADMIN" -- string to locate within unit name for admin slots
 
 --- Dynamic list of all clients
 local SetClient = SET_CLIENT:New():FilterStart()
@@ -28,8 +28,7 @@ local SetClient = SET_CLIENT:New():FilterStart()
 -- mission flag for setting dev mode
 local devFlag = 8888
 -- If missionflag is true, mission file will load from filesystem with an assert
-devState = trigger.misc.getUserFlag(devFlag)
-env.info('Dev flag = ' .. devState)
+local devState = trigger.misc.getUserFlag(devFlag)
 
 if devState ~= 0 then
   env.warning('*** JTF-1 - DEV flag is ON! ***')
@@ -54,7 +53,7 @@ local setGroupGroundActive = SET_GROUP:New():FilterActive():FilterCategoryGround
 -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
 -- Create a new missile trainer object.
-MissileTrainer = {
+local MissileTrainer = {
   menuadded = {},
   MenuF10   = {},
 }
@@ -125,7 +124,7 @@ end
 --- BEGIN ADMIN MENU SECTION
 -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
-Admin = {
+local Admin = {
   flagLoadMission = 9999, -- mission flag for triggering reload/loading of missions
 }
 
@@ -152,7 +151,9 @@ function Admin.eventhandler:OnEventBirth(EventData)
   local unitName = EventData.IniUnitName
   local unit, playername = Admin:GetPlayerUnitAndName(unitName)
   if unit and playername then
-    SCHEDULER:New(nil, Admin.BuildAdminMenu, {Admin, unit, playername}, 0.1)
+	if string.find(adminUnitName, unitName) then
+		SCHEDULER:New(nil, Admin.BuildAdminMenu, {Admin, unit, playername}, 0.1)
+	end
   end
 end
 
@@ -191,7 +192,7 @@ end
 -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
 -- define table of respawning support aircraft ---
-TableSpawnSupport = { -- {spawnobjectname, spawnzone, callsignName, callsignNumber}
+local TableSpawnSupport = { -- {spawnobjectname, spawnzone, callsignName, callsignNumber}
   {
     spawnobject     = "AR230V_KC-135_01", 
     spawnzone       = ZONE:New("AR230V"), 
@@ -467,7 +468,7 @@ STATICRANGES:AddStaticRanges(STATICRANGES.Ranges)
 
 --- ACTIVE RANGES
 
-MenuActiveRangesTop = MENU_COALITION:New(coalition.side.BLUE, "Active Ranges")
+local MenuActiveRangesTop = MENU_COALITION:New(coalition.side.BLUE, "Active Ranges")
 
 function resetRangeTarget(rangeGroup, rangePrefix, rangeMenu, withSam, refreshRange)
 
@@ -534,7 +535,7 @@ end
 
 function initActiveRange(rangeTemplateGroup, refreshRange) -- initial menu build for active ranges
 
-  rangeTemplate = rangeTemplateGroup.GroupName
+  local rangeTemplate = rangeTemplateGroup.GroupName
   local activeRange = SPAWN:New(rangeTemplate)
     activeRange:OnSpawnGroup(
     function (spawnGroup)
@@ -566,10 +567,10 @@ function rangeMovingTarget(targetId)
 	spawnMovingTarget:Spawn()
 end
 
-MenuT6208 = MENU_COALITION:New( coalition.side.BLUE, "Target 62-08" )
-MenuT6208_1 = MENU_COALITION_COMMAND:New( coalition.side.BLUE, "TGT 6208: Activate  4x4 (46 mph)", MenuT6208, rangeMovingTarget, "Vehicle6208-1") 
-MenuT6208_2 = MENU_COALITION_COMMAND:New( coalition.side.BLUE, "TGT 6208: Activate  Truck (23 mph)", MenuT6208, rangeMovingTarget, "Vehicle6208-2") 
-MenuT6208_3 = MENU_COALITION_COMMAND:New( coalition.side.BLUE, "TGT 6208: Activate  T-55 (11 mph)", MenuT6208, rangeMovingTarget, "Vehicle6208-3") 
+local MenuT6208 = MENU_COALITION:New( coalition.side.BLUE, "Target 62-08" )
+local MenuT6208_1 = MENU_COALITION_COMMAND:New( coalition.side.BLUE, "TGT 6208: Activate  4x4 (46 mph)", MenuT6208, rangeMovingTarget, "Vehicle6208-1") 
+local MenuT6208_2 = MENU_COALITION_COMMAND:New( coalition.side.BLUE, "TGT 6208: Activate  Truck (23 mph)", MenuT6208, rangeMovingTarget, "Vehicle6208-2") 
+local MenuT6208_3 = MENU_COALITION_COMMAND:New( coalition.side.BLUE, "TGT 6208: Activate  T-55 (11 mph)", MenuT6208, rangeMovingTarget, "Vehicle6208-3") 
 
 -- END R62 T6208
 
@@ -579,7 +580,7 @@ MenuT6208_3 = MENU_COALITION_COMMAND:New( coalition.side.BLUE, "TGT 6208: Activa
 --- BEGIN ELECTRONIC COMBAT SIMULATOR RANGE
 -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
-menuEcsTop = MENU_COALITION:New(coalition.side.BLUE, "EC South")
+local menuEcsTop = MENU_COALITION:New(coalition.side.BLUE, "EC South")
 
 -- SAM spawn emplates
 templateEcs_Sa10  = "ECS_SA10"
@@ -591,7 +592,7 @@ templateEcs_Sa15  = "ECS_SA15"
 -- Zone in which threat will be spawned
 zoneEcs7769 = ZONE:FindByName("ECS_ZONE_7769")
 
-ECS = {}
+local ECS = {}
 ECS.ActiveSite = {}
 ECS.rIADS = nil
 
@@ -671,7 +672,7 @@ addEcsThreatMenu()
 --- BEGIN ACM/BFM SECTION
 -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
-BfmAcm = {}
+local BfmAcm = {}
 BfmAcm.Menu = {}
 
 --local SpawnBfm.groupName = nil
@@ -750,7 +751,7 @@ end
 
 -- SPAWN AIR MENU
 
-local function BfmAddMenu()
+function BfmAddMenu()
 
   local devMenuBfm = false -- if true, BFM menu available outside BFM zone
 
@@ -815,7 +816,7 @@ BfmAddMenu()
 -- @field #table SubMenu BVRGCI submenus
 -- @field #number headingDefault Default heading for adversary spawns
 -- @field #boolean Destroy When set to true, spawned adversary groups will be removed
-BVRGCI = {
+local BVRGCI = {
   Menu            = {},
   SubMenu         = {},
   Spawn           = {},
