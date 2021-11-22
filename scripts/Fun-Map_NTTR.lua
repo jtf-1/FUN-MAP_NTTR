@@ -158,10 +158,11 @@ function Admin.eventhandler:OnEventBirth(EventData)
 end
 
 --- Set mission flag to load a new mission.
---- 1 = PG Day.
---- 2 = PG Night.
---- 3 = PG Weather.
---- 4 = PG Weather + Night.
+--- 1 = NTTR Day.
+--- 2 = NTTR Day IFR.
+--- 3 = NTTR Night.
+--- 4 = NTTR Day Weather.
+--- 5 = NTTR Night No Moon.
 -- @param #string playerName Name of client calling restart command
 -- @param #number mapFlagValue Mission number to which flag should be set
 function Admin:LoadMission(playerName, mapFlagValue)
@@ -968,7 +969,8 @@ end
 
 --- Add BVR/GCI MENU Level.
 -- @param #number Altitude Altitude, in metres, at which to adversary group should spawn
--- @param #string MenuName
+-- @param #string MenuName Text for this item's menu name
+-- 
 function BVRGCI.BuildMenuLevel(Altitude, MenuName, MenuText, ParentMenu)
   BVRGCI.SubMenu[MenuName] = MENU_COALITION:New(coalition.side.BLUE, MenuText, ParentMenu)
   BVRGCI.Spawn.Level = Altitude
@@ -984,6 +986,9 @@ function BVRGCI.BuildMenuLevel(Altitude, MenuName, MenuText, ParentMenu)
 end
 
 --- Add BVR/GCI MENU Group Size.
+-- @param #number Qty Quantity of aircraft in enemy flight.
+-- @param #string MenuName Text for this item's menu name
+-- @param #object ParentMenu to which this menu item belongs 
 function BVRGCI.BuildMenuQty(Qty, MenuName, ParentMenu)
   MenuText = MenuName
   BVRGCI.SubMenu[MenuName] = MENU_COALITION:New(coalition.side.BLUE, MenuText, ParentMenu)
