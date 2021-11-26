@@ -151,9 +151,9 @@ function Admin.eventhandler:OnEventBirth(EventData)
   local unitName = EventData.IniUnitName
   local unit, playername = Admin:GetPlayerUnitAndName(unitName)
   if unit and playername then
-	if string.find(adminUnitName, unitName) then
-		SCHEDULER:New(nil, Admin.BuildAdminMenu, {Admin, unit, playername}, 0.1)
-	end
+  if string.find(adminUnitName, unitName) then
+    SCHEDULER:New(nil, Admin.BuildAdminMenu, {Admin, unit, playername}, 0.1)
+  end
   end
 end
 
@@ -564,8 +564,8 @@ SetInitActiveRangeGroups:ForEachGroup(initActiveRange)
 -- R62 T6208 MOVING TARGETS
 
 function rangeMovingTarget(targetId)
-	spawnMovingTarget = SPAWN:New( targetId )
-	spawnMovingTarget:Spawn()
+  spawnMovingTarget = SPAWN:New( targetId )
+  spawnMovingTarget:Spawn()
 end
 
 local MenuT6208 = MENU_COALITION:New( coalition.side.BLUE, "Target 62-08" )
@@ -580,6 +580,9 @@ local MenuT6208_3 = MENU_COALITION_COMMAND:New( coalition.side.BLUE, "TGT 6208: 
 -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 --- BEGIN ELECTRONIC COMBAT SIMULATOR RANGE
 -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+--- IADS
+-- REQUIRES MIST
 
 local menuEcsTop = MENU_COALITION:New(coalition.side.BLUE, "EC South")
 
