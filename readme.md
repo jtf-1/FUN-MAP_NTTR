@@ -113,9 +113,12 @@ R74C
 - 74-01, 74-06, 74-25, 74-26, 74-27, 74-29, 74-30, 74-36, 74-39
 
 R75W
-- 75-16
+- 75-16, 75-20
 
-Two activation options are available for each Active Target; Activate or Active with SAM. Activated targets will engage with firearms, AAA. If the SAM option is selected, SAM and MANPAD assets at or IVO the target will also engage.
+R76
+- 76-10, 76-20
+
+Two activation options are available for each Active Target that also has a separate SAM defence; Activate or Active with SAM. Activated targets will engage with firearms, AAA. If the SAM option is selected, SAM and MANPAD assets at or IVO the target will also engage. Dedicated SAM targets will become active when the Activate option is selected.
 
 ELECTRONIC COMBAT SIMULATION RANGE
 ==================================

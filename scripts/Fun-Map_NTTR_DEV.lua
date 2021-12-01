@@ -505,7 +505,7 @@ function activateRangeTarget(rangeGroup, rangePrefix, rangeMenu, withSam, refres
   if withSam then
     local samTemplate = "SAM_" .. rangePrefix
     local activateSam = SPAWN:New(samTemplate)
-     activateSam:OnSpawnGroup(
+    activateSam:OnSpawnGroup(
       function (spawnGroup)
         MENU_COALITION_COMMAND:New(coalition.side.BLUE, deactivateText , _G["rangeMenu_" .. rangePrefix], resetRangeTarget, rangeGroup, rangePrefix, _G["rangeMenu_" .. rangePrefix], spawnGroup, false)
         MENU_COALITION_COMMAND:New(coalition.side.BLUE, refreshText .. " with SAM" , _G["rangeMenu_" .. rangePrefix], resetRangeTarget, rangeGroup, rangePrefix, _G["rangeMenu_" .. rangePrefix], spawnGroup, true)
@@ -515,7 +515,11 @@ function activateRangeTarget(rangeGroup, rangePrefix, rangeMenu, withSam, refres
     :Spawn()
   else
     MENU_COALITION_COMMAND:New(coalition.side.BLUE, deactivateText , _G["rangeMenu_" .. rangePrefix], resetRangeTarget, rangeGroup, rangePrefix, _G["rangeMenu_" .. rangePrefix], withSam, false)
-    MENU_COALITION_COMMAND:New(coalition.side.BLUE, refreshText .. " NO SAM" , _G["rangeMenu_" .. rangePrefix], resetRangeTarget, rangeGroup, rangePrefix, _G["rangeMenu_" .. rangePrefix], withSam, true)
+    if GROUP:FindByName(samTemplate) ~= nil then
+      MENU_COALITION_COMMAND:New(coalition.side.BLUE, refreshText .. " NO SAM" , _G["rangeMenu_" .. rangePrefix], resetRangeTarget, rangeGroup, rangePrefix, _G["rangeMenu_" .. rangePrefix], withSam, true)
+    else
+      MENU_COALITION_COMMAND:New(coalition.side.BLUE, refreshText , _G["rangeMenu_" .. rangePrefix], resetRangeTarget, rangeGroup, rangePrefix, _G["rangeMenu_" .. rangePrefix], withSam, true)
+    end
     MESSAGE:New("Target " .. rangePrefix .. " is active."):ToAll()
   end
   
@@ -528,8 +532,11 @@ function addActiveRangeMenu(rangeGroup, rangePrefix)
     _G["rangeMenuSub_" .. rangeIdent] = MENU_COALITION:New(coalition.side.BLUE, "R" .. rangeIdent, MenuActiveRangesTop)
   end
   _G["rangeMenu_" .. rangePrefix] = MENU_COALITION:New(coalition.side.BLUE, rangePrefix, _G["rangeMenuSub_" .. rangeIdent])
-  MENU_COALITION_COMMAND:New(coalition.side.BLUE, "Activate " .. rangePrefix .. " NO SAM", _G["rangeMenu_" .. rangePrefix], activateRangeTarget, rangeGroup, rangePrefix, _G["rangeMenu_" .. rangePrefix], false )
-  MENU_COALITION_COMMAND:New(coalition.side.BLUE, "Activate " .. rangePrefix .. " with SAM" , _G["rangeMenu_" .. rangePrefix], activateRangeTarget, rangeGroup, rangePrefix, _G["rangeMenu_" .. rangePrefix], true )
+  MENU_COALITION_COMMAND:New(coalition.side.BLUE, "Activate " .. rangePrefix, _G["rangeMenu_" .. rangePrefix], activateRangeTarget, rangeGroup, rangePrefix, _G["rangeMenu_" .. rangePrefix], false )
+  local samTemplate = "SAM_" .. rangePrefix
+  if GROUP:FindByName(samTemplate) ~= nil then
+    MENU_COALITION_COMMAND:New(coalition.side.BLUE, "Activate " .. rangePrefix .. " with SAM" , _G["rangeMenu_" .. rangePrefix], activateRangeTarget, rangeGroup, rangePrefix, _G["rangeMenu_" .. rangePrefix], true )
+  end
   return _G["rangeMenu_" .. rangePrefix]
   
 end
@@ -542,6 +549,9 @@ function initActiveRange(rangeTemplateGroup, refreshRange) -- initial menu build
     function (spawnGroup)
       local rangeName = spawnGroup.GroupName
       local rangePrefix = string.sub(rangeName, 8, 12) 
+      if refreshRange ~= true then -- turn off AI if initial spawn or if master target is SAM
+        spawnGroup:SetAIOff()
+      end
       if refreshRange == nil then
         addActiveRangeMenu(spawnGroup, rangePrefix)
       end
