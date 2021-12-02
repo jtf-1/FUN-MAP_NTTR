@@ -15,11 +15,18 @@ end
 --- activate admin menu option in admin slots if true
 local JtfAdmin = true 
 
+-- mission flag for triggering reload/loading of missions
+local flagLoadMission = 9999
+
 --- Name of client unit used for admin control
-local adminUnitName = "XX_ADMIN" -- string to locate within unit name for admin slots
+local adminUnitName = "XX_" -- string to locate within unit name for admin slots
 
 --- Dynamic list of all clients
 local SetClient = SET_CLIENT:New():FilterStart()
+
+-- flag value to trigger reloading of DEV mission
+local devMission = 99
+
 
 -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 --- Check for Static or Dynamic mission file loading flag
@@ -27,12 +34,20 @@ local SetClient = SET_CLIENT:New():FilterStart()
 
 -- mission flag for setting dev mode
 local devFlag = 8888
+
 -- If missionflag is true, mission file will load from filesystem with an assert
 local devState = trigger.misc.getUserFlag(devFlag)
 
 if devState ~= 0 then
   env.warning('*** JTF-1 - DEV flag is ON! ***')
   MESSAGE:New("Dev Mode is ON!"):ToAll()
+  
+  function restartDev(flagLoadMission, mapFlagValue)
+    trigger.action.setUserFlag(flagLoadMission, mapFlagValue)    
+  end
+
+  MENU_MISSION_COMMAND:New("Reload DEV Mission",nil,restartDev,flagLoadMission,99)
+  
 else
   env.info('*** JTF-1 - DEV flag is OFF. ***')
 end
@@ -47,6 +62,77 @@ local setGroupGroundActive = SET_GROUP:New():FilterActive():FilterCategoryGround
       activeGroup:SetAIOff()
     end
   )
+
+
+-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+--- BEGIN ADMIN MENU SECTION
+-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+local Admin = {
+  --flagLoadMission = 9999, -- mission flag for triggering reload/loading of missions
+}
+
+Admin.eventhandler = EVENTHANDLER:New()
+Admin.eventhandler:HandleEvent(EVENTS.Birth)
+
+function Admin:GetPlayerUnitAndName(unitName)
+  if unitName ~= nil then
+    -- Get DCS unit from its name.
+    local DCSunit = Unit.getByName(unitName)
+    if DCSunit then
+      local playername=DCSunit:getPlayerName()
+      local unit = UNIT:Find(DCSunit)
+      if DCSunit and unit and playername then
+        return unit, playername
+      end
+    end
+  end
+  -- Return nil if we could not find a player.
+  return nil,nil
+end
+
+function Admin.eventhandler:OnEventBirth(EventData)
+  local unitName = EventData.IniUnitName
+  local unit, playername = Admin:GetPlayerUnitAndName(unitName)
+  if unit and playername then
+  local adminCheck = (string.find(unitName, adminUnitName) and "true" or "false")
+  if string.find(unitName, adminUnitName) then
+    SCHEDULER:New(nil, Admin.BuildAdminMenu, {Admin, unit, playername}, 0.1)
+  end
+  end
+end
+
+--- Set mission flag to load a new mission.
+--- 1 = NTTR Day.
+--- 2 = NTTR Day IFR.
+--- 3 = NTTR Night.
+--- 4 = NTTR Day Weather.
+--- 5 = NTTR Night No Moon.
+-- @param #string playerName Name of client calling restart command
+-- @param #number mapFlagValue Mission number to which flag should be set
+function Admin:LoadMission(playerName, mapFlagValue)
+  if adminClientName then
+    env.info("ADMIN Restart player name: " .. playerName)
+  end
+  trigger.action.setUserFlag(flagLoadMission, mapFlagValue) 
+end
+
+--- Add admin menu and commands if client is in an ADMIN spawn
+-- @param #object unit Unit of player.
+-- @param #string playername Name of player
+function Admin:BuildAdminMenu(unit,playername)
+  local adminGroup = unit:GetGroup()
+  local adminGroupName = adminGroup:GetName()
+  local adminMenu = MENU_GROUP:New(adminGroup, "Admin")
+  MENU_GROUP_COMMAND:New(adminGroup, "Load DAY NTTR", adminMenu, self.LoadMission, self, playername, 1 )
+  MENU_GROUP_COMMAND:New(adminGroup, "Load DAY NTTR - IFR", adminMenu, self.LoadMission, self, playername, 2 )
+  MENU_GROUP_COMMAND:New(adminGroup, "Load NIGHT NTTR", adminMenu, self.LoadMission, self, playername, 3 )
+  MENU_GROUP_COMMAND:New(adminGroup, "Load NIGHT NTTR - Weather", adminMenu, self.LoadMission, self, playername, 4 )
+  MENU_GROUP_COMMAND:New(adminGroup, "Load NIGHT NTTR - No Moon", adminMenu, self.LoadMission, self, playername, 5 )
+end
+
+--- END ADMIN MENU SECTION
+
 
 -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 --- BEGIN MISSILE TRAINER
@@ -105,7 +191,7 @@ function MissileTrainer:ToggleMissileTrainer(unitName)
   self.fox:_ToggleDestroyMissiles(unitName)
 end
 
---- Add Missile Trainer F10 root menu
+--- Add Missile Trainer F10 root menu.
 -- @param #MissileTrainer self
 -- @param #wrapper.Unit unit Unit object occupied by client
 -- @param #string unitName Name of unit occupied by client
@@ -120,73 +206,7 @@ end
 
 --- END MISSILE TRAINER
 
--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
---- BEGIN ADMIN MENU SECTION
--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
-local Admin = {
-  flagLoadMission = 9999, -- mission flag for triggering reload/loading of missions
-}
-
-Admin.eventhandler = EVENTHANDLER:New()
-Admin.eventhandler:HandleEvent(EVENTS.Birth)
-
-function Admin:GetPlayerUnitAndName(unitName)
-  if unitName ~= nil then
-    -- Get DCS unit from its name.
-    local DCSunit = Unit.getByName(unitName)
-    if DCSunit then
-      local playername=DCSunit:getPlayerName()
-      local unit = UNIT:Find(DCSunit)
-      if DCSunit and unit and playername then
-        return unit, playername
-      end
-    end
-  end
-  -- Return nil if we could not find a player.
-  return nil,nil
-end
-
-function Admin.eventhandler:OnEventBirth(EventData)
-  local unitName = EventData.IniUnitName
-  local unit, playername = Admin:GetPlayerUnitAndName(unitName)
-  if unit and playername then
-  if string.find(adminUnitName, unitName) then
-    SCHEDULER:New(nil, Admin.BuildAdminMenu, {Admin, unit, playername}, 0.1)
-  end
-  end
-end
-
---- Set mission flag to load a new mission.
---- 1 = NTTR Day.
---- 2 = NTTR Day IFR.
---- 3 = NTTR Night.
---- 4 = NTTR Day Weather.
---- 5 = NTTR Night No Moon.
--- @param #string playerName Name of client calling restart command
--- @param #number mapFlagValue Mission number to which flag should be set
-function Admin:LoadMission(playerName, mapFlagValue)
-  if adminClientName then
-    env.info("ADMIN Restart player name: " .. playerName)
-  end
-  trigger.action.setUserFlag(self.flagLoadMission, mapFlagValue) 
-end
-
---- Add admin menu and commands if client is in an ADMIN spawn
--- @param #object unit Unit of player.
--- @param #string playername Name of player
-function Admin:BuildAdminMenu(unit,playername)
-  local adminGroup = unit:GetGroup()
-  local adminGroupName = adminGroup:GetName()
-  local adminMenu = MENU_GROUP:New(adminGroup, "Admin")
-  MENU_GROUP_COMMAND:New(adminGroup, "Load DAY NTTR", adminMenu, self.LoadMission, self, playername, 1 )
-  MENU_GROUP_COMMAND:New(adminGroup, "Load DAY NTTR - IFR", adminMenu, self.LoadMission, self, playername, 2 )
-  MENU_GROUP_COMMAND:New(adminGroup, "Load NIGHT NTTR", adminMenu, self.LoadMission, self, playername, 3 )
-  MENU_GROUP_COMMAND:New(adminGroup, "Load NIGHT NTTR - Weather", adminMenu, self.LoadMission, self, playername, 4 )
-  MENU_GROUP_COMMAND:New(adminGroup, "Load NIGHT NTTR - No Moon", adminMenu, self.LoadMission, self, playername, 5 )
-end
-
---- END ADMIN MENU SECTION
 
 -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 --- BEGIN SUPPORT AIRCRAFT SECTION
@@ -468,9 +488,20 @@ STATICRANGES:AddStaticRanges(STATICRANGES.Ranges)
 
 
 --- ACTIVE RANGES
+local ACTIVERANGES = {
+  menu = {}
+}
 
-local MenuActiveRangesTop = MENU_COALITION:New(coalition.side.BLUE, "Active Ranges")
 
+ACTIVERANGES.menu.menuTop = MENU_COALITION:New(coalition.side.BLUE, "Active Ranges")
+
+--- Deactivate or refresh target group and associated SAM
+-- @function resetRangeTarget
+-- @param #table rangeGroup Target GROUP object.
+-- @param #string rangePrefix Range nname prefix.
+-- @param #table rangeMenu Parent menu to which submenus should be added.
+-- @param #bool withSam Find and destroy associated SAM group.
+-- @param #bool refreshRange True if target is to be refreshed. False if it is to be deactivated. 
 function resetRangeTarget(rangeGroup, rangePrefix, rangeMenu, withSam, refreshRange)
 
   if rangeGroup:IsActive() then
@@ -478,92 +509,137 @@ function resetRangeTarget(rangeGroup, rangePrefix, rangeMenu, withSam, refreshRa
     if withSam then
       withSam:Destroy(false)
     end
-    if not refreshRange then
+    if refreshRange == false then
       rangeMenu:Remove()
-      initActiveRange(GROUP:FindByName("ACTIVE_" .. rangePrefix))
+      local reactivateRangeGroup = initActiveRange(GROUP:FindByName("ACTIVE_" .. rangePrefix), false )
+      reactivateRangeGroup:OptionROE(ENUMS.ROE.WeaponHold)
+      reactivateRangeGroup:OptionROTEvadeFire()
+      reactivateRangeGroup:OptionAlarmStateGreen()
       MESSAGE:New("Target " .. rangePrefix .. " has been deactivated."):ToAll()
     else
-      refreshRangeGroup = initActiveRange(GROUP:FindByName("ACTIVE_" .. rangePrefix), refreshRange)
-      activateRangeTarget(refreshRangeGroup, rangePrefix, rangeMenu, withSam, refreshRange)      
+      local refreshRangeGroup = initActiveRange(GROUP:FindByName("ACTIVE_" .. rangePrefix), true)
+      activateRangeTarget(refreshRangeGroup, rangePrefix, rangeMenu, withSam, true)      
     end
   end
   
 end
 
+--- Activate selected range target.
+-- @function activateRangeTarget
+-- @param #table rangeGroup Target GROUP object.
+-- @param #string rangePrefix Range name prefix.
+-- @param #table rangeMenu Menu that should be removed and/or to which sub-menus should be added
+-- @param #boolean withSam Spawn and activate associated SAM target
+-- @param #boolean refreshRange True if target is to being refreshed. False if it is being deactivated.
 function activateRangeTarget(rangeGroup, rangePrefix, rangeMenu, withSam, refreshRange)
 
   if refreshRange == nil then
     rangeMenu:Remove()
-    _G["rangeMenu_" .. rangePrefix] = MENU_COALITION:New(coalition.side.BLUE, "Reset " .. rangePrefix, MenuActiveRangesTop)
+    ACTIVERANGES.menu["rangeMenu_" .. rangePrefix] = MENU_COALITION:New(coalition.side.BLUE, "Reset " .. rangePrefix, ACTIVERANGES.menu.menuTop)
   end
-  rangeGroup:SetAIOn()
+  
   rangeGroup:OptionROE(ENUMS.ROE.WeaponFree)
   rangeGroup:OptionROTEvadeFire()
   rangeGroup:OptionAlarmStateRed()
+  rangeGroup:SetAIOnOff(true)
+  
   local deactivateText = "Deactivate " .. rangePrefix
   local refreshText = "Refresh " .. rangePrefix
+  
   if withSam then
     local samTemplate = "SAM_" .. rangePrefix
     local activateSam = SPAWN:New(samTemplate)
     activateSam:OnSpawnGroup(
       function (spawnGroup)
-        MENU_COALITION_COMMAND:New(coalition.side.BLUE, deactivateText , _G["rangeMenu_" .. rangePrefix], resetRangeTarget, rangeGroup, rangePrefix, _G["rangeMenu_" .. rangePrefix], spawnGroup, false)
-        MENU_COALITION_COMMAND:New(coalition.side.BLUE, refreshText .. " with SAM" , _G["rangeMenu_" .. rangePrefix], resetRangeTarget, rangeGroup, rangePrefix, _G["rangeMenu_" .. rangePrefix], spawnGroup, true)
+        MENU_COALITION_COMMAND:New(coalition.side.BLUE, deactivateText , ACTIVERANGES.menu["rangeMenu_" .. rangePrefix], resetRangeTarget, rangeGroup, rangePrefix, ACTIVERANGES.menu["rangeMenu_" .. rangePrefix], spawnGroup, false)
+        MENU_COALITION_COMMAND:New(coalition.side.BLUE, refreshText .. " with SAM" , ACTIVERANGES.menu["rangeMenu_" .. rangePrefix], resetRangeTarget, rangeGroup, rangePrefix, ACTIVERANGES.menu["rangeMenu_" .. rangePrefix], spawnGroup, true)
         MESSAGE:New("Target " .. rangePrefix .. " is active, with SAM."):ToAll()
-      end, rangeGroup, rangePrefix, rangeMenu, withSam, deactivateText, refreshText
+        spawnGroup:OptionROE(ENUMS.ROE.WeaponFree)
+        spawnGroup:OptionROTEvadeFire()
+        spawnGroup:OptionAlarmStateRed()
+      end
+      , rangeGroup, rangePrefix, rangeMenu, withSam, deactivateText, refreshText
     )
     :Spawn()
   else
-    MENU_COALITION_COMMAND:New(coalition.side.BLUE, deactivateText , _G["rangeMenu_" .. rangePrefix], resetRangeTarget, rangeGroup, rangePrefix, _G["rangeMenu_" .. rangePrefix], withSam, false)
+    MENU_COALITION_COMMAND:New(coalition.side.BLUE, deactivateText , ACTIVERANGES.menu["rangeMenu_" .. rangePrefix], resetRangeTarget, rangeGroup, rangePrefix, ACTIVERANGES.menu["rangeMenu_" .. rangePrefix], withSam, false)
     if GROUP:FindByName(samTemplate) ~= nil then
-      MENU_COALITION_COMMAND:New(coalition.side.BLUE, refreshText .. " NO SAM" , _G["rangeMenu_" .. rangePrefix], resetRangeTarget, rangeGroup, rangePrefix, _G["rangeMenu_" .. rangePrefix], withSam, true)
+      MENU_COALITION_COMMAND:New(coalition.side.BLUE, refreshText .. " NO SAM" , ACTIVERANGES.menu["rangeMenu_" .. rangePrefix], resetRangeTarget, rangeGroup, rangePrefix, ACTIVERANGES.menu["rangeMenu_" .. rangePrefix], withSam, true)
     else
-      MENU_COALITION_COMMAND:New(coalition.side.BLUE, refreshText , _G["rangeMenu_" .. rangePrefix], resetRangeTarget, rangeGroup, rangePrefix, _G["rangeMenu_" .. rangePrefix], withSam, true)
+      MENU_COALITION_COMMAND:New(coalition.side.BLUE, refreshText , ACTIVERANGES.menu["rangeMenu_" .. rangePrefix], resetRangeTarget, rangeGroup, rangePrefix, ACTIVERANGES.menu["rangeMenu_" .. rangePrefix], withSam, true)
     end
     MESSAGE:New("Target " .. rangePrefix .. " is active."):ToAll()
   end
   
 end
 
+--- Add menus for range target.
+-- @function addActiveRangeMenu
+-- @param #table rangeGroup Target group object
+-- @param #string rangePrefix Range prefix
 function addActiveRangeMenu(rangeGroup, rangePrefix)
 
   local rangeIdent = string.sub(rangePrefix, 1, 2)
-  if _G["rangeMenuSub_" .. rangeIdent] == nil then
-    _G["rangeMenuSub_" .. rangeIdent] = MENU_COALITION:New(coalition.side.BLUE, "R" .. rangeIdent, MenuActiveRangesTop)
+  
+  if ACTIVERANGES.menu["rangeMenuSub_" .. rangeIdent] == nil then
+    ACTIVERANGES.menu["rangeMenuSub_" .. rangeIdent] = MENU_COALITION:New(coalition.side.BLUE, "R" .. rangeIdent, ACTIVERANGES.menu.menuTop)
   end
-  _G["rangeMenu_" .. rangePrefix] = MENU_COALITION:New(coalition.side.BLUE, rangePrefix, _G["rangeMenuSub_" .. rangeIdent])
-  MENU_COALITION_COMMAND:New(coalition.side.BLUE, "Activate " .. rangePrefix, _G["rangeMenu_" .. rangePrefix], activateRangeTarget, rangeGroup, rangePrefix, _G["rangeMenu_" .. rangePrefix], false )
+  
+  ACTIVERANGES.menu["rangeMenu_" .. rangePrefix] = MENU_COALITION:New(coalition.side.BLUE, rangePrefix, ACTIVERANGES.menu["rangeMenuSub_" .. rangeIdent])
+  
+  MENU_COALITION_COMMAND:New(coalition.side.BLUE, "Activate " .. rangePrefix, ACTIVERANGES.menu["rangeMenu_" .. rangePrefix], activateRangeTarget, rangeGroup, rangePrefix, ACTIVERANGES.menu["rangeMenu_" .. rangePrefix], false )
+ 
   local samTemplate = "SAM_" .. rangePrefix
+  
   if GROUP:FindByName(samTemplate) ~= nil then
-    MENU_COALITION_COMMAND:New(coalition.side.BLUE, "Activate " .. rangePrefix .. " with SAM" , _G["rangeMenu_" .. rangePrefix], activateRangeTarget, rangeGroup, rangePrefix, _G["rangeMenu_" .. rangePrefix], true )
+    MENU_COALITION_COMMAND:New(coalition.side.BLUE, "Activate " .. rangePrefix .. " with SAM" , ACTIVERANGES.menu["rangeMenu_" .. rangePrefix], activateRangeTarget, rangeGroup, rangePrefix, ACTIVERANGES.menu["rangeMenu_" .. rangePrefix], true )
   end
-  return _G["rangeMenu_" .. rangePrefix]
+ 
+  return ACTIVERANGES.menu["rangeMenu_" .. rangePrefix]
   
 end
 
-function initActiveRange(rangeTemplateGroup, refreshRange) -- initial menu build for active ranges
+
+--- Spawn ACTIVE range groups.
+-- @function initActiveRange
+-- @param #table rangeTemplateGroup Target spawn template GROUP object
+-- @param #string refreshRange If false, turn off target AI and add menu option to activate the target
+function initActiveRange(rangeTemplateGroup, refreshRange)
 
   local rangeTemplate = rangeTemplateGroup.GroupName
+
   local activeRange = SPAWN:New(rangeTemplate)
-    activeRange:OnSpawnGroup(
+
+  if refreshRange == false then -- turn off AI if initial
+    activeRange:InitAIOnOff(false)
+  end
+  
+  activeRange:OnSpawnGroup(
     function (spawnGroup)
       local rangeName = spawnGroup.GroupName
       local rangePrefix = string.sub(rangeName, 8, 12) 
-      if refreshRange ~= true then -- turn off AI if initial spawn or if master target is SAM
-        spawnGroup:SetAIOff()
-      end
-      if refreshRange == nil then
+      if refreshRange == false then
         addActiveRangeMenu(spawnGroup, rangePrefix)
       end
-    end, refreshRange 
+    end
+    , refreshRange 
   )
-  :Spawn()
-  return activeRange:GetLastAliveGroup()
+
+    activeRange:Spawn()
+    
+    local rangeGroup = activeRange:GetLastAliveGroup()
+    rangeGroup:OptionROE(ENUMS.ROE.WeaponHold)
+    rangeGroup:OptionROTEvadeFire()
+    rangeGroup:OptionAlarmStateGreen()
+    rangeGroup:SetAIOnOff(false)
+
+    return rangeGroup
+
   
 end
 
 local SetInitActiveRangeGroups = SET_GROUP:New():FilterPrefixes("ACTIVE_"):FilterOnce() -- create list of group objects with prefix "ACTIVE_"
-SetInitActiveRangeGroups:ForEachGroup(initActiveRange)
+SetInitActiveRangeGroups:ForEachGroup(initActiveRange, false)
 
 --- END RANGES
 
