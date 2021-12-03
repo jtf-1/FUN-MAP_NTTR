@@ -41,7 +41,7 @@ if devState ~= 0 then
   env.warning('*** JTF-1 - DEV flag is ON! ***')
   MESSAGE:New("Dev Mode is ON!"):ToAll()
   
-  function restartDev(flagLoadMission, mapFlagValue)
+  local function restartDev(flagLoadMission, mapFlagValue)
     trigger.action.setUserFlag(flagLoadMission, mapFlagValue)    
   end
 
@@ -67,14 +67,14 @@ local setGroupGroundActive = SET_GROUP:New():FilterActive():FilterCategoryGround
 --- BEGIN ADMIN MENU SECTION
 -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
-local Admin = {
+local ADMIN = {
   --flagLoadMission = 9999, -- mission flag for triggering reload/loading of missions
 }
 
-Admin.eventhandler = EVENTHANDLER:New()
-Admin.eventhandler:HandleEvent(EVENTS.Birth)
+ADMIN.eventhandler = EVENTHANDLER:New()
+ADMIN.eventhandler:HandleEvent(EVENTS.Birth)
 
-function Admin:GetPlayerUnitAndName(unitName)
+function ADMIN:GetPlayerUnitAndName(unitName)
   if unitName ~= nil then
     -- Get DCS unit from its name.
     local DCSunit = Unit.getByName(unitName)
@@ -90,13 +90,13 @@ function Admin:GetPlayerUnitAndName(unitName)
   return nil,nil
 end
 
-function Admin.eventhandler:OnEventBirth(EventData)
+function ADMIN.eventhandler:OnEventBirth(EventData)
   local unitName = EventData.IniUnitName
-  local unit, playername = Admin:GetPlayerUnitAndName(unitName)
+  local unit, playername = ADMIN:GetPlayerUnitAndName(unitName)
   if unit and playername then
   local adminCheck = (string.find(unitName, adminUnitName) and "true" or "false")
   if string.find(unitName, adminUnitName) then
-    SCHEDULER:New(nil, Admin.BuildAdminMenu, {Admin, unit, playername}, 0.1)
+    SCHEDULER:New(nil, ADMIN.BuildAdminMenu, {ADMIN, unit, playername}, 0.1)
   end
   end
 end
@@ -109,8 +109,8 @@ end
 --- 5 = NTTR Night No Moon.
 -- @param #string playerName Name of client calling restart command.
 -- @param #number mapFlagValue Mission number to which flag should be set.
-function Admin:LoadMission(playerName, mapFlagValue)
-  if adminClientName then
+function ADMIN:LoadMission(playerName, mapFlagValue)
+  if playerName then
     env.info("ADMIN Restart player name: " .. playerName)
   end
   trigger.action.setUserFlag(flagLoadMission, mapFlagValue) 
@@ -119,7 +119,7 @@ end
 --- Add admin menu and commands if client is in an ADMIN spawn
 -- @param #object unit Unit of player.
 -- @param #string playername Name of player
-function Admin:BuildAdminMenu(unit,playername)
+function ADMIN:BuildAdminMenu(unit,playername)
   local adminGroup = unit:GetGroup()
   local adminGroupName = adminGroup:GetName()
   local adminMenu = MENU_GROUP:New(adminGroup, "Admin")
@@ -199,7 +199,7 @@ function MissileTrainer:AddMenu(unit, unitName)
   local gid = group:GetID()
 
   self.MenuF10[gid] = missionCommands.addSubMenuForGroup(gid, "Missile Trainer")
-  rootPath = self.MenuF10[gid]
+  local rootPath = self.MenuF10[gid]
   missionCommands.addCommandForGroup(gid, "Missile Trainer On/Off", rootPath, self.ToggleMissileTrainer, MissileTrainer, unitName)
 end
 
@@ -544,9 +544,9 @@ local function activateRangeTarget(rangeGroup, rangePrefix, rangeMenu, withSam, 
   
   local deactivateText = "Deactivate " .. rangePrefix
   local refreshText = "Refresh " .. rangePrefix
-  
+  local samTemplate = "SAM_" .. rangePrefix
+
   if withSam then
-    local samTemplate = "SAM_" .. rangePrefix
     local activateSam = SPAWN:New(samTemplate)
     activateSam:OnSpawnGroup(
       function (spawnGroup)
@@ -647,8 +647,8 @@ SetInitActiveRangeGroups:ForEachGroup(initActiveRange, false)
 
 -- R62 T6208 MOVING TARGETS
 
-function rangeMovingTarget(targetId)
-  spawnMovingTarget = SPAWN:New( targetId )
+local function rangeMovingTarget(targetId)
+  local spawnMovingTarget = SPAWN:New( targetId )
   spawnMovingTarget:Spawn()
 end
 
@@ -668,41 +668,38 @@ local MenuT6208_3 = MENU_COALITION_COMMAND:New( coalition.side.BLUE, "TGT 6208: 
 --- IADS
 -- REQUIRES MIST
 
-local menuEcsTop = MENU_COALITION:New(coalition.side.BLUE, "EC South")
-
--- SAM spawn emplates
-templateEcs_Sa10  = "ECS_SA10"
-templateEcs_Sa2   = "ECS_SA2"
-templateEcs_Sa3   = "ECS_SA3"
-templateEcs_Sa6   = "ECS_SA6"
-templateEcs_Sa8   = "ECS_SA8"
-templateEcs_Sa15  = "ECS_SA15"
--- Zone in which threat will be spawned
-zoneEcs7769 = ZONE:FindByName("ECS_ZONE_7769")
-
 local ECS = {}
 ECS.ActiveSite = {}
 ECS.rIADS = nil
+
+ECS.menuEscTop = MENU_COALITION:New(coalition.side.BLUE, "EC South")
+
+-- SAM spawn emplates
+ECS.templates = {
+  {templateName = "ECS_SA10", threatName = "SA-10"},
+  {templateName = "ECS_SA2",  threatName = "SA-2"},
+  {templateName = "ECS_SA3",  threatName = "SA-3"},
+  {templateName = "ECS_SA6",  threatName = "SA-6"},
+  {templateName = "ECS_SA8",  threatName = "SA-8"},
+  {templateName = "ECS_SA15", threatName = "SA-15"},
+}
+-- Zone in which threat will be spawned
+ECS.zoneEcs7769 = ZONE:FindByName("ECS_ZONE_7769")
 
 
 function activateEcsThreat(samTemplate, samZone, activeThreat, isReset)
 
   -- remove threat selection menu options
   if not isReset then
-    commandActivateSa10:Remove()
-    commandActivateSa2:Remove()
-    commandActivateSa3:Remove()
-    commandActivateSa6:Remove()
-    commandActivateSa8:Remove()
-    commandActivateSa15:Remove()
+    ECS.menuEscTop:RemoveSubMenus()
   end
   
   -- spawn threat in ECS zone
   local ecsSpawn = SPAWN:New(samTemplate)
   ecsSpawn:OnSpawnGroup(
       function (spawnGroup)
-        commandDeactivateEcs_7769 = MENU_COALITION_COMMAND:New(coalition.side.BLUE, "Deactivate 77-69", menuEcsTop, resetEcsThreat, spawnGroup, ecsSpawn, activeThreat, false)
-        commandRefreshEcs_7769 = MENU_COALITION_COMMAND:New(coalition.side.BLUE, "Reset 77-69", menuEcsTop, resetEcsThreat, spawnGroup, ecsSpawn, activeThreat, true, samZone)
+        MENU_COALITION_COMMAND:New(coalition.side.BLUE, "Deactivate 77-69", ECS.menuEscTop, resetEcsThreat, spawnGroup, ecsSpawn, activeThreat, false)
+        MENU_COALITION_COMMAND:New(coalition.side.BLUE, "Reset 77-69", ECS.menuEscTop, resetEcsThreat, spawnGroup, ecsSpawn, activeThreat, true, samZone)
         MESSAGE:New("EC South is active with " .. activeThreat):ToAll()
         ECS.rIADS = SkynetIADS:create("ECSOUTH")
         ECS.rIADS:setUpdateInterval(5)
@@ -711,15 +708,14 @@ function activateEcsThreat(samTemplate, samZone, activeThreat, isReset)
         ECS.rIADS:getSAMSiteByGroupName(spawnGroup.GroupName):setGoLiveRangeInPercent(80)
         ECS.rIADS:activate()        
       end
-      , menuEcsTop, rangePrefix, ecsSpawn, activeThreat, samZone
+      , ECS.menuEscTop, ecsSpawn, activeThreat, samZone --, rangePrefix
     )
     :SpawnInZone(samZone, true)
 end
 
 function resetEcsThreat(spawnGroup, ecsSpawn, activeThreat, refreshEcs, samZone)
 
-  commandDeactivateEcs_7769:Remove() -- remove ECS active menus
-  commandRefreshEcs_7769:Remove()
+  ECS.menuEscTop:RemoveSubMenus()
   
   if ECS.rIADS ~= nil then
     ECS.rIADS:deactivate()
@@ -741,13 +737,9 @@ end
 
 function addEcsThreatMenu()
 
-  -- [threat template], [threat zone], [active threat]
-  commandActivateSa10 = MENU_COALITION_COMMAND:New(coalition.side.BLUE, "Activate SA-10", menuEcsTop ,activateEcsThreat, templateEcs_Sa10, zoneEcs7769, "SA-10")
-  commandActivateSa2 = MENU_COALITION_COMMAND:New(coalition.side.BLUE, "Activate SA-2", menuEcsTop ,activateEcsThreat, templateEcs_Sa2, zoneEcs7769, "SA-2")
-  commandActivateSa3 = MENU_COALITION_COMMAND:New(coalition.side.BLUE, "Activate SA-3", menuEcsTop ,activateEcsThreat, templateEcs_Sa3, zoneEcs7769, "SA-3")
-  commandActivateSa6 = MENU_COALITION_COMMAND:New(coalition.side.BLUE, "Activate SA-6", menuEcsTop ,activateEcsThreat, templateEcs_Sa6, zoneEcs7769, "SA-6")
-  commandActivateSa8 = MENU_COALITION_COMMAND:New(coalition.side.BLUE, "Activate SA-8", menuEcsTop ,activateEcsThreat, templateEcs_Sa8, zoneEcs7769, "SA-8")
-  commandActivateSa15 = MENU_COALITION_COMMAND:New(coalition.side.BLUE, "Activate SA-15", menuEcsTop ,activateEcsThreat, templateEcs_Sa15, zoneEcs7769, "SA-15")
+  for i, template in ipairs(ECS.templates) do
+    MENU_COALITION_COMMAND:New(coalition.side.BLUE, "Activate " .. template.threatName, ECS.menuEscTop, activateEcsThreat, template.templateName, ECS.zoneEcs7769, template.threatName)
+  end
 
 end
 
@@ -779,7 +771,7 @@ Adv23 = SPAWN:New( "ADV_MiG23" )
 Adv16 = SPAWN:New( "ADV_F16" )
 Adv18 = SPAWN:New( "ADV_F18" )
 
-local function BFMACM.BfmSpawnAdv(adv,qty,group,rng,unit)
+function BFMACM.BfmSpawnAdv(adv,qty,group,rng,unit)
 
   playerName = (unit:GetPlayerName() and unit:GetPlayerName() or "Unknown") 
   range = rng * 1852
@@ -813,7 +805,7 @@ local function BFMACM.BfmSpawnAdv(adv,qty,group,rng,unit)
 
 end
 
-local function BFMACM.BfmBuildMenuCommands (AdvMenu, MenuGroup, MenuName, BfmMenu, AdvType, AdvQty, unit)
+function BFMACM.BfmBuildMenuCommands (AdvMenu, MenuGroup, MenuName, BfmMenu, AdvType, AdvQty, unit)
 
   BFMACM[AdvMenu] = MENU_GROUP:New( MenuGroup, MenuName, BfmMenu)
     BFMACM[AdvMenu .. "_rng5"] = MENU_GROUP_COMMAND:New( MenuGroup, "5 nmi", BFMACM[AdvMenu], BFMACM.BfmSpawnAdv, AdvType, AdvQty, MenuGroup, 5, unit)
@@ -822,7 +814,7 @@ local function BFMACM.BfmBuildMenuCommands (AdvMenu, MenuGroup, MenuName, BfmMen
 
 end
 
-local function BfmBuildMenus(AdvQty, MenuGroup, MenuName, SpawnBfmGroup, unit)
+function BfmBuildMenus(AdvQty, MenuGroup, MenuName, SpawnBfmGroup, unit)
 
   local AdvSuffix = "_" .. tostring(AdvQty)
   BfmMenu = MENU_GROUP:New(MenuGroup, MenuName, SpawnBfmGroup)
@@ -839,7 +831,7 @@ end
 
 -- SPAWN AIR MENU
 
-local function BFMACM.BfmAddMenu()
+function BFMACM.BfmAddMenu()
 
   local devMenuBfm = false -- if true, BFM menu available outside BFM zone
 
