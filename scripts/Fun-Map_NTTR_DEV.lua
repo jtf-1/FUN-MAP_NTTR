@@ -27,7 +27,6 @@ local SetClient = SET_CLIENT:New():FilterStart()
 -- flag value to trigger reloading of DEV mission
 local devMission = 99
 
-
 -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 --- Check for Static or Dynamic mission file loading flag
 -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
@@ -108,8 +107,8 @@ end
 --- 3 = NTTR Night.
 --- 4 = NTTR Day Weather.
 --- 5 = NTTR Night No Moon.
--- @param #string playerName Name of client calling restart command
--- @param #number mapFlagValue Mission number to which flag should be set
+-- @param #string playerName Name of client calling restart command.
+-- @param #number mapFlagValue Mission number to which flag should be set.
 function Admin:LoadMission(playerName, mapFlagValue)
   if adminClientName then
     env.info("ADMIN Restart player name: " .. playerName)
