@@ -56,12 +56,17 @@ end
 -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
 local setGroupGroundActive = SET_GROUP:New():FilterActive():FilterCategoryGround():FilterOnce()
-  setGroupGroundActive:ForEachGroup(
-    function(activeGroup)
-      activeGroup:SetAIOff()
-    end
-  )
 
+-- Prefix for groups for which AI should NOT be disabled
+local excludeAI = "BLUFOR"
+
+setGroupGroundActive:ForEachGroup(
+  function(activeGroup)
+    if not string.find(activeGroup:GetName(), excludeAI) then
+      activeGroup:SetAIOff()
+    end      
+  end
+)
 
 -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 --- BEGIN ADMIN MENU SECTION
@@ -215,60 +220,67 @@ end
 local TableSpawnSupport = { -- {spawnobjectname, spawnzone, callsignName, callsignNumber}
   {
     spawnobject     = "AR230V_KC-135_01", 
-    spawnzone       = ZONE:New("AR230V"), 
+    spawnzone       = "AR230V", 
     callsignName    = 2, 
     callsignNumber  = 1
-   },
+  },
   {
     spawnobject     = "AR230V_KC-130_01", 
-    spawnzone       = ZONE:New("AR230V"), 
+    spawnzone       = "AR230V", 
     callsignName    = 2, 
     callsignNumber  = 3
   },
-    {spawnobject    = "AR231V_KC-135_01", 
-    spawnzone       = ZONE:New("AR231V"), 
-    callsignName    = 2, 
-    callSignNumber  = 2
-  },
   {
     spawnobject     = "AR635_KC-135_01", 
-    spawnzone       = ZONE:New("AR635"), 
-    callsignName    = 1, 
+    spawnzone       = "AR635", 
+    callsignName    = 1,
     callsignNumber  = 2
   },
 --  {
 --    spawnobject     = "AR625_KC-135_01", 
 --    spawnzone       = ZONE:New("AR625"), 
---    callsignName    = 1, 
+--    callsignName    = 1,
 --    callsignNumber  = 3
 --  },
   {
     spawnobject     = "AR641A_KC-135_01", 
-    spawnzone       = ZONE:New("AR641A"), 
-    callsignName    = 1, 
+    spawnzone       = "AR641A", 
+    callsignName    = 1,
     callsignNumber  = 1
   },
   {
     spawnobject     = "AR635_KC-135MPRS_01", 
-    spawnzone       = ZONE:New("AR635"), 
-    callsignName    = 3, 
+    spawnzone       = "AR635", 
+    callsignName    = 3,
     callsignNumber  = 2
   },
 --  {
 --    spawnobject     = "AR625_KC-135MPRS_01", 
---    spawnzone       = ZONE:New("AR625"), 
---    callsignName    = 3, 
+--    spawnzone       = "AR625", 
+--    callsignName    = 3,
 --    callsignNumber  = 3
 --  },
   {
     spawnobject     = "AR641A_KC-135MPRS_01", 
-    spawnzone       = ZONE:New("AR641A"), 
-    callsignName    = 3, 
+    spawnzone       = "AR641A", 
+    callsignName    = 3,
     callsignNumber  = 1
   },
   {
+    spawnobject    = "ARLNS_KC-135MPRS_01", 
+    spawnzone       = "ARLNS", 
+    callsignName    = 3,
+    callSignNumber  = 3
+  },
+  {
+    spawnobject    = "ARLNS_KC-135_01", 
+    spawnzone       = "ARLNS", 
+    callsignName    = 1,
+    callSignNumber  = 3
+  },
+  {
     spawnobject     = "AWACS_DARKSTAR", 
-    spawnzone       = ZONE:New("AWACS"), 
+    spawnzone       = "AWACS", 
     callsignName    = 5, 
     callsignNumber  = 1
   },
@@ -286,7 +298,7 @@ function SpawnSupport (SupportSpawn) -- spawnobject, spawnzone
         local CheckTanker = SCHEDULER:New( nil, 
         function ()
           if SpawnGroup then
-            if SpawnGroup:IsNotInZone( SupportSpawn.spawnzone ) then
+            if SpawnGroup:IsNotInZone( ZONE:FindByName(SupportSpawn.spawnzone) ) then
               SupportSpawnObject:ReSpawn( SpawnIndex )
             end
           end
@@ -956,11 +968,11 @@ BVRGCI.BvrWp1Vec3 = COORDINATE:NewFromVec3(BVRGCI.ZoneBvrWp1:GetPointVec3())
 BVRGCI.Heading = COORDINATE:GetAngleDegrees(BVRGCI.BvrSpawnVec3:GetDirectionVec3(BVRGCI.BvrWp1Vec3))
 
 --- Spawn adversary aircraft with menu tree selected parameters.
--- @param #string typeName Aircraft type name.
--- @param #string typeSpawnTemplate Airctraft type spawn template.
--- @param #number Qty Quantity to spawn.
--- @param #number Altitude Alititude at which to spawn adversary group.
--- @param #number Formation ID for Formation, and spacing, in which to spawn adversary group.
+-- @param #string typeName Aircraft type name
+-- @param #string typeSpawnTemplate Airctraft type spawn template
+-- @param #number Qty Quantity to spawn
+-- @param #number Altitude Alititude at which to spawn adversary group
+-- @param #number Formation ID for Formation, and spacing, in which to spawn adversary group
 function BVRGCI.SpawnType(typeName, typeSpawnTemplate, Qty, Altitude, Formation) 
   local spawnHeading = BVRGCI.Heading
   local spawnVec3 = BVRGCI.BvrSpawnVec3
