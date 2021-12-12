@@ -513,7 +513,7 @@ ACTIVERANGES.menu.menuTop = MENU_COALITION:New(coalition.side.BLUE, "Active Rang
 -- @param #table rangeMenu Parent menu to which submenus should be added.
 -- @param #bool withSam Find and destroy associated SAM group.
 -- @param #bool refreshRange True if target is to be refreshed. False if it is to be deactivated. 
-local function resetRangeTarget(rangeGroup, rangePrefix, rangeMenu, withSam, refreshRange)
+function resetRangeTarget(rangeGroup, rangePrefix, rangeMenu, withSam, refreshRange)
 
   if rangeGroup:IsActive() then
     rangeGroup:Destroy(false)
@@ -542,7 +542,7 @@ end
 -- @param #table rangeMenu Menu that should be removed and/or to which sub-menus should be added
 -- @param #boolean withSam Spawn and activate associated SAM target
 -- @param #boolean refreshRange True if target is to being refreshed. False if it is being deactivated.
-local function activateRangeTarget(rangeGroup, rangePrefix, rangeMenu, withSam, refreshRange)
+function activateRangeTarget(rangeGroup, rangePrefix, rangeMenu, withSam, refreshRange)
 
   if refreshRange == nil then
     rangeMenu:Remove()
@@ -588,7 +588,7 @@ end
 -- @function addActiveRangeMenu
 -- @param #table rangeGroup Target group object
 -- @param #string rangePrefix Range prefix
-local function addActiveRangeMenu(rangeGroup, rangePrefix)
+ function addActiveRangeMenu(rangeGroup, rangePrefix)
 
   local rangeIdent = string.sub(rangePrefix, 1, 2)
   
@@ -614,7 +614,7 @@ end
 -- @function initActiveRange
 -- @param #table rangeTemplateGroup Target spawn template GROUP object
 -- @param #string refreshRange If false, turn off target AI and add menu option to activate the target
-local function initActiveRange(rangeTemplateGroup, refreshRange)
+function initActiveRange(rangeTemplateGroup, refreshRange)
 
   local rangeTemplate = rangeTemplateGroup.GroupName
 
