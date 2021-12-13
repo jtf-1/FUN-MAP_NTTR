@@ -588,7 +588,7 @@ end
 -- @function addActiveRangeMenu
 -- @param #table rangeGroup Target group object
 -- @param #string rangePrefix Range prefix
- function addActiveRangeMenu(rangeGroup, rangePrefix)
+function addActiveRangeMenu(rangeGroup, rangePrefix)
 
   local rangeIdent = string.sub(rangePrefix, 1, 2)
   
