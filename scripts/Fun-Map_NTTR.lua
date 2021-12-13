@@ -110,8 +110,7 @@ end
 --- 1 = NTTR Day.
 --- 2 = NTTR Day IFR.
 --- 3 = NTTR Night.
---- 4 = NTTR Day Weather.
---- 5 = NTTR Night No Moon.
+--- 4 = NTTR Night No Moon.
 -- @param #string playerName Name of client calling restart command.
 -- @param #number mapFlagValue Mission number to which flag should be set.
 function ADMIN:LoadMission(playerName, mapFlagValue)
@@ -131,8 +130,7 @@ function ADMIN:BuildAdminMenu(unit,playername)
   MENU_GROUP_COMMAND:New(adminGroup, "Load DAY NTTR", adminMenu, self.LoadMission, self, playername, 1 )
   MENU_GROUP_COMMAND:New(adminGroup, "Load DAY NTTR - IFR", adminMenu, self.LoadMission, self, playername, 2 )
   MENU_GROUP_COMMAND:New(adminGroup, "Load NIGHT NTTR", adminMenu, self.LoadMission, self, playername, 3 )
-  MENU_GROUP_COMMAND:New(adminGroup, "Load NIGHT NTTR - Weather", adminMenu, self.LoadMission, self, playername, 4 )
-  MENU_GROUP_COMMAND:New(adminGroup, "Load NIGHT NTTR - No Moon", adminMenu, self.LoadMission, self, playername, 5 )
+  MENU_GROUP_COMMAND:New(adminGroup, "Load NIGHT NTTR - No Moon", adminMenu, self.LoadMission, self, playername, 4 )
 end
 
 --- END ADMIN MENU SECTION

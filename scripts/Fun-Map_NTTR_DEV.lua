@@ -37,7 +37,7 @@ local devFlag = 8888
 -- If missionflag is true, mission file will load from filesystem with an assert
 local devState = trigger.misc.getUserFlag(devFlag)
 
-if devState ~= 0 then
+if devState == 1 then
   env.warning('*** JTF-1 - DEV flag is ON! ***')
   MESSAGE:New("Dev Mode is ON!"):ToAll()
   
@@ -110,8 +110,7 @@ end
 --- 1 = NTTR Day.
 --- 2 = NTTR Day IFR.
 --- 3 = NTTR Night.
---- 4 = NTTR Day Weather.
---- 5 = NTTR Night No Moon.
+--- 4 = NTTR Night No Moon.
 -- @param #string playerName Name of client calling restart command.
 -- @param #number mapFlagValue Mission number to which flag should be set.
 function ADMIN:LoadMission(playerName, mapFlagValue)
@@ -131,8 +130,7 @@ function ADMIN:BuildAdminMenu(unit,playername)
   MENU_GROUP_COMMAND:New(adminGroup, "Load DAY NTTR", adminMenu, self.LoadMission, self, playername, 1 )
   MENU_GROUP_COMMAND:New(adminGroup, "Load DAY NTTR - IFR", adminMenu, self.LoadMission, self, playername, 2 )
   MENU_GROUP_COMMAND:New(adminGroup, "Load NIGHT NTTR", adminMenu, self.LoadMission, self, playername, 3 )
-  MENU_GROUP_COMMAND:New(adminGroup, "Load NIGHT NTTR - Weather", adminMenu, self.LoadMission, self, playername, 4 )
-  MENU_GROUP_COMMAND:New(adminGroup, "Load NIGHT NTTR - No Moon", adminMenu, self.LoadMission, self, playername, 5 )
+  MENU_GROUP_COMMAND:New(adminGroup, "Load NIGHT NTTR - No Moon", adminMenu, self.LoadMission, self, playername, 4 )
 end
 
 --- END ADMIN MENU SECTION
@@ -319,10 +317,8 @@ end
 --- END SUPPORT AIRCRAFT SECTION
 
 -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
---- BEGIN RANGE SECTION
+--- BEGIN STATIC RANGE SECTION
 -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-
---- STATIC RANGES
 
 -- @field #STATICRANGES
 local STATICRANGES = {}
@@ -497,8 +493,12 @@ end
 -- Create ranges
 STATICRANGES:AddStaticRanges(STATICRANGES.Ranges)
 
+--- END STATIC RANGES
 
---- ACTIVE RANGES
+-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+--- BEGIN ACTIVE RANGE SECTION
+-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
 local ACTIVERANGES = {
   menu = {}
 }
@@ -651,7 +651,7 @@ end
 local SetInitActiveRangeGroups = SET_GROUP:New():FilterPrefixes("ACTIVE_"):FilterOnce() -- create list of group objects with prefix "ACTIVE_"
 SetInitActiveRangeGroups:ForEachGroup(initActiveRange, false)
 
---- END RANGES
+--- END ACTIVE RANGES
 
 -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 --- BEGIN MOVING TARGETS
