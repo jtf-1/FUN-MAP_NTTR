@@ -18,6 +18,12 @@ local JtfAdmin = true
 -- mission flag for triggering reload/loading of missions
 local flagLoadMission = 9999
 
+-- value for triggering loading of base mission
+local flagBaseMissionValue = 1
+
+-- value for triggering loading of dev mission
+local flagDevMissionValue = 99
+
 --- Name of client unit used for admin control
 local adminUnitName = "XX_" -- string to locate within unit name for admin slots
 
@@ -40,12 +46,13 @@ local devState = trigger.misc.getUserFlag(devFlag)
 if devState == 1 then
   env.warning('*** JTF-1 - DEV flag is ON! ***')
   MESSAGE:New("Dev Mode is ON!"):ToAll()
-  
-  local function restartDev(flagLoadMission, mapFlagValue)
-    trigger.action.setUserFlag(flagLoadMission, mapFlagValue)    
+
+  local function restartDev()
+    trigger.action.setUserFlag(flagLoadMission, flagDevMissionValue)
   end
 
-  MENU_MISSION_COMMAND:New("Reload DEV Mission",nil,restartDev,flagLoadMission,99)
+  -- add command to OTHER menu root to retart dev mission
+  MENU_MISSION_COMMAND:New("Reload DEV Mission",nil,restartDev)
   
 else
   env.info('*** JTF-1 - DEV flag is OFF. ***')
@@ -99,10 +106,10 @@ function ADMIN.eventhandler:OnEventBirth(EventData)
   local unitName = EventData.IniUnitName
   local unit, playername = ADMIN:GetPlayerUnitAndName(unitName)
   if unit and playername then
-  local adminCheck = (string.find(unitName, adminUnitName) and "true" or "false")
-  if string.find(unitName, adminUnitName) then
-    SCHEDULER:New(nil, ADMIN.BuildAdminMenu, {ADMIN, unit, playername}, 0.1)
-  end
+    local adminCheck = (string.find(unitName, adminUnitName) and "true" or "false")
+    if string.find(unitName, adminUnitName) then
+      SCHEDULER:New(nil, ADMIN.BuildAdminMenu, {ADMIN, unit, playername}, 0.1)
+    end
   end
 end
 
@@ -135,7 +142,51 @@ end
 
 --- END ADMIN MENU SECTION
 
+-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+--- BEGIN MISSION TIMER
+-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
+local MissionTimer = {}
+
+-- Mission run time in HOURS
+MissionTimer.durationHrs = 11
+
+-- Mission run time in seconds
+MissionTimer.durationSecs = MissionTimer.durationHrs * 3600
+
+--- Schedule for mission restart warning messages.
+-- Time in minutes.
+MissionTimer.msgSchedule = {60, 30, 10, 5}
+
+-- schedule container
+MissionTimer.msgWarning = {}
+
+
+--- add scheduled messages for mission restart warnings and restart at end of mission duration
+function MissionTimer:AddSchedules()
+
+  for i, msgTime in ipairs(self.msgSchedule) do
+
+    self.msgWarning[i] = SCHEDULER:New( nil, 
+      function()
+        MESSAGE:New("Mission will restart in " .. msgTime .. " minutes!"):ToAll()
+      end,
+    {msgTime}, self.durationSecs - (msgTime * 60))
+
+  end
+
+  self.msgWarning["restart"] = SCHEDULER:New( nil,
+    function()
+      MESSAGE:New("Mission is restarting now!"):ToAll()
+      trigger.action.setUserFlag(flagLoadMission, flagBaseMissionValue)
+    end,
+    { }, self.durationSecs)
+
+end
+
+MissionTimer:AddSchedules()
+
+--- END MISSION TIMER
 -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 --- BEGIN MISSILE TRAINER
 -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
