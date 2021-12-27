@@ -146,21 +146,28 @@ end
 --- BEGIN MISSION TIMER
 -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
+--- Mission Timer
+--
+-- Add schedules to display messages at set intervals prior to restarting the base mission.
+-- ME switched triggers should be set to a FLAG EQUALS condition for the flag flagLoadMission
+-- value (defined in script header). The flag value 1 should trigger a LOAD MISSION for the
+-- base (default) map.
+--
+--
+
 local MissionTimer = {}
 
 -- Mission run time in HOURS
 MissionTimer.durationHrs = 11
 
+-- Schedule for mission restart warning messages. Time in minutes.
+MissionTimer.msgSchedule = {60, 30, 10, 5}
+
 -- Mission run time in seconds
 MissionTimer.durationSecs = MissionTimer.durationHrs * 3600
 
---- Schedule for mission restart warning messages.
--- Time in minutes.
-MissionTimer.msgSchedule = {60, 30, 10, 5}
-
 -- schedule container
 MissionTimer.msgWarning = {}
-
 
 --- add scheduled messages for mission restart warnings and restart at end of mission duration
 function MissionTimer:AddSchedules()
@@ -187,6 +194,7 @@ end
 MissionTimer:AddSchedules()
 
 --- END MISSION TIMER
+
 -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 --- BEGIN MISSILE TRAINER
 -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
@@ -195,10 +203,13 @@ MissionTimer:AddSchedules()
 local MissileTrainer = {
   menuadded = {},
   MenuF10   = {},
+  safeZone = "ZONE_FOX",
+  launchZone = "ZONE_FOX",
 }
 
 MissileTrainer.eventhandler = EVENTHANDLER:New()
 MissileTrainer.eventhandler:HandleEvent(EVENTS.Birth)
+MissileTrainer.eventhandler:HandleEvent(EVENTS.Dead)
 
 function MissileTrainer:GetPlayerUnitAndName(unitName)
   if unitName ~= nil then
@@ -221,7 +232,16 @@ function MissileTrainer.eventhandler:OnEventBirth(EventData)
   local unit, playername = MissileTrainer:GetPlayerUnitAndName(unitName)
   
   if unit and playername then
-    SCHEDULER:New(nil, MissileTrainer.AddMenu, {MissileTrainer, unit, unitName},0.1)
+    SCHEDULER:New(nil, MissileTrainer.AddMenu, {MissileTrainer, unit, unitName, true},0.1)
+  end
+end
+
+function MissileTrainer.eventhandler:OnEventDead(EventData)
+  local unitName = EventData.IniUnitName
+  local unit, playername = MissileTrainer:GetPlayerUnitAndName(unitname)
+
+  if unit and playername then
+    MissileTrainer:AddMenu(unit, unitname, false)
   end
 end
 
@@ -234,6 +254,8 @@ MissileTrainer.fox:SetDefaultLaunchAlerts(false) -- launcher alerts OFF
   :SetExplosionDistance(300) -- distance from uit at which to destroy incoming missiles
   :SetDebugOnOff() -- set debug on if true
   :SetDisableF10Menu() -- remove default F10 menu as a custom menu will be used
+  -- :AddSafeZone(ZONE:New(MissileTrainer.safeZone)) -- zone in which players will be protected
+  -- :AddLaunchZone(ZONE:New(MissileTrainer.launchZone)) -- zone in which launches will be tracked
   :Start() -- start the missile trainer
 
 --- Toggle Launch Alerts and Destroy Missiles on/off
@@ -248,13 +270,22 @@ end
 -- @param #MissileTrainer self
 -- @param #wrapper.Unit unit Unit object occupied by client
 -- @param #string unitName Name of unit occupied by client
-function MissileTrainer:AddMenu(unit, unitName)
+function MissileTrainer:AddMenu(unit, unitName, state)
   local group = unit:GetGroup()
   local gid = group:GetID()
 
-  self.MenuF10[gid] = missionCommands.addSubMenuForGroup(gid, "Missile Trainer")
-  local rootPath = self.MenuF10[gid]
-  missionCommands.addCommandForGroup(gid, "Missile Trainer On/Off", rootPath, self.ToggleMissileTrainer, MissileTrainer, unitName)
+  if state then
+    if not self.MenuF10[gid] then
+      self.MenuF10[gid] = missionCommands.addSubMenuForGroup(gid, "Missile Trainer")
+      local rootPath = self.MenuF10[gid]
+      missionCommands.addCommandForGroup(gid, "Missile Trainer On/Off", rootPath, self.ToggleMissileTrainer, MissileTrainer, unitName)
+    else
+      MESSAGE:New("Missile Trainer menu already exists!"):ToGroup(group)
+    end
+  else
+    self.MenuF10[gid]:Remove()
+    self.MenuF10[gid] = nil
+  end
 end
 
 --- END MISSILE TRAINER
@@ -912,7 +943,7 @@ function BFMACM.BfmAddMenu()
             BFMACM["SpawnBfm" .. groupName] = MENU_GROUP:New( MenuGroup, "AI BFM/ACM" )
               BfmBuildMenus(1, MenuGroup, "Single", BFMACM["SpawnBfm" .. groupName], unit)
               BfmBuildMenus(2, MenuGroup, "Pair", BFMACM["SpawnBfm" .. groupName], unit)
-            MESSAGE:New(playerName .. " has entered the BFM/ACM zone.\nUse F10 menu to spawn adversaries."):ToGroup(group)
+            MESSAGE:New(playerName .. " has entered the BFM/ACM zone.\nUse F10 menu to spawn adversaries.\nMissile Trainer can also be activated from F10 menu."):ToGroup(group)
             --env.info("BFM/ACM entry Player name: " ..client:GetPlayerName())
             --env.info("BFM/ACM entry Group Name: " ..group:GetName())
           end
