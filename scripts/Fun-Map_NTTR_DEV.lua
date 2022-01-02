@@ -78,13 +78,9 @@ setGroupGroundActive:ForEachGroup(
 -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 --- BEGIN ADMIN MENU SECTION
 -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-
-local ADMIN = {
-  --flagLoadMission = 9999, -- mission flag for triggering reload/loading of missions
-}
-
-ADMIN.eventhandler = EVENTHANDLER:New()
-ADMIN.eventhandler:HandleEvent(EVENTS.Birth)
+ 
+ADMIN = EVENTHANDLER:New()
+ADMIN:HandleEvent(EVENTS.Birth)
 
 function ADMIN:GetPlayerUnitAndName(unitName)
   if unitName ~= nil then
@@ -102,13 +98,13 @@ function ADMIN:GetPlayerUnitAndName(unitName)
   return nil,nil
 end
 
-function ADMIN.eventhandler:OnEventBirth(EventData)
+function ADMIN:OnEventBirth(EventData)
   local unitName = EventData.IniUnitName
   local unit, playername = ADMIN:GetPlayerUnitAndName(unitName)
   if unit and playername then
     local adminCheck = (string.find(unitName, adminUnitName) and "true" or "false")
     if string.find(unitName, adminUnitName) then
-      SCHEDULER:New(nil, ADMIN.BuildAdminMenu, {ADMIN, unit, playername}, 0.1)
+      SCHEDULER:New(nil, ADMIN.BuildAdminMenu, {self, unit, playername}, 0.5)
     end
   end
 end
@@ -134,10 +130,10 @@ function ADMIN:BuildAdminMenu(unit,playername)
   local adminGroup = unit:GetGroup()
   local adminGroupName = adminGroup:GetName()
   local adminMenu = MENU_GROUP:New(adminGroup, "Admin")
-  MENU_GROUP_COMMAND:New(adminGroup, "Load DAY NTTR", adminMenu, self.LoadMission, self, playername, 1 )
-  MENU_GROUP_COMMAND:New(adminGroup, "Load DAY NTTR - IFR", adminMenu, self.LoadMission, self, playername, 2 )
-  MENU_GROUP_COMMAND:New(adminGroup, "Load NIGHT NTTR", adminMenu, self.LoadMission, self, playername, 3 )
-  MENU_GROUP_COMMAND:New(adminGroup, "Load NIGHT NTTR - No Moon", adminMenu, self.LoadMission, self, playername, 4 )
+  MENU_GROUP_COMMAND:New(adminGroup, "Load DAY NTTR", adminMenu, ADMIN.LoadMission, self, playername, 1 )
+  MENU_GROUP_COMMAND:New(adminGroup, "Load DAY NTTR - IFR", adminMenu, ADMIN.LoadMission, self, playername, 2 )
+  MENU_GROUP_COMMAND:New(adminGroup, "Load NIGHT NTTR", adminMenu, ADMIN.LoadMission, self, playername, 3 )
+  MENU_GROUP_COMMAND:New(adminGroup, "Load NIGHT NTTR - No Moon", adminMenu, ADMIN.LoadMission, self, playername, 4 )
 end
 
 --- END ADMIN MENU SECTION
@@ -279,8 +275,6 @@ function MissileTrainer:AddMenu(unit, unitName, state)
       self.MenuF10[gid] = missionCommands.addSubMenuForGroup(gid, "Missile Trainer")
       local rootPath = self.MenuF10[gid]
       missionCommands.addCommandForGroup(gid, "Missile Trainer On/Off", rootPath, self.ToggleMissileTrainer, MissileTrainer, unitName)
-    else
-      MESSAGE:New("Missile Trainer menu already exists!"):ToGroup(group)
     end
   else
     self.MenuF10[gid]:Remove()
