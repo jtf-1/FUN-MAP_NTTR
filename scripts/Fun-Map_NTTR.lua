@@ -195,17 +195,18 @@ MissionTimer:AddSchedules()
 --- BEGIN MISSILE TRAINER
 -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
--- Create a new missile trainer object.
-local MissileTrainer = {
-  menuadded = {},
-  MenuF10   = {},
-  safeZone = "ZONE_FOX",
-  launchZone = "ZONE_FOX",
-}
+-- Create event handler
+MissileTrainer = EVENTHANDLER:New()
+MissileTrainer:HandleEvent(EVENTS.Birth)
+MissileTrainer:HandleEvent(EVENTS.Dead)
 
-MissileTrainer.eventhandler = EVENTHANDLER:New()
-MissileTrainer.eventhandler:HandleEvent(EVENTS.Birth)
-MissileTrainer.eventhandler:HandleEvent(EVENTS.Dead)
+
+-- Create MissileTrainer container and defaults
+MissileTrainer.menuadded = {}
+MissileTrainer.MenuF10   = {}
+MissileTrainer.safeZone = "ZONE_FOX"
+MissileTrainer.launchZone = "ZONE_FOX"
+
 
 function MissileTrainer:GetPlayerUnitAndName(unitName)
   if unitName ~= nil then
@@ -221,24 +222,6 @@ function MissileTrainer:GetPlayerUnitAndName(unitName)
   end
   -- Return nil if we could not find a player.
   return nil,nil
-end
-
-function MissileTrainer.eventhandler:OnEventBirth(EventData)
-  local unitName = EventData.IniUnitName
-  local unit, playername = MissileTrainer:GetPlayerUnitAndName(unitName)
-  
-  if unit and playername then
-    SCHEDULER:New(nil, MissileTrainer.AddMenu, {MissileTrainer, unit, unitName, true},0.1)
-  end
-end
-
-function MissileTrainer.eventhandler:OnEventDead(EventData)
-  local unitName = EventData.IniUnitName
-  local unit, playername = MissileTrainer:GetPlayerUnitAndName(unitname)
-
-  if unit and playername then
-    MissileTrainer:AddMenu(unit, unitname, false)
-  end
 end
 
 MissileTrainer.fox = FOX:New() -- add new FOX class to the Missile Trainer
@@ -282,8 +265,25 @@ function MissileTrainer:AddMenu(unit, unitName, state)
   end
 end
 
---- END MISSILE TRAINER
+function MissileTrainer:OnEventBirth(EventData)
+  local unitName = EventData.IniUnitName
+  local unit, playername = MissileTrainer:GetPlayerUnitAndName(unitName)
+  
+  if unit and playername then
+    SCHEDULER:New(nil, MissileTrainer.AddMenu, {MissileTrainer, unit, unitName, true},0.1)
+  end
+end
 
+function MissileTrainer:OnEventDead(EventData)
+  local unitName = EventData.IniUnitName
+  local unit, playername = MissileTrainer:GetPlayerUnitAndName(unitname)
+
+  if unit and playername then
+    MissileTrainer:AddMenu(unit, unitname, false)
+  end
+end
+
+--- END MISSILE TRAINER
 
 
 -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
