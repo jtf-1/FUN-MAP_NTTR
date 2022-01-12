@@ -9,11 +9,6 @@ _SETTINGS:SetPlayerMenuOff()
 
 --- debug on/off
 BASE:TraceOnOff(false) 
-if BASE:IsTrace() then
-  BASE:TraceLevel(1)
-  --BASE:TraceAll(true)
-  BASE:TraceClass("setGroupGroundActive")
-end
 
 JTF = {}
 --- activate admin menu option in admin slots if true
