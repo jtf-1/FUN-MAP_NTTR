@@ -2,19 +2,26 @@
 --- BEGIN MISSILE TRAINER
 -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
--- Create event handler
-mTrainer = EVENTHANDLER:New()
-mTrainer:HandleEvent(EVENTS.Birth)   --EVENTS.Birth or EVENTS.BirthPlayerEnterAircraft
+MTRAINER = {
+  menuadded = {},
+  MenuF10   = {},
+  safeZone = nil, -- safezone to use, otherwise nil --"ZONE_FOX"
+  launchZone = nil, -- launchzone to use, otherwise nil --"ZONE_FOX"
+  DefaultLaunchAlerts = false,
+  DefaultMissileDestruction = false,
+  DefaultLaunchMarks = false,
+  ExplosionDistance = 300,
+}
+-- Create MTRAINER container and defaults
 
--- Create mTrainer container and defaults
-mTrainer.menuadded = {}
-mTrainer.MenuF10   = {}
-mTrainer.safeZone = nil --safezone to use, otherwise nil --"ZONE_FOX"
-mTrainer.launchZone = nil --launchzone to use, otherwise nil --"ZONE_FOX"
+-- add event handler
+MTRAINER.eventHandler = EVENTHANDLER:New()
+MTRAINER.eventHandler:HandleEvent(EVENTS.PlayerEnterAircraft)
+MTRAINER.eventHandler:HandleEvent(EVENTS.PlayerLeaveUnit)
 
-function mTrainer:GetPlayerUnitAndName(unitname)
+-- check player is present and unit is alive
+function MTRAINER:GetPlayerUnitAndName(unitname)
   if unitname ~= nil then
-    -- Get DCS unit from its name.
     local DCSunit = Unit.getByName(unitname)
     if DCSunit then
       local playername=DCSunit:getPlayerName()
@@ -28,79 +35,95 @@ function mTrainer:GetPlayerUnitAndName(unitname)
   return nil,nil
 end
 
-mTrainer.fox = FOX:New() -- add new FOX class to the Missile Trainer
+-- add new FOX class to the Missile Trainer
+MTRAINER.fox = FOX:New()
 
 --- FOX Default Settings
--- launcher alerts OFF
-mTrainer.fox:SetDefaultLaunchAlerts(false)
--- missile destruction off
-mTrainer.fox:SetDefaultMissileDestruction(false)
--- launch map marks OFF
-mTrainer.fox:SetDefaultLaunchMarks(false)
--- distance from uit at which to destroy incoming missiles
-mTrainer.fox:SetExplosionDistance(300)
--- set debug on if true
-mTrainer.fox:SetDebugOnOff()
--- remove default F10 menu as a custom menu will be used
-mTrainer.fox:SetDisableF10Menu()
+MTRAINER.fox:SetDefaultLaunchAlerts(MTRAINER.DefaultLaunchAlerts)
+MTRAINER.fox:SetDefaultMissileDestruction(MTRAINER.DefaultMissileDestruction)
+MTRAINER.fox:SetDefaultLaunchMarks(MTRAINER.DefaultLaunchMarks)
+MTRAINER.fox:SetExplosionDistance(MTRAINER.ExplosionDistance)
+MTRAINER.fox:SetDebugOnOff()
+MTRAINER.fox:SetDisableF10Menu()
+
 -- zone in which players will be protected
-if mTrainer.safeZone then
-  mTrainer.fox:AddSafeZone(ZONE:New(mTrainer.safeZone))
+if MTRAINER.safeZone then
+  MTRAINER.fox:AddSafeZone(ZONE:New(MTRAINER.safeZone))
 end
+
 -- zone in which launches will be tracked
-if mTrainer.launchZone then
-  mTrainer.fox:AddLaunchZone(ZONE:New(mTrainer.launchZone))
+if MTRAINER.launchZone then
+  MTRAINER.fox:AddLaunchZone(ZONE:New(MTRAINER.launchZone))
 end
 
 -- start the missile trainer
-mTrainer.fox:Start()
+MTRAINER.fox:Start()
 
 --- Toggle Launch Alerts and Destroy Missiles on/off
--- @param #mTrainer self
 -- @param #string unitname name of client unit
-function mTrainer:TogglemTrainer(unitname)
+function MTRAINER:ToggleTrainer(unitname)
   self.fox:_ToggleLaunchAlert(unitname)
   self.fox:_ToggleDestroyMissiles(unitname)
 end
 
---- Add Missile Trainer F10 root menu.
--- @param #mTrainer self
--- @param #wrapper.Unit unit Unit object occupied by client
+--- Add Missile Trainer for GROUP|UNIT in F10 root menu.
 -- @param #string unitname Name of unit occupied by client
-function mTrainer:AddMenu(unitname, state)
-  self:F(unitname)
+function MTRAINER:AddMenu(unitname)
   local unit, playername = self:GetPlayerUnitAndName(unitname)
-  -- check for player unit.
   if unit and playername then
-    -- get group and groupo ID.
     local group = unit:GetGroup()
     local gid = group:GetID()
+    local uid = unit:GetID()
     if group and gid then
-      if not self.menuadded[gid] then
-        -- enable switch so that we don't do this twice
-        self.menuadded[gid] = true
-        local rootPath=nil
-        if FOX.MenuF10[gid] == nil then
-          FOX.MenuF10[gid] = missionCommands.addSubMenuForGroup(gid, "Missile Trainer")
+      -- only add menu once!
+      if MTRAINER.menuadded[uid] == nil then
+        -- add GROUP menu if not already present
+        if MTRAINER.MenuF10[gid] == nil then
+          BASE:T("[MTRAINER] Adding menu for group: " .. group:GetName())
+          MTRAINER.MenuF10[gid] = MENU_GROUP:New(group, "Missile Trainer")
         end
-        rootPath = FOX.MenuF10[gid]
-        missionCommands.addCommandForGroup(gid, "Missile Trainer On/Off", rootPath, self.TogglemTrainer, self, unitname) -- F1
-        missionCommands.addCommandForGroup(gid, "My Status", rootPath, self.fox._MyStatus,  self.fox, unitname) -- F2
+        if MTRAINER.MenuF10[gid][uid] == nil then
+          BASE:T("[MTRAINER] Add submenu for player: " .. playername)
+          MTRAINER.MenuF10[gid][uid] = MENU_GROUP:New(group, playername, MTRAINER.MenuF10[gid])
+          BASE:T("[MTRAINER] Add commands for player: " .. playername)
+          MENU_GROUP_COMMAND:New(group, "Missile Trainer On/Off", MTRAINER.MenuF10[gid][uid], MTRAINER.ToggleTrainer, MTRAINER, unitname)
+          MENU_GROUP_COMMAND:New(group, "My Status", MTRAINER.MenuF10[gid][uid], MTRAINER.fox._MyStatus, MTRAINER.fox, unitname)
+        end
+        MTRAINER.menuadded[uid] = true
       end
     else
-      self:E(self.lid..string.format("ERROR: Could not find group or group ID in AddMenu() function. Unit name: %s.", unitname))
+      BASE:T(string.format("[MTRAINER] ERROR: Could not find group or group ID in AddMenu() function. Unit name: %s.", unitname))
     end
   else
-    self:E(self.lid..string.format("ERROR: Player unit does not exist in AddMenu() function. Unit name: %s.", unitname))
+    BASE:T(string.format("[MTRAINER] ERROR: Player unit does not exist in AddMenu() function. Unit name: %s.", unitname))
   end
 end
 
-function mTrainer:OnEventBirth(EventData) -- OnEventBirth or OnEventPlayerEnterAircraft
-  self:F({eventbirth = EventData})
+-- handler for PlayEnterAircraft event.
+-- call function to add GROUP:UNIT menu.
+function MTRAINER.eventHandler:OnEventPlayerEnterAircraft(EventData) 
   local unitname = EventData.IniUnitName
-  local unit, playername = mTrainer:GetPlayerUnitAndName(unitname)
+  local unit, playername = MTRAINER:GetPlayerUnitAndName(unitname)
   if unit and playername then
-    SCHEDULER:New(nil, mTrainer.AddMenu, {mTrainer, unitname, true},0.1)
+    SCHEDULER:New(nil, MTRAINER.AddMenu, {MTRAINER, unitname, true},0.1)
+  end
+end
+
+-- handler for PlayerLeaveUnit event.
+-- remove GROUP:UNIT menu.
+function MTRAINER.eventHandler:OnEventPlayerLeaveUnit(EventData)
+  local playername = EventData.IniPlayerName
+  local unit = EventData.IniUnit
+  local gid = EventData.IniGroup:GetID()
+  local uid = EventData.IniUnit:GetID()
+  BASE:T("[MTRAINER] " .. playername .. " left unit:" .. unit:GetName() .. " UID: " .. uid)
+  if gid and uid then
+    if MTRAINER.MenuF10[gid] then
+      BASE:T("[MTRAINER] Removing menu for unit UID:" .. uid)
+      MTRAINER.MenuF10[gid][uid]:Remove()
+      MTRAINER.MenuF10[gid][uid] = nil
+      MTRAINER.menuadded[uid] = nil
+    end
   end
 end
 

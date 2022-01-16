@@ -9,34 +9,47 @@ local devFlag = 8888
 local devState = trigger.misc.getUserFlag(devFlag)
 
 if devState == 1 then
-  DEV_MENU = {}
-  --turn on tracing
-  BASE:TraceOn()
+
   env.warning('*** JTF-1 - DEV flag is ON! ***')
   MESSAGE:New("Dev Mode is ON!"):ToAll()
 
-  local function devRestart()
+  local DEV_MENU = {
+    traceOn = false, -- default tracestate false == trace off, true == trace on.
+  }
+
+  function DEV_MENU:restart()
     trigger.action.setUserFlag(flagLoadMission, flagDevMissionValue)
   end
 
-  local function devTraceOnOff(tracestate)
-    DEV_MENU.traceOnOff:Remove()
-    if tracestate then
-      BASE:TraceOn()
-    else
+  function DEV_MENU:toggleTrace(traceOn)
+    if self.traceOn then
       BASE:TraceOff()
+    else
+      BASE:TraceOn()
     end
-    tracestate = not tracestate
-    DEV_MENU.traceOnOff = MENU_MISSION_COMMAND:New("Toggle TRACE.", DEV_MENU.topmenu, devTraceOnOff, tracestate)
+    self.traceOn = not traceOn
+  end
+
+  function DEV_MENU:testLua(IncludeFile)
+    local base = _G
+    local __filepath = 'E:/GitHub/FUN-MAP_NTTR/scripts/dynamic/'
+		local f = assert( base.loadfile( __filepath .. IncludeFile ) )
+    if f == nil then
+      error ("[DEVCHECK] Loader: could not load mission file " .. IncludeFile )
+    else
+      env.info( "[DEVCHECK] Loader: " .. IncludeFile .. " dynamically loaded." )
+			return f()
+    end
   end
 
   -- Add Dev submenu to F10 Other
   DEV_MENU.topmenu = MENU_MISSION:New("DEVMENU")
   -- add command to OTHER menu root to retart dev mission
-  DEV_MENU.reload = MENU_MISSION_COMMAND:New("Reload DEV Mission", DEV_MENU.topmenu, devRestart)
-  DEV_MENU.traceOnOff = MENU_MISSION_COMMAND:New("Toggle TRACE.", DEV_MENU.topmenu, devTraceOnOff, false)
+  DEV_MENU.reload = MENU_MISSION_COMMAND:New("Reload DEV Mission.", DEV_MENU.topmenu, DEV_MENU.restart, DEV_MENU)
+  DEV_MENU.traceOnOff = MENU_MISSION_COMMAND:New("Toggle TRACE.", DEV_MENU.topmenu, DEV_MENU.toggleTrace, DEV_MENU, DEV_MENU.traceOn)
+  DEV_MENU.loadTest = MENU_MISSION_COMMAND:New("Load Test LUA.", DEV_MENU.topmenu, DEV_MENU.testLua, "test.lua")
 
-  -- turn on tracing for debug
+  -- trace all events
   BASE:TraceAll(true)
 else
   env.info('*** JTF-1 - DEV flag is OFF. ***')
