@@ -29,7 +29,7 @@ ECHO.
 ECHO STATIC FILE BUILD STARTED: %DATE:~6,4%-%DATE:~3,2%-%DATE:~0,2%T%TIME% > %log%
 ECHO. >> %log%
 ECHO Creating static file
-ECHO env.info( '*** MISSION FILE BUILD DATE: %DATE:~6,4%-%DATE:~3,2%-%DATE:~0,2%T%TIME%Z ***') > %build_path%%build_filename%
+ECHO env.info( '[JTF-1] *** MISSION FILE BUILD DATE: %DATE:~6,4%-%DATE:~3,2%-%DATE:~0,2%T%TIME%Z ***') > %build_path%%build_filename%
 ECHO %DATE:~6,4%-%DATE:~3,2%-%DATE:~0,2%T%TIME%      Create Static file:     %build_path%%build_filename% >> %log%
 
 ECHO.

@@ -22,12 +22,12 @@ local TableSpawnSupport = { -- {spawnobjectname, spawnzone, callsignName, callsi
     callsignName    = 1,
     callsignNumber  = 2
   },
---  {
---    spawnobject     = "AR625_KC-135_01", 
---    spawnzone       = ZONE:New("AR625"), 
---    callsignName    = 1,
---    callsignNumber  = 3
---  },
+ {
+   spawnobject     = "XX_AR625_KC-135_01", -- remove XX_ to reactivate
+   spawnzone       = "AR625", 
+   callsignName    = 1,
+   callsignNumber  = 3
+ },
   {
     spawnobject     = "AR641A_KC-135_01", 
     spawnzone       = "AR641A", 
@@ -40,12 +40,12 @@ local TableSpawnSupport = { -- {spawnobjectname, spawnzone, callsignName, callsi
     callsignName    = 3,
     callsignNumber  = 2
   },
---  {
---    spawnobject     = "AR625_KC-135MPRS_01", 
---    spawnzone       = "AR625", 
---    callsignName    = 3,
---    callsignNumber  = 3
---  },
+ {
+   spawnobject     = "XX_AR625_KC-135MPRS_01", -- remove XX_ to reactivate
+   spawnzone       = "AR625", 
+   callsignName    = 3,
+   callsignNumber  = 3
+ },
   {
     spawnobject     = "AR641A_KC-135MPRS_01", 
     spawnzone       = "AR641A", 
@@ -72,30 +72,39 @@ local TableSpawnSupport = { -- {spawnobjectname, spawnzone, callsignName, callsi
   },
 }
 
-function SpawnSupport (SupportSpawn) -- spawnobject, spawnzone
+function SpawnSupport (SupportSpawn) -- spawnobject, spawnzone, callsignName, callsignNumber
 
   --local SupportSpawn = _args[1]
-  local SupportSpawnObject = SPAWN:New( SupportSpawn.spawnobject )
-  SupportSpawnObject:InitLimit( 1, 50 )
-    :OnSpawnGroup(
-      function ( SpawnGroup )
-        --SpawnGroup:CommandSetCallsign(SupportSpawn.callsignName, SupportSpawn.callsignNumber)
-        local SpawnIndex = SupportSpawnObject:GetSpawnIndexFromGroup( SpawnGroup )
-        local CheckTanker = SCHEDULER:New( nil, 
-        function ()
-          if SpawnGroup then
-            if SpawnGroup:IsNotInZone( ZONE:FindByName(SupportSpawn.spawnzone) ) then
-              SupportSpawnObject:ReSpawn( SpawnIndex )
+
+  if GROUP:FindByName(SupportSpawn.spawnobject) then
+
+    local SupportSpawnObject = SPAWN:New( SupportSpawn.spawnobject )
+    SupportSpawnObject:InitLimit( 1, 50 )
+      :OnSpawnGroup(
+        function ( SpawnGroup )
+          --SpawnGroup:CommandSetCallsign(SupportSpawn.callsignName, SupportSpawn.callsignNumber)
+          local SpawnIndex = SupportSpawnObject:GetSpawnIndexFromGroup( SpawnGroup )
+          local CheckTanker = SCHEDULER:New( nil, 
+          function ()
+            if SpawnGroup then
+              if SpawnGroup:IsNotInZone( ZONE:FindByName(SupportSpawn.spawnzone) ) then
+                SupportSpawnObject:ReSpawn( SpawnIndex )
+              end
             end
-          end
-        end,
-        {}, 0, 60 )
-      end
-    )
-    :InitRepeatOnLanding()
-    :Spawn()
- 
-end
+          end,
+          {}, 0, 60 )
+        end
+      )
+      :InitRepeatOnLanding()
+      :Spawn()
+
+    else
+
+      env.error("[JTF-1] Function SpawnSupport: spawn template not found in mission: " .. tostring(SupportSpawn.spawnobject))
+      
+    end
+
+  end
 
 -- spawn support aircraft ---
 for i, v in ipairs( TableSpawnSupport ) do

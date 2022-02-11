@@ -100,15 +100,15 @@ function BFMACM.BfmAddMenu()
               BfmBuildMenus(1, MenuGroup, "Single", BFMACM["SpawnBfm" .. groupName], unit)
               BfmBuildMenus(2, MenuGroup, "Pair", BFMACM["SpawnBfm" .. groupName], unit)
             MESSAGE:New(playerName .. " has entered the BFM/ACM zone.\nUse F10 menu to spawn adversaries.\nMissile Trainer can also be activated from F10 menu."):ToGroup(group)
-            --env.info("BFM/ACM entry Player name: " ..client:GetPlayerName())
-            --env.info("BFM/ACM entry Group Name: " ..group:GetName())
+            --env.info("[JTF-1] BFM/ACM entry Player name: " ..client:GetPlayerName())
+            --env.info("[JTF-1] BFM/ACM entry Group Name: " ..group:GetName())
           end
         elseif BFMACM["SpawnBfm" .. groupName] ~= nil then
           if unit:IsNotInZone(BFMACM.ZoneMenu) then
             BFMACM["SpawnBfm" .. groupName]:Remove()
             BFMACM["SpawnBfm" .. groupName] = nil
             MESSAGE:New(playerName .. " has left the ACM/BFM zone."):ToGroup(group)
-            --env.info("BFM/ACM exit Group Name: " ..group:GetName())
+            --env.info("[JTF-1] BFM/ACM exit Group Name: " ..group:GetName())
           end
         end
       end

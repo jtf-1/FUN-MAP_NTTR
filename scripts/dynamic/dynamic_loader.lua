@@ -15,7 +15,7 @@ __Loader.Include = function( IncludeFile )
 		if f == nil then
 			error ("Mission Loader: could not load mission file " .. IncludeFile )
 		else
-			env.info( "Mission Loader: " .. IncludeFile .. " dynamically loaded." )
+			env.info( "[JTF-1] Mission Loader: " .. IncludeFile .. " dynamically loaded." )
 			return f()
 		end
 	end

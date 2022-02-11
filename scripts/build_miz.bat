@@ -40,7 +40,7 @@ For %%I IN (%projectroot%*.miz) do (
   cd Temp
   mkdir l10n
   mkdir l10n\DEFAULT
-  copy %staticscriptpath%%missionsscript% l10n\DEFAULT
+  copy %staticscriptpath%*.lua l10n\DEFAULT
   7z.exe -bb0 u "%%I" "l10n\DEFAULT\*.lua"
   cd %projectroot%
   rmdir /S /Q Temp

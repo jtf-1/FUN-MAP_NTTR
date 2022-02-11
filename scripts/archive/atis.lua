@@ -1,4 +1,4 @@
-env.info( '*** JTF-1 ATIS START ***' )
+env.info( '[JTF-1] *** JTF-1 ATIS START ***' )
 
 -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 --- BEGIN ATIS
@@ -77,4 +77,4 @@ atisTonopahT=ATIS:New(AIRBASE.Nevada.Tonopah_Test_Range_Airfield, 113.000, radio
 
 --]]
 
-env.info( '*** JTF-1 ATIS END ***' )
+env.info( '[JTF-1] *** JTF-1 ATIS END ***' )

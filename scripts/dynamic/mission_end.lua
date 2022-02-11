@@ -1,1 +1,1 @@
-env.info( '*** JTF-1 MOOSE MISSION SCRIPT END ***' )
+env.info( '[JTF-1] *** JTF-1 MOOSE MISSION SCRIPT END ***' )

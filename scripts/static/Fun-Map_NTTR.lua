@@ -1,5 +1,5 @@
-env.info( '*** MISSION FILE BUILD DATE: 2022-01-16T18:47:41.73Z ***') 
-env.info( '*** JTF-1 STATIC MISSION SCRIPT START ***' )
+env.info( '[JTF-1] *** MISSION FILE BUILD DATE: 2022-02-11T14:40:56.54Z ***') 
+env.info( '[JTF-1] *** JTF-1 STATIC MISSION SCRIPT START ***' )
 
 -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 --- BEGIN INIT
@@ -10,28 +10,6 @@ _SETTINGS:SetPlayerMenuOff()
 
 --- debug on/off
 BASE:TraceOnOff(false) 
-
-JTF = {}
---- activate admin menu option in admin slots if true
-JtfAdmin = true 
-
--- mission flag for triggering reload/loading of missions
-flagLoadMission = 9999
-
--- value for triggering loading of base mission
-flagBaseMissionValue = 1
-
--- value for triggering loading of dev mission
-flagDevMissionValue = 99
-
---- Name of client unit used for admin control
-adminUnitName = "XX_" -- string to locate within unit name for admin slots
-
---- Dynamic list of all clients
---JTF.SetClient = SET_CLIENT:New():FilterStart()
-
--- flag value to trigger reloading of DEV mission
-devMission = 99
 
 --- END INIT
  
@@ -47,16 +25,12 @@ local devState = trigger.misc.getUserFlag(devFlag)
 
 if devState == 1 then
 
-  env.warning('*** JTF-1 - DEV flag is ON! ***')
+  env.warning('[JTF-1] *** JTF-1 - DEV flag is ON! ***')
   MESSAGE:New("Dev Mode is ON!"):ToAll()
 
   local DEV_MENU = {
     traceOn = false, -- default tracestate false == trace off, true == trace on.
   }
-
-  function DEV_MENU:restart()
-    trigger.action.setUserFlag(flagLoadMission, flagDevMissionValue)
-  end
 
   function DEV_MENU:toggleTrace(traceOn)
     if self.traceOn then
@@ -72,24 +46,22 @@ if devState == 1 then
     local __filepath = 'E:/GitHub/FUN-MAP_NTTR/scripts/dynamic/'
                 local f = assert( base.loadfile( __filepath .. IncludeFile ) )
     if f == nil then
-      error ("[DEVCHECK] Loader: could not load mission file " .. IncludeFile )
+      error ("[JTF-1] Loader: could not load mission file " .. IncludeFile )
     else
-      env.info( "[DEVCHECK] Loader: " .. IncludeFile .. " dynamically loaded." )
+      env.info( "[JTF-1] Loader: " .. IncludeFile .. " dynamically loaded." )
                         return f()
     end
   end
 
   -- Add Dev submenu to F10 Other
   DEV_MENU.topmenu = MENU_MISSION:New("DEVMENU")
-  -- add command to OTHER menu root to retart dev mission
-  DEV_MENU.reload = MENU_MISSION_COMMAND:New("Reload DEV Mission.", DEV_MENU.topmenu, DEV_MENU.restart, DEV_MENU)
   DEV_MENU.traceOnOff = MENU_MISSION_COMMAND:New("Toggle TRACE.", DEV_MENU.topmenu, DEV_MENU.toggleTrace, DEV_MENU, DEV_MENU.traceOn)
   DEV_MENU.loadTest = MENU_MISSION_COMMAND:New("Load Test LUA.", DEV_MENU.topmenu, DEV_MENU.testLua, "test.lua")
 
   -- trace all events
   BASE:TraceAll(true)
 else
-  env.info('*** JTF-1 - DEV flag is OFF. ***')
+  env.info('[JTF-1] *** JTF-1 - DEV flag is OFF. ***')
 end
 
 --- END DEVCHECK
@@ -116,9 +88,13 @@ setGroupGroundActive:ForEachGroup(
 -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 --- BEGIN ADMIN MENU SECTION
 -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
- 
+
 ADMIN = EVENTHANDLER:New()
 ADMIN:HandleEvent(EVENTS.PlayerEnterAircraft)
+
+ADMIN.adminUnitName = "XX_" -- String to locate within unit name for admin slots
+ADMIN.missionRestart = 9999 -- Flag value to restart current mission
+ADMIN.missionRestartMsg = "ADMIN9999" -- Message to trigger mission restart via jtf1-hooks
 
 function ADMIN:GetPlayerUnitAndName(unitName)
   if unitName ~= nil then
@@ -140,14 +116,16 @@ function ADMIN:OnEventPlayerEnterAircraft(EventData)
   local unitName = EventData.IniUnitName
   local unit, playername = ADMIN:GetPlayerUnitAndName(unitName)
   if unit and playername then
-    local adminCheck = (string.find(unitName, adminUnitName) and "true" or "false")
-    if string.find(unitName, adminUnitName) then
+    local adminCheck = (string.find(unitName, ADMIN.adminUnitName) and "true" or "false")
+    if string.find(unitName, ADMIN.adminUnitName) then
       SCHEDULER:New(nil, ADMIN.BuildAdminMenu, {self, unit, playername}, 0.5)
     end
   end
 end
 
 --- Set mission flag to load a new mission.
+--- If mapFlagValue is current mission, restart the mission via jtf1-hooks
+--- 9999 = Current Mission
 --- 1 = NTTR Day.
 --- 2 = NTTR Day IFR.
 --- 3 = NTTR Night.
@@ -156,9 +134,13 @@ end
 -- @param #number mapFlagValue Mission number to which flag should be set.
 function ADMIN:LoadMission(playerName, mapFlagValue)
   if playerName then
-    env.info("ADMIN Restart player name: " .. playerName)
+    env.info("[JTF-1] ADMIN Restart player name: " .. playerName)
   end
-  trigger.action.setUserFlag(flagLoadMission, mapFlagValue) 
+  if mapFlagValue == ADMIN.missionRestart then
+    MESSAGE:New(ADMIN.missionRestartMsg):ToAll()
+  else
+    trigger.action.setUserFlag(ADMIN.flagLoadMission, mapFlagValue)
+  end
 end
 
 --- Add admin menu and commands if client is in an ADMIN spawn
@@ -168,6 +150,7 @@ function ADMIN:BuildAdminMenu(unit,playername)
   local adminGroup = unit:GetGroup()
   local adminGroupName = adminGroup:GetName()
   local adminMenu = MENU_GROUP:New(adminGroup, "Admin")
+  MENU_GROUP_COMMAND:New(adminGroup, "Restart current mission", adminMenu, ADMIN.LoadMission, self, playername, 9999 )
   MENU_GROUP_COMMAND:New(adminGroup, "Load DAY NTTR", adminMenu, ADMIN.LoadMission, self, playername, 1 )
   MENU_GROUP_COMMAND:New(adminGroup, "Load DAY NTTR - IFR", adminMenu, ADMIN.LoadMission, self, playername, 2 )
   MENU_GROUP_COMMAND:New(adminGroup, "Load NIGHT NTTR", adminMenu, ADMIN.LoadMission, self, playername, 3 )
@@ -384,12 +367,12 @@ local TableSpawnSupport = { -- {spawnobjectname, spawnzone, callsignName, callsi
     callsignName    = 1,
     callsignNumber  = 2
   },
---  {
---    spawnobject     = "AR625_KC-135_01", 
---    spawnzone       = ZONE:New("AR625"), 
---    callsignName    = 1,
---    callsignNumber  = 3
---  },
+ {
+   spawnobject     = "XX_AR625_KC-135_01", -- remove XX_ to reactivate
+   spawnzone       = "AR625", 
+   callsignName    = 1,
+   callsignNumber  = 3
+ },
   {
     spawnobject     = "AR641A_KC-135_01", 
     spawnzone       = "AR641A", 
@@ -402,12 +385,12 @@ local TableSpawnSupport = { -- {spawnobjectname, spawnzone, callsignName, callsi
     callsignName    = 3,
     callsignNumber  = 2
   },
---  {
---    spawnobject     = "AR625_KC-135MPRS_01", 
---    spawnzone       = "AR625", 
---    callsignName    = 3,
---    callsignNumber  = 3
---  },
+ {
+   spawnobject     = "XX_AR625_KC-135MPRS_01", -- remove XX_ to reactivate
+   spawnzone       = "AR625", 
+   callsignName    = 3,
+   callsignNumber  = 3
+ },
   {
     spawnobject     = "AR641A_KC-135MPRS_01", 
     spawnzone       = "AR641A", 
@@ -434,30 +417,39 @@ local TableSpawnSupport = { -- {spawnobjectname, spawnzone, callsignName, callsi
   },
 }
 
-function SpawnSupport (SupportSpawn) -- spawnobject, spawnzone
+function SpawnSupport (SupportSpawn) -- spawnobject, spawnzone, callsignName, callsignNumber
 
   --local SupportSpawn = _args[1]
-  local SupportSpawnObject = SPAWN:New( SupportSpawn.spawnobject )
-  SupportSpawnObject:InitLimit( 1, 50 )
-    :OnSpawnGroup(
-      function ( SpawnGroup )
-        --SpawnGroup:CommandSetCallsign(SupportSpawn.callsignName, SupportSpawn.callsignNumber)
-        local SpawnIndex = SupportSpawnObject:GetSpawnIndexFromGroup( SpawnGroup )
-        local CheckTanker = SCHEDULER:New( nil, 
-        function ()
-          if SpawnGroup then
-            if SpawnGroup:IsNotInZone( ZONE:FindByName(SupportSpawn.spawnzone) ) then
-              SupportSpawnObject:ReSpawn( SpawnIndex )
+
+  if GROUP:FindByName(SupportSpawn.spawnobject) then
+
+    local SupportSpawnObject = SPAWN:New( SupportSpawn.spawnobject )
+    SupportSpawnObject:InitLimit( 1, 50 )
+      :OnSpawnGroup(
+        function ( SpawnGroup )
+          --SpawnGroup:CommandSetCallsign(SupportSpawn.callsignName, SupportSpawn.callsignNumber)
+          local SpawnIndex = SupportSpawnObject:GetSpawnIndexFromGroup( SpawnGroup )
+          local CheckTanker = SCHEDULER:New( nil, 
+          function ()
+            if SpawnGroup then
+              if SpawnGroup:IsNotInZone( ZONE:FindByName(SupportSpawn.spawnzone) ) then
+                SupportSpawnObject:ReSpawn( SpawnIndex )
+              end
             end
-          end
-        end,
-        {}, 0, 60 )
-      end
-    )
-    :InitRepeatOnLanding()
-    :Spawn()
- 
-end
+          end,
+          {}, 0, 60 )
+        end
+      )
+      :InitRepeatOnLanding()
+      :Spawn()
+
+    else
+
+      env.error("[JTF-1] Function SpawnSupport: spawn template not found in mission: " .. tostring(SupportSpawn.spawnobject))
+      
+    end
+
+  end
 
 -- spawn support aircraft ---
 for i, v in ipairs( TableSpawnSupport ) do
@@ -813,14 +805,14 @@ local function rangeMovingTarget(targetId)
     local spawnMovingTarget = SPAWN:New( targetId )
     spawnMovingTarget:Spawn()
   end
-  
+
   local MenuT6208 = MENU_COALITION:New( coalition.side.BLUE, "Target 62-08" )
-  local MenuT6208_1 = MENU_COALITION_COMMAND:New( coalition.side.BLUE, "TGT 6208: Activate  4x4 (46 mph)", MenuT6208, rangeMovingTarget, "Vehicle6208-1") 
-  local MenuT6208_2 = MENU_COALITION_COMMAND:New( coalition.side.BLUE, "TGT 6208: Activate  Truck (23 mph)", MenuT6208, rangeMovingTarget, "Vehicle6208-2") 
-  local MenuT6208_3 = MENU_COALITION_COMMAND:New( coalition.side.BLUE, "TGT 6208: Activate  T-55 (11 mph)", MenuT6208, rangeMovingTarget, "Vehicle6208-3") 
-  
+  local MenuT6208_1 = MENU_COALITION_COMMAND:New( coalition.side.BLUE, "TGT 6208: Activate  4x4 (46 mph)", MenuT6208, rangeMovingTarget, "Vehicle6208-1")
+  local MenuT6208_2 = MENU_COALITION_COMMAND:New( coalition.side.BLUE, "TGT 6208: Activate  Truck (23 mph)", MenuT6208, rangeMovingTarget, "Vehicle6208-2")
+  local MenuT6208_3 = MENU_COALITION_COMMAND:New( coalition.side.BLUE, "TGT 6208: Activate  T-55 (11 mph)", MenuT6208, rangeMovingTarget, "Vehicle6208-3")
+
   -- END R62 T6208
-  
+
 --- END MOVING TARGETS 
  
 -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
@@ -1011,15 +1003,15 @@ function BFMACM.BfmAddMenu()
               BfmBuildMenus(1, MenuGroup, "Single", BFMACM["SpawnBfm" .. groupName], unit)
               BfmBuildMenus(2, MenuGroup, "Pair", BFMACM["SpawnBfm" .. groupName], unit)
             MESSAGE:New(playerName .. " has entered the BFM/ACM zone.\nUse F10 menu to spawn adversaries.\nMissile Trainer can also be activated from F10 menu."):ToGroup(group)
-            --env.info("BFM/ACM entry Player name: " ..client:GetPlayerName())
-            --env.info("BFM/ACM entry Group Name: " ..group:GetName())
+            --env.info("[JTF-1] BFM/ACM entry Player name: " ..client:GetPlayerName())
+            --env.info("[JTF-1] BFM/ACM entry Group Name: " ..group:GetName())
           end
         elseif BFMACM["SpawnBfm" .. groupName] ~= nil then
           if unit:IsNotInZone(BFMACM.ZoneMenu) then
             BFMACM["SpawnBfm" .. groupName]:Remove()
             BFMACM["SpawnBfm" .. groupName] = nil
             MESSAGE:New(playerName .. " has left the ACM/BFM zone."):ToGroup(group)
-            --env.info("BFM/ACM exit Group Name: " ..group:GetName())
+            --env.info("[JTF-1] BFM/ACM exit Group Name: " ..group:GetName())
           end
         end
       end
@@ -1253,5 +1245,5 @@ local BVRGCI = {
   
 --- END BVRGCI SECTION
  
-env.info( '*** JTF-1 MOOSE MISSION SCRIPT END ***' )
+env.info( '[JTF-1] *** JTF-1 MOOSE MISSION SCRIPT END ***' )
  
