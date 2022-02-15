@@ -17,6 +17,9 @@ if devState == 1 then
     traceOn = false, -- default tracestate false == trace off, true == trace on.
   }
 
+  DEV_MENU.missionRestartMsg = (JTF1.missionRestartMsg and JTF1.missionRestartMsg or "ADMIN9999") -- Message to trigger mission restart via jtf1-hooks
+  env.info("[JTF-1] missionRestartMsg: " .. tostring(DEV_MENU.missionRestartMsg))
+
   function DEV_MENU:toggleTrace(traceOn)
     if self.traceOn then
       BASE:TraceOff()
@@ -38,10 +41,15 @@ if devState == 1 then
     end
   end
 
+  function DEV_MENU:restartMission()
+    MESSAGE:New(DEV_MENU.missionRestartMsg):ToAll()
+  end
+
   -- Add Dev submenu to F10 Other
   DEV_MENU.topmenu = MENU_MISSION:New("DEVMENU")
-  DEV_MENU.traceOnOff = MENU_MISSION_COMMAND:New("Toggle TRACE.", DEV_MENU.topmenu, DEV_MENU.toggleTrace, DEV_MENU, DEV_MENU.traceOn)
-  DEV_MENU.loadTest = MENU_MISSION_COMMAND:New("Load Test LUA.", DEV_MENU.topmenu, DEV_MENU.testLua, "test.lua")
+  MENU_MISSION_COMMAND:New("Toggle TRACE.", DEV_MENU.topmenu, DEV_MENU.toggleTrace, DEV_MENU, DEV_MENU.traceOn)
+  MENU_MISSION_COMMAND:New("Load Test LUA.", DEV_MENU.topmenu, DEV_MENU.testLua, "test.lua")
+  MENU_MISSION_COMMAND:New("Restart Mission", DEV_MENU.topmenu, DEV_MENU.restartMission)
 
   -- trace all events
   BASE:TraceAll(true)

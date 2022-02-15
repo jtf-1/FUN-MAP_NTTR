@@ -10,4 +10,7 @@ _SETTINGS:SetPlayerMenuOff()
 --- debug on/off
 BASE:TraceOnOff(false) 
 
+JTF1 = {
+    missionRestartMsg = "ADMIN9999", -- Message to trigger mission restart via jtf1-hooks
+}
 --- END INIT
