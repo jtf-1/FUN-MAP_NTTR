@@ -2,16 +2,35 @@
 --- BEGIN ADMIN MENU SECTION
 -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
+--- Admin menu
+--
+-- Add F10 command menus for selecting a mission to load, or restarting the current mission.
+--
+-- In the Mission Editor, add (a) switched condition trigger(s) with a 
+-- FLAG EQUALS condition, where flag number is ADMIN.flagLoadMission value
+-- and flag value is the ADMIN.missionList[x].missionFlagValue (see below).
+-- A missionFlagValue == 0 is used to trigger restart of the current
+-- mission using jtf1-hooks.lua.
+--
+-- If the menu should only appear for restricted client slots, set
+-- ADMIN.menuAllSlots to FALSE and add a client slot with the group name
+-- *prefixed* with the value set in ADMIN.adminMenuName.
+--
+-- If the menu should be available in all mission slots, set ADMIN.menuAllSlots
+-- to TRUE.
+--
+-- 
+
 ADMIN = EVENTHANDLER:New()
 ADMIN:HandleEvent(EVENTS.PlayerEnterAircraft)
 
 ADMIN.adminUnitName = "XX_" -- String to locate within unit name for admin slots
-ADMIN.missionRestart = 9999 -- Flag value to restart current mission
-ADMIN.missionRestartMsg = (JTF1.missionRestartMsg and JTF1.missionRestartMsg or "ADMIN9999") -- Message to trigger mission restart via jtf1-hooks
+ADMIN.missionRestart = (JTF1.missionRestart and JTF1.missionRestart or "ADMIN9999") -- Message to trigger mission restart via jtf1-hooks
+ADMIN.flagLoadMission = 9999
 ADMIN.menuAllSlots = false -- Set to true for admin menu to appear for all players
 
 ADMIN.missionList = { -- List of missions for load mission menu commands
-  {menuText = "Restart current mission", missionFlagValue = 9999},
+  {menuText = "Restart current mission", missionFlagValue = 0},
   {menuText = "Load DAY NTTR", missionFlagValue = 1},
   {menuText = "Load DAY NTTR - IFR", missionFlagValue = 2},
   {menuText = "Load NIGHT NTTR", missionFlagValue = 3},
@@ -55,8 +74,8 @@ function ADMIN:LoadMission(playerName, mapFlagValue)
   if playerName then
     env.info("[JTF-1] ADMIN Restart player name: " .. playerName)
   end
-  if mapFlagValue == ADMIN.missionRestart then
-    MESSAGE:New(ADMIN.missionRestartMsg):ToAll()
+  if mapFlagValue == 0 then -- use jtf1-hooks to restart current mission
+    MESSAGE:New(ADMIN.missionRestart):ToAll()
   else
     trigger.action.setUserFlag(ADMIN.flagLoadMission, mapFlagValue)
   end

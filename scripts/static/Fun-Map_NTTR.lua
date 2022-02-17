@@ -1,4 +1,4 @@
-env.info( '[JTF-1] *** MISSION FILE BUILD DATE: 2022-02-15T16:03:08.73Z ***') 
+env.info( '[JTF-1] *** MISSION FILE BUILD DATE: 2022-02-17T17:16:13.49Z ***') 
 env.info( '[JTF-1] *** JTF-1 STATIC MISSION SCRIPT START ***' )
 
 -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
@@ -12,7 +12,7 @@ _SETTINGS:SetPlayerMenuOff()
 BASE:TraceOnOff(false) 
 
 JTF1 = {
-    missionRestartMsg = "ADMIN9999", -- Message to trigger mission restart via jtf1-hooks
+    missionRestart = "ADMIN9999", -- Message to trigger mission restart via jtf1-hooks
 }
 --- END INIT
  
@@ -36,8 +36,7 @@ if devState == 1 then
   }
 
   DEV_MENU.missionRestartMsg = (JTF1.missionRestartMsg and JTF1.missionRestartMsg or "ADMIN9999") -- Message to trigger mission restart via jtf1-hooks
-  env.info("[JTF-1] missionRestartMsg: " .. tostring(DEV_MENU.missionRestartMsg))
-
+  
   function DEV_MENU:toggleTrace(traceOn)
     if self.traceOn then
       BASE:TraceOff()
@@ -100,16 +99,35 @@ setGroupGroundActive:ForEachGroup(
 --- BEGIN ADMIN MENU SECTION
 -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
+--- Admin menu
+--
+-- Add F10 command menus for selecting a mission to load, or restarting the current mission.
+--
+-- In the Mission Editor, add (a) switched condition trigger(s) with a 
+-- FLAG EQUALS condition, where flag number is ADMIN.flagLoadMission value
+-- and flag value is the ADMIN.missionList[x].missionFlagValue (see below).
+-- A missionFlagValue == 0 is used to trigger restart of the current
+-- mission using jtf1-hooks.lua.
+--
+-- If the menu should only appear for restricted client slots, set
+-- ADMIN.menuAllSlots to FALSE and add a client slot with the group name
+-- *prefixed* with the value set in ADMIN.adminMenuName.
+--
+-- If the menu should be available in all mission slots, set ADMIN.menuAllSlots
+-- to TRUE.
+--
+-- 
+
 ADMIN = EVENTHANDLER:New()
 ADMIN:HandleEvent(EVENTS.PlayerEnterAircraft)
 
 ADMIN.adminUnitName = "XX_" -- String to locate within unit name for admin slots
-ADMIN.missionRestart = 9999 -- Flag value to restart current mission
-ADMIN.missionRestartMsg = (JTF1.missionRestartMsg and JTF1.missionRestartMsg or "ADMIN9999") -- Message to trigger mission restart via jtf1-hooks
+ADMIN.missionRestart = (JTF1.missionRestart and JTF1.missionRestart or "ADMIN9999") -- Message to trigger mission restart via jtf1-hooks
+ADMIN.flagLoadMission = 9999
 ADMIN.menuAllSlots = false -- Set to true for admin menu to appear for all players
 
 ADMIN.missionList = { -- List of missions for load mission menu commands
-  {menuText = "Restart current mission", missionFlagValue = 9999},
+  {menuText = "Restart current mission", missionFlagValue = 0},
   {menuText = "Load DAY NTTR", missionFlagValue = 1},
   {menuText = "Load DAY NTTR - IFR", missionFlagValue = 2},
   {menuText = "Load NIGHT NTTR", missionFlagValue = 3},
@@ -153,8 +171,8 @@ function ADMIN:LoadMission(playerName, mapFlagValue)
   if playerName then
     env.info("[JTF-1] ADMIN Restart player name: " .. playerName)
   end
-  if mapFlagValue == ADMIN.missionRestart then
-    MESSAGE:New(ADMIN.missionRestartMsg):ToAll()
+  if mapFlagValue == 0 then -- use jtf1-hooks to restart current mission
+    MESSAGE:New(ADMIN.missionRestart):ToAll()
   else
     trigger.action.setUserFlag(ADMIN.flagLoadMission, mapFlagValue)
   end
@@ -197,43 +215,38 @@ end
 -- value (defined in script header). The flag value 1 should trigger a LOAD MISSION for the
 -- base (default) map.
 --
+-- Uses jtf1-hooks.lua to restart curent mission at end of mission runtime.
+--
 --
 
 local MissionTimer = {}
-
--- Mission run time in HOURS
-MissionTimer.durationHrs = 11
-
--- Schedule for mission restart warning messages. Time in minutes.
-MissionTimer.msgSchedule = {60, 30, 10, 5}
-
--- Mission run time in seconds
-MissionTimer.durationSecs = MissionTimer.durationHrs * 3600
-
--- schedule container
-MissionTimer.msgWarning = {}
+MissionTimer.durationHrs = 11 -- Mission run time in HOURS
+MissionTimer.msgSchedule = {60, 30, 10, 5} -- Schedule for mission restart warning messages. Time in minutes.
+MissionTimer.durationSecs = MissionTimer.durationHrs * 3600 -- Mission run time in seconds
+MissionTimer.msgWarning = {} -- schedule container
+MissionTimer.missionRestart = ( JTF1.missionRestart and JTF1.missionRestart or "ADMIN9999" ) -- Message to trigger mission restart via jtf1-hooks
 
 --- add scheduled messages for mission restart warnings and restart at end of mission duration
 function MissionTimer:AddSchedules()
 
-  for i, msgTime in ipairs(self.msgSchedule) do
-
-    self.msgWarning[i] = SCHEDULER:New( nil, 
-      function()
-        MESSAGE:New("Mission will restart in " .. msgTime .. " minutes!"):ToAll()
-      end,
-    {msgTime}, self.durationSecs - (msgTime * 60))
-
+  if MissionTimer.msgSchedule ~= nil then
+    for i, msgTime in ipairs(self.msgSchedule) do
+      self.msgWarning[i] = SCHEDULER:New( nil, 
+        function()
+          MESSAGE:New("Mission will restart in " .. msgTime .. " minutes!"):ToAll()
+        end,
+      {msgTime}, self.durationSecs - (msgTime * 60))
+    end
   end
 
   self.msgWarning["restart"] = SCHEDULER:New( nil,
     function()
-      MESSAGE:New("Mission is restarting now!"):ToAll()
-      trigger.action.setUserFlag(flagLoadMission, flagBaseMissionValue)
+      env.info("[JTF-1] MISSION RESTART CALLED")
+      MESSAGE:New(MissionTimer.missionRestart):ToAll()
     end,
     { }, self.durationSecs)
 
-end
+  end
 
 MissionTimer:AddSchedules()
 

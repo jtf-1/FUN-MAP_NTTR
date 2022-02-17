@@ -18,8 +18,7 @@ if devState == 1 then
   }
 
   DEV_MENU.missionRestartMsg = (JTF1.missionRestartMsg and JTF1.missionRestartMsg or "ADMIN9999") -- Message to trigger mission restart via jtf1-hooks
-  env.info("[JTF-1] missionRestartMsg: " .. tostring(DEV_MENU.missionRestartMsg))
-
+  
   function DEV_MENU:toggleTrace(traceOn)
     if self.traceOn then
       BASE:TraceOff()
