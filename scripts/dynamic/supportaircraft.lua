@@ -11,7 +11,7 @@ local TableSpawnSupport = { -- {spawnobjectname, spawnzone, callsignName, callsi
     callsignNumber  = 1
   },
   {
-    spawnobject     = "AR230V_KC-130_01", 
+    spawnobject     = "AR230V_KC-130J_01", 
     spawnzone       = "AR230V", 
     callsignName    = 2, 
     callsignNumber  = 3
@@ -73,38 +73,33 @@ local TableSpawnSupport = { -- {spawnobjectname, spawnzone, callsignName, callsi
 }
 
 function SpawnSupport (SupportSpawn) -- spawnobject, spawnzone, callsignName, callsignNumber
-
-  --local SupportSpawn = _args[1]
-
   if GROUP:FindByName(SupportSpawn.spawnobject) then
-
     local SupportSpawnObject = SPAWN:New( SupportSpawn.spawnobject )
-    SupportSpawnObject:InitLimit( 1, 50 )
+    SupportSpawnObject:InitLimit( 1, 0 )
       :OnSpawnGroup(
         function ( SpawnGroup )
           --SpawnGroup:CommandSetCallsign(SupportSpawn.callsignName, SupportSpawn.callsignNumber)
           local SpawnIndex = SupportSpawnObject:GetSpawnIndexFromGroup( SpawnGroup )
           local CheckTanker = SCHEDULER:New( nil, 
-          function ()
-            if SpawnGroup then
-              if SpawnGroup:IsNotInZone( ZONE:FindByName(SupportSpawn.spawnzone) ) then
-                SupportSpawnObject:ReSpawn( SpawnIndex )
+            function ()
+              if SpawnGroup then
+                if SpawnGroup:IsNotInZone( ZONE:FindByName(SupportSpawn.spawnzone) ) then
+                  SupportSpawnObject:ReSpawn( SpawnIndex )
+                  BASE:T("[JTF-1][SUPPORTSPAWN] Spawned aircraft: " .. SpawnGroup:GetName() .. " is not in zone.")
+                end
               end
-            end
-          end,
-          {}, 0, 60 )
+            end,
+            {}, 0, 60 
+          )
         end
       )
       :InitRepeatOnLanding()
       :Spawn()
-
-    else
-
-      env.error("[JTF-1] Function SpawnSupport: spawn template not found in mission: " .. tostring(SupportSpawn.spawnobject))
-      
-    end
-
+    BASE:T("[JTF-1][SUPPORTSPAWN] Spawned " .. SupportSpawn.spawnobject)
+  else
+    BASE:E("[JTF-1] Function SpawnSupport: spawn template not found in mission: " .. tostring(SupportSpawn.spawnobject))
   end
+end
 
 -- spawn support aircraft ---
 for i, v in ipairs( TableSpawnSupport ) do

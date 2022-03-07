@@ -14,13 +14,13 @@ if devState == 1 then
   MESSAGE:New("Dev Mode is ON!"):ToAll()
 
   local DEV_MENU = {
-    traceOn = false, -- default tracestate false == trace off, true == trace on.
+    traceOn = true, -- default tracestate false == trace off, true == trace on.
   }
 
   DEV_MENU.missionRestartMsg = (JTF1.missionRestartMsg and JTF1.missionRestartMsg or "ADMIN9999") -- Message to trigger mission restart via jtf1-hooks
   
   function DEV_MENU:toggleTrace(traceOn)
-    if self.traceOn then
+    if traceOn then
       BASE:TraceOff()
     else
       BASE:TraceOn()
@@ -52,6 +52,11 @@ if devState == 1 then
 
   -- trace all events
   BASE:TraceAll(true)
+
+  if DEV_MENU.traceOn then 
+    DEV_MENU:toggleTrace(false) 
+  end
+
 else
   env.info('[JTF-1] *** JTF-1 - DEV flag is OFF. ***')
 end
