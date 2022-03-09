@@ -15,9 +15,11 @@ if devState == 1 then
 
   local DEV_MENU = {
     traceOn = true, -- default tracestate false == trace off, true == trace on.
+    flagLoadMission = (JTF1.flagLoadMission and JTF1.flagLoadMission or 9999), -- flag for load misison trigger
+    missionRestartMsg = (JTF1.missionRestartMsg and JTF1.missionRestartMsg or "ADMIN9999"), -- Message to trigger mission restart via jtf1-hooks
   }
 
-  DEV_MENU.missionRestartMsg = (JTF1.missionRestartMsg and JTF1.missionRestartMsg or "ADMIN9999") -- Message to trigger mission restart via jtf1-hooks
+  
   
   function DEV_MENU:toggleTrace(traceOn)
     if traceOn then
@@ -27,6 +29,8 @@ if devState == 1 then
     end
     self.traceOn = not traceOn
   end
+
+  local base = _G
 
   function DEV_MENU:testLua(IncludeFile)
     local base = _G
@@ -41,21 +45,21 @@ if devState == 1 then
   end
 
   function DEV_MENU:restartMission()
-    MESSAGE:New(DEV_MENU.missionRestartMsg):ToAll()
+    trigger.action.setUserFlag(ADMIN.flagLoadMission, 99)
   end
 
   -- Add Dev submenu to F10 Other
   DEV_MENU.topmenu = MENU_MISSION:New("DEVMENU")
   MENU_MISSION_COMMAND:New("Toggle TRACE.", DEV_MENU.topmenu, DEV_MENU.toggleTrace, DEV_MENU, DEV_MENU.traceOn)
-  MENU_MISSION_COMMAND:New("Load Test LUA.", DEV_MENU.topmenu, DEV_MENU.testLua, "test.lua")
+  MENU_MISSION_COMMAND:New("Load Test LUA.", DEV_MENU.topmenu, DEV_MENU.testLua, 'test.lua')
   MENU_MISSION_COMMAND:New("Restart Mission", DEV_MENU.topmenu, DEV_MENU.restartMission)
 
   -- trace all events
   BASE:TraceAll(true)
 
-  if DEV_MENU.traceOn then 
-    DEV_MENU:toggleTrace(false) 
-  end
+  if DEV_MENU.traceOn then
+    BASE:TraceOn()
+  end  
 
 else
   env.info('[JTF-1] *** JTF-1 - DEV flag is OFF. ***')

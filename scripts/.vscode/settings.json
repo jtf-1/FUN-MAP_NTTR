@@ -1,0 +1,9 @@
+{
+    "Lua.diagnostics.globals": [
+        "Unit",
+        "zoneNoSpawnName",
+        "_zone",
+        "_msg",
+        "_adv"
+    ]
+}

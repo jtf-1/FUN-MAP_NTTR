@@ -50,11 +50,7 @@ function BFMACM:GetPlayerUnitAndName(unitname)
 end
 
 -- Add main BFMACM zone
-_zone = ZONE:FindByName(BFMACM.zoneBfmAcmName)
-if _zone == nil then
-  _zone = ZONE_POLYGON:FindByName(BFMACM.zoneBfmAcmName)
-end
-
+ _zone = ( ZONE:FindByName(BFMACM.zoneBfmAcmName) and ZONE:FindByName(BFMACM.zoneBfmAcmName) or ZONE_POLYGON:FindByName(BFMACM.zoneBfmAcmName))
 if _zone == nil then
   _msg = "[BFMACM] ERROR: BFM/ACM Zone: " .. tostring(BFMACM.zoneBfmAcmName) .. " not found!"
   BASE:E(_msg)
@@ -68,7 +64,7 @@ end
 if BFMACM.zonesNoSpawnName then
   BFMACM.zonesNoSpawn = {}
   for i, zoneNoSpawnName in ipairs(BFMACM.zonesNoSpawnName) do
-    _zone = (ZONE:FindByName(zoneNoSpawnName) or ZONE_POLYGON:FindByName(zoneNoSpawnName))
+    _zone = (ZONE:FindByName(zoneNoSpawnName) and ZONE:FindByName(zoneNoSpawnName) or ZONE_POLYGON:FindByName(zoneNoSpawnName))
     if _zone == nil then
       _msg = "[BFMACM] ERROR: Exclusion zone: " .. tostring(zoneNoSpawnName) .. " not found!"
       BASE:E(_msg)
@@ -96,26 +92,32 @@ end
 -- Spawn adversaries
 function BFMACM.SpawnAdv(adv,qty,group,rng,unit)
   local playerName = (unit:GetPlayerName() and unit:GetPlayerName() or "Unknown") 
-  local spawnAllowed = true
-  local msgNoSpawn = ""
   local range = rng * 1852
   local hdg = unit:GetHeading()
   local pos = unit:GetPointVec2()
   local spawnPt = pos:Translate(range, hdg, true)
   local spawnVec3 = spawnPt:GetVec3()
+
+  -- check player is in BFM ACM zone.
+  local spawnAllowed = unit:IsInZone(BFMACM.zoneBfmAcm)
+  local msgNoSpawn = " - Cannot spawn adversary aircraft if you are outside the BFM/ACM zone!"
+
   -- Check spawn location is not in an exclusion zone
-  if BFMACM.zonesNoSpawn then
-    for i, zoneExclusion in ipairs(BFMACM.zonesNoSpawn) do
-      spawnAllowed = not zoneExclusion:IsVec3InZone(spawnVec3)
+  if spawnAllowed then
+    if BFMACM.zonesNoSpawn then
+      for i, zoneExclusion in ipairs(BFMACM.zonesNoSpawn) do
+        spawnAllowed = not zoneExclusion:IsVec3InZone(spawnVec3)
+      end
+      msgNoSpawn = " - Cannot spawn adversary aircraft in an exclusion zone. Change course, or increase your range from the zone, and try again."
     end
   end
+
   -- Check spawn location is inside the BFM/ACM zone
   if spawnAllowed then
     spawnAllowed = BFMACM.zoneBfmAcm:IsVec3InZone(spawnVec3)
     msgNoSpawn = " - Cannot spawn adversary aircraft outside the BFM/ACM zone. Change course and try again."
-  else
-    msgNoSpawn = " - Cannot spawn adversary aircraft in an exclusion zone. Change course, or increase your range from the zone, and try again."
   end
+
   -- Spawn the adversary, if not in an exclusion zone or outside the BFM/ACM zone.
   if spawnAllowed then
     BFMACM.adversary.spawn[adv]:InitGrouping(qty)

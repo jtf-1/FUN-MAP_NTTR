@@ -1,4 +1,4 @@
-env.info( '[JTF-1] *** MISSION FILE BUILD DATE: 2022-03-07T22:06:32.23Z ***') 
+env.info( '[JTF-1] *** MISSION FILE BUILD DATE: 2022-03-09T22:43:50.87Z ***') 
 env.info( '[JTF-1] *** JTF-1 STATIC MISSION SCRIPT START ***' )
 
 -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
@@ -13,6 +13,7 @@ BASE:TraceOnOff(false)
 
 JTF1 = {
     missionRestart = "ADMIN9999", -- Message to trigger mission restart via jtf1-hooks
+    flagLoadMission = 9999, -- flag for load misison trigger
 }
 --- END INIT
  
@@ -33,9 +34,11 @@ if devState == 1 then
 
   local DEV_MENU = {
     traceOn = true, -- default tracestate false == trace off, true == trace on.
+    flagLoadMission = (JTF1.flagLoadMission and JTF1.flagLoadMission or 9999), -- flag for load misison trigger
+    missionRestartMsg = (JTF1.missionRestartMsg and JTF1.missionRestartMsg or "ADMIN9999"), -- Message to trigger mission restart via jtf1-hooks
   }
 
-  DEV_MENU.missionRestartMsg = (JTF1.missionRestartMsg and JTF1.missionRestartMsg or "ADMIN9999") -- Message to trigger mission restart via jtf1-hooks
+  
   
   function DEV_MENU:toggleTrace(traceOn)
     if traceOn then
@@ -45,6 +48,8 @@ if devState == 1 then
     end
     self.traceOn = not traceOn
   end
+
+  local base = _G
 
   function DEV_MENU:testLua(IncludeFile)
     local base = _G
@@ -59,21 +64,21 @@ if devState == 1 then
   end
 
   function DEV_MENU:restartMission()
-    MESSAGE:New(DEV_MENU.missionRestartMsg):ToAll()
+    trigger.action.setUserFlag(ADMIN.flagLoadMission, 99)
   end
 
   -- Add Dev submenu to F10 Other
   DEV_MENU.topmenu = MENU_MISSION:New("DEVMENU")
   MENU_MISSION_COMMAND:New("Toggle TRACE.", DEV_MENU.topmenu, DEV_MENU.toggleTrace, DEV_MENU, DEV_MENU.traceOn)
-  MENU_MISSION_COMMAND:New("Load Test LUA.", DEV_MENU.topmenu, DEV_MENU.testLua, "test.lua")
+  MENU_MISSION_COMMAND:New("Load Test LUA.", DEV_MENU.topmenu, DEV_MENU.testLua, 'test.lua')
   MENU_MISSION_COMMAND:New("Restart Mission", DEV_MENU.topmenu, DEV_MENU.restartMission)
 
   -- trace all events
   BASE:TraceAll(true)
 
-  if DEV_MENU.traceOn then 
-    DEV_MENU:toggleTrace(false) 
-  end
+  if DEV_MENU.traceOn then
+    BASE:TraceOn()
+  end  
 
 else
   env.info('[JTF-1] *** JTF-1 - DEV flag is OFF. ***')
@@ -993,11 +998,7 @@ function BFMACM:GetPlayerUnitAndName(unitname)
 end
 
 -- Add main BFMACM zone
-_zone = ZONE:FindByName(BFMACM.zoneBfmAcmName)
-if _zone == nil then
-  _zone = ZONE_POLYGON:FindByName(BFMACM.zoneBfmAcmName)
-end
-
+ _zone = ( ZONE:FindByName(BFMACM.zoneBfmAcmName) and ZONE:FindByName(BFMACM.zoneBfmAcmName) or ZONE_POLYGON:FindByName(BFMACM.zoneBfmAcmName))
 if _zone == nil then
   _msg = "[BFMACM] ERROR: BFM/ACM Zone: " .. tostring(BFMACM.zoneBfmAcmName) .. " not found!"
   BASE:E(_msg)
@@ -1011,7 +1012,7 @@ end
 if BFMACM.zonesNoSpawnName then
   BFMACM.zonesNoSpawn = {}
   for i, zoneNoSpawnName in ipairs(BFMACM.zonesNoSpawnName) do
-    _zone = (ZONE:FindByName(zoneNoSpawnName) or ZONE_POLYGON:FindByName(zoneNoSpawnName))
+    _zone = (ZONE:FindByName(zoneNoSpawnName) and ZONE:FindByName(zoneNoSpawnName) or ZONE_POLYGON:FindByName(zoneNoSpawnName))
     if _zone == nil then
       _msg = "[BFMACM] ERROR: Exclusion zone: " .. tostring(zoneNoSpawnName) .. " not found!"
       BASE:E(_msg)
@@ -1039,26 +1040,32 @@ end
 -- Spawn adversaries
 function BFMACM.SpawnAdv(adv,qty,group,rng,unit)
   local playerName = (unit:GetPlayerName() and unit:GetPlayerName() or "Unknown") 
-  local spawnAllowed = true
-  local msgNoSpawn = ""
   local range = rng * 1852
   local hdg = unit:GetHeading()
   local pos = unit:GetPointVec2()
   local spawnPt = pos:Translate(range, hdg, true)
   local spawnVec3 = spawnPt:GetVec3()
+
+  -- check player is in BFM ACM zone.
+  local spawnAllowed = unit:IsInZone(BFMACM.zoneBfmAcm)
+  local msgNoSpawn = " - Cannot spawn adversary aircraft if you are outside the BFM/ACM zone!"
+
   -- Check spawn location is not in an exclusion zone
-  if BFMACM.zonesNoSpawn then
-    for i, zoneExclusion in ipairs(BFMACM.zonesNoSpawn) do
-      spawnAllowed = not zoneExclusion:IsVec3InZone(spawnVec3)
+  if spawnAllowed then
+    if BFMACM.zonesNoSpawn then
+      for i, zoneExclusion in ipairs(BFMACM.zonesNoSpawn) do
+        spawnAllowed = not zoneExclusion:IsVec3InZone(spawnVec3)
+      end
+      msgNoSpawn = " - Cannot spawn adversary aircraft in an exclusion zone. Change course, or increase your range from the zone, and try again."
     end
   end
+
   -- Check spawn location is inside the BFM/ACM zone
   if spawnAllowed then
     spawnAllowed = BFMACM.zoneBfmAcm:IsVec3InZone(spawnVec3)
     msgNoSpawn = " - Cannot spawn adversary aircraft outside the BFM/ACM zone. Change course and try again."
-  else
-    msgNoSpawn = " - Cannot spawn adversary aircraft in an exclusion zone. Change course, or increase your range from the zone, and try again."
   end
+
   -- Spawn the adversary, if not in an exclusion zone or outside the BFM/ACM zone.
   if spawnAllowed then
     BFMACM.adversary.spawn[adv]:InitGrouping(qty)

@@ -1,128 +1,223 @@
-TESTLUA = {}
+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+--- BEGIN ACM/BFM SECTION
+-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
--- Initialise menu elements
-TESTLUA.menuadded = {}
-TESTLUA.MenuF10 = {}
+--- AI ACM/BFM
+--
+-- ZONES: if zones are MOOSE polygon zones, zone name in mission editor MUST be suffixed with ~ZONE_POLYGON
+-- 
 
--- Add event handler
-TESTLUA.eventHandler = EVENTHANDLER:New()
-TESTLUA.eventHandler:HandleEvent(EVENTS.PlayerEnterAircraft)
-TESTLUA.eventHandler:HandleEvent(EVENTS.PlayerLeaveUnit)
-
--- check player is present and unit is alive
-function TESTLUA:GetPlayerUnitAndName(unitname)
-
-  if unitname ~= nil then
-
-    local DCSunit = Unit.getByName(unitname)
-
-    if DCSunit then
-
-      local playername=DCSunit:getPlayerName()
-      local unit = UNIT:Find(DCSunit)
-
-      if DCSunit and unit and playername then
-
-        return unit, playername
-
+BFMACM = {
+    menuAdded = {},
+    menuF10 = {},
+    zoneBfmAcmName = "COYOTEABC", -- The BFM/ACM Zone
+    zonesNoSpawnName = { -- zones inside BFM/ACM zone within which adversaries may NOT be spawned.
+        "zone_box",
+    },
+    adversary = {
+      menu = { -- Adversary menu
+        {template = "ADV_F4", menuText = "Adversary A-4"},
+        {template = "ADV_MiG28", menuText = "Adversary MiG-28"},
+        {template = "ADV_Su27", menuText = "Adversary MiG-23"},
+        {template = "ADV_MiG23", menuText = "Adversary Su-27"},
+        {template = "ADV_F16", menuText = "Adversary F-16"},
+        {template = "ADV_F18", menuText = "Adversary F-18"},
+      },
+      range = {5, 10, 20}, -- ranges at which to spawn adversaries in nautical miles
+      spawn = {} -- container for aversary spawn objects
+    },
+  }
+  
+  -- add event handler
+  BFMACM.eventHandler = EVENTHANDLER:New()
+  BFMACM.eventHandler:HandleEvent(EVENTS.PlayerEnterAircraft)
+  BFMACM.eventHandler:HandleEvent(EVENTS.PlayerLeaveUnit)
+  
+  -- check player is present and unit is alive
+  function BFMACM:GetPlayerUnitAndName(unitname)
+    if unitname ~= nil then
+      local DCSunit = Unit.getByName(unitname)
+      if DCSunit then
+        local playername=DCSunit:getPlayerName()
+        local unit = UNIT:Find(DCSunit)
+        if DCSunit and unit and playername then
+          return unit, playername
+        end
       end
-
     end
-
+    -- Return nil if we could not find a player.
+    return nil,nil
   end
-
-  -- Return nil if player not found.
-  return nil,nil
-
-end
-
--- command function
-function TESTLUA:testCommand(unitname)
-
-    local unit, playername = TESTLUA:GetPlayerUnitAndName(unitname)
-    MESSAGE:New("[TEST MENU] menuTestUnit called by: " .. playername .. "\nIn Unit: " .. unit:GetName()):ToAll()
-    BASE:I("[TEST MENU] menuTestUnit called by: " .. playername .. "\nIn Unit: " .. unit:GetName())
-
-end
-
--- addmenu for unit.
-function TESTLUA:AddMenu(unitname)
-
-    local unit, playername = TESTLUA:GetPlayerUnitAndName(unitname)
-
-    local group = unit:GetGroup()
-    local gid = group:GetID()
-    local uid = unit:GetID()
-
-    BASE:I("[TEST MENU] AddMenu called for unit: [" .. unitname .. "] and Playername: [" .. playername .. "]")
-
-    if TESTLUA.menuadded[uid] == nil then
-
-
-        if TESTLUA.MenuF10[gid] == nil then
-
-            BASE:I("[TEST MENU] Adding Submenu for group: " .. group:GetName())
-            TESTLUA.MenuF10[gid] = MENU_GROUP:New(group, "[" .. group:GetName() .. "] F10 MENU")
-
-        end
-
-        if TESTLUA.MenuF10[gid][uid] == nil then
-
-            BASE:I("[TEST MENU] Add command for player: " .. playername)
-            TESTLUA.MenuF10[gid][uid] = MENU_GROUP_COMMAND:New(group, "[" .. playername .."]["..unitname.."] TEST COMMAND", TESTLUA.MenuF10[gid], TESTLUA.testCommand, self, unitname)
-
-        end
-        
-        TESTLUA.menuadded[uid] = true
-
+  
+  -- Add main BFMACM zone
+  
+  
+  --[[ _zone = ZONE:FindByName(BFMACM.zoneBfmAcmName)
+  if _zone == nil then
+    _zone = ZONE_POLYGON:FindByName(BFMACM.zoneBfmAcmName)
+  end
+   ]]
+  
+   _zone = (ZONE:FindByName(BFMACM.zoneBfmAcmName) and ZONE:FindByName(BFMACM.zoneBfmAcmName) or ZONE_POLYGON:FindByName(BFMACM.zoneBfmAcmName))
+  if _zone == nil then
+    _msg = "[BFMACM] ERROR: BFM/ACM Zone: " .. tostring(BFMACM.zoneBfmAcmName) .. " not found!"
+    BASE:E(_msg)
+  else
+    BFMACM.zoneBfmAcm = _zone
+    _msg = "[BFMACM] BFM/ACM Zone: " .. tostring(BFMACM.zoneBfmAcmName) .. " added."
+    BASE:T(_msg)
+  end
+  
+  -- Add spawn exclusion zone(s)
+  if BFMACM.zonesNoSpawnName then
+    BFMACM.zonesNoSpawn = {}
+    for i, zoneNoSpawnName in ipairs(BFMACM.zonesNoSpawnName) do
+      _zone = (ZONE:FindByName(zoneNoSpawnName) and ZONE:FindByName(zoneNoSpawnName) or ZONE_POLYGON:FindByName(zoneNoSpawnName))
+      if _zone == nil then
+        _msg = "[BFMACM] ERROR: Exclusion zone: " .. tostring(zoneNoSpawnName) .. " not found!"
+        BASE:E(_msg)
+      else
+        BFMACM.zonesNoSpawn[i] = _zone
+        _msg = "[BFMACM] Exclusion zone: " .. tostring(zoneNoSpawnName) .. " added."
+        BASE:T(_msg)
+      end
     end
-
-
-end
-
--- handler for PlayEnterAircraft event.
--- call function to add GROUP:UNIT menu.
-function TESTLUA.eventHandler:OnEventPlayerEnterAircraft(EventData) -- OnEventBirth or OnEventPlayerEnterAircraft
+  else
+    BASE:T("[BFMACM] No exclusion zones defined")
+  end
+  
+  -- Add spawn objects
+  for i, adversaryMenu in ipairs(BFMACM.adversary.menu) do
+    _adv = GROUP:FindByName(adversaryMenu.template)
+    if _adv then
+      BFMACM.adversary.spawn[adversaryMenu.template] = SPAWN:New(adversaryMenu.template)
+    else
+      _msg = "[BFMACM] ERROR: spawn template: " .. tostring(adversaryMenu.template) .. " not found!" .. tostring(zoneNoSpawnName) .. " not found!"
+      BASE:E(_msg)
+    end
+  end
+  
+  -- Spawn adversaries
+  function BFMACM.SpawnAdv(adv,qty,group,rng,unit)
+    local playerName = (unit:GetPlayerName() and unit:GetPlayerName() or "Unknown") 
+    local spawnAllowed = true
+    local msgNoSpawn = ""
+    local range = rng * 1852
+    local hdg = unit:GetHeading()
+    local pos = unit:GetPointVec2()
+    local spawnPt = pos:Translate(range, hdg, true)
+    local spawnVec3 = spawnPt:GetVec3()
+    -- Check spawn location is not in an exclusion zone
+    if BFMACM.zonesNoSpawn then
+      for i, zoneExclusion in ipairs(BFMACM.zonesNoSpawn) do
+        spawnAllowed = not zoneExclusion:IsVec3InZone(spawnVec3)
+      end
+    end
+    -- Check spawn location is inside the BFM/ACM zone
+    if spawnAllowed then
+      spawnAllowed = BFMACM.zoneBfmAcm:IsVec3InZone(spawnVec3)
+      msgNoSpawn = " - Cannot spawn adversary aircraft outside the BFM/ACM zone. Change course and try again."
+    else
+      msgNoSpawn = " - Cannot spawn adversary aircraft in an exclusion zone. Change course, or increase your range from the zone, and try again."
+    end
+    -- Spawn the adversary, if not in an exclusion zone or outside the BFM/ACM zone.
+    if spawnAllowed then
+      BFMACM.adversary.spawn[adv]:InitGrouping(qty)
+      :InitHeading(hdg + 180)
+      :OnSpawnGroup(
+        function ( SpawnGroup )
+          local CheckAdversary = SCHEDULER:New( SpawnGroup, 
+          function (CheckAdversary)
+            if SpawnGroup then
+              if SpawnGroup:IsNotInZone( BFMACM.zoneBfmAcm ) then
+                MESSAGE:New("Adversary left BFM Zone and was removed!"):ToAll()
+                SpawnGroup:Destroy()
+                SpawnGroup = nil
+              end
+            end
+          end,
+          {}, 0, 5 )
+        end
+      )
+      :SpawnFromVec3(spawnVec3)
+      MESSAGE:New(playerName .. " has spawned Adversary."):ToGroup(group)
+    else
+      MESSAGE:New(playerName .. msgNoSpawn):ToGroup(group)
+    end
+  end
     
-    local unitname = EventData.IniUnitName
-    local unit, playername = TESTLUA:GetPlayerUnitAndName(unitname)
-
+  function BFMACM:AddMenu(unitname)
+    BASE:T("[BFMACM] AddMenu called.")
+    local unit, playername = BFMACM:GetPlayerUnitAndName(unitname)
     if unit and playername then
-
-        BASE:I("[TEST MENU] Player " .. playername .. " entered unit: " .. unitname .. " UID: " .. unit:GetID())
-        SCHEDULER:New(nil, TESTLUA.AddMenu, {TESTLUA, unitname, true},0.1)
-
+      local group = unit:GetGroup()
+      local gid = group:GetID()
+      local uid = unit:GetID()
+      if group and gid then
+        -- only add menu once!
+        if BFMACM.menuAdded[uid] == nil then
+          -- add GROUP menu if not already present
+          if BFMACM.menuF10[gid] == nil then
+            BASE:T("[BFMACM] Adding menu for group: " .. group:GetName())
+            BFMACM.menuF10[gid] = MENU_GROUP:New(group, "AI BFM/ACM")
+          end
+          if BFMACM.menuF10[gid][uid] == nil then
+            -- add playername submenu
+            BASE:T("[BFMACM] Add submenu for player: " .. playername)
+            BFMACM.menuF10[gid][uid] = MENU_GROUP:New(group, playername, BFMACM.menuF10[gid])
+            -- add adversary submenus and range selectors
+            BASE:T("[BFMACM] Add submenus and range selectors for player: " .. playername)
+            for iMenu, adversary in ipairs(BFMACM.adversary.menu) do
+              -- Add adversary type menu
+              BFMACM.menuF10[gid][uid][iMenu] = MENU_GROUP:New(group, adversary.menuText, BFMACM.menuF10[gid][uid])
+              -- Add single or pair selection for adversary type
+              BFMACM.menuF10[gid][uid][iMenu].single = MENU_GROUP:New(group, "Single", BFMACM.menuF10[gid][uid][iMenu])
+              BFMACM.menuF10[gid][uid][iMenu].pair = MENU_GROUP:New(group, "Pair", BFMACM.menuF10[gid][uid][iMenu])
+              -- select range at which to spawn adversary
+              for iCommand, range in ipairs(BFMACM.adversary.range) do
+                  MENU_GROUP_COMMAND:New(group, tostring(range) .. " nm", BFMACM.menuF10[gid][uid][iMenu].single, BFMACM.SpawnAdv, adversary.template, 1, group, range, unit)
+                  MENU_GROUP_COMMAND:New(group, tostring(range) .. " nm", BFMACM.menuF10[gid][uid][iMenu].pair, BFMACM.SpawnAdv, adversary.template, 2, group, range, unit)
+              end
+            end
+          end
+          BFMACM.menuAdded[uid] = true
+        end
+      else
+        BASE:T(string.format("[BFMACM] ERROR: Could not find group or group ID in AddMenu() function. Unit name: %s.", unitname))
+      end
+    else
+      BASE:T(string.format("[BFMACM] ERROR: Player unit does not exist in AddMenu() function. Unit name: %s.", unitname))
     end
-
-end
-
--- handler for PlayerLeaveUnit event.
--- remove GROUP:UNIT menu.
-function TESTLUA.eventHandler:OnEventPlayerLeaveUnit(EventData)
-
+  end
+    
+  -- handler for PlayEnterAircraft event.
+  -- call function to add GROUP:UNIT menu.
+  function BFMACM.eventHandler:OnEventPlayerEnterAircraft(EventData)
+    BASE:T("[BFMACM] PlayerEnterAircraft called.")
+    local unitname = EventData.IniUnitName
+    local unit, playername = BFMACM:GetPlayerUnitAndName(unitname)
+    if unit and playername then
+      BASE:T("[BFMACM] Player entered Aircraft: " .. playername)
+      SCHEDULER:New(nil, BFMACM.AddMenu, {BFMACM, unitname},0.1)
+    end
+  end
+  
+  -- handler for PlayerLeaveUnit event.
+  -- remove GROUP:UNIT menu.
+  function BFMACM.eventHandler:OnEventPlayerLeaveUnit(EventData)
     local playername = EventData.IniPlayerName
     local unit = EventData.IniUnit
     local gid = EventData.IniGroup:GetID()
     local uid = EventData.IniUnit:GetID()
-    
-    BASE:I("[TEST MENU] " .. playername .. " left unit:" .. unit:GetName() .. " UID: " .. uid)
-    
+    BASE:T("[BFMACM] " .. playername .. " left unit:" .. unit:GetName() .. " UID: " .. uid)
     if gid and uid then
-
-        if TESTLUA.MenuF10[gid] then
-
-            if TESTLUA.MenuF10[gid][uid] then
-
-                BASE:I("[TEST MENU] Removing menu for unit UID:" .. uid)
-                TESTLUA.MenuF10[gid][uid]:Remove()
-                TESTLUA.MenuF10[gid][uid] = nil
-                TESTLUA.menuadded[uid] = nil
-            end  
-
-        end
-            
+      if BFMACM.menuF10[gid] then
+        BASE:T("[BFMACM] Removing menu for unit UID:" .. uid)
+        BFMACM.menuF10[gid][uid]:Remove()
+        BFMACM.menuF10[gid][uid] = nil
+        BFMACM.menuAdded[uid] = nil
+      end
     end
-                
-end
-
---- END MISSILE TRAINER
+  end
+  
+  --- END ACMBFM SECTION
