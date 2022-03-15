@@ -4,6 +4,9 @@
         "zoneNoSpawnName",
         "_zone",
         "_msg",
-        "_adv"
+        "_adv",
+        "env",
+        "coalition",
+        "Group"
     ]
 }

@@ -25,13 +25,12 @@ ECHO Static path:           %staticscriptpath%
 SET kneeboardpath=%projectroot%KNEEBOARD\IMAGES\
 ECHO Kneeboard path:        %kneeboardpath%
 
-
 :: Initialise build file & log
 ECHO MISSION FILE BUILD STARTED: %DATE:~6,4%-%DATE:~3,2%-%DATE:~0,2%T%TIME% > %log%
 ECHO. >> %log%
 
 CD %projectroot%
-DIR %projectroot%*.miz 
+DIR  %projectroot%*.miz 
 
 :: Prepare build content
 mkdir %projectroot%Temp\l10n\DEFAULT
@@ -43,10 +42,15 @@ copy %kneeboardpath%*.png %projectroot%Temp\KNEEBOARD\IMAGES
 For %%I IN (%projectroot%*.miz) do (
   ECHO %DATE:~6,4%-%DATE:~3,2%-%DATE:~0,2%T%TIME%      Building MIZ file:    %%I >> %log%
   echo Mission: %%I
+  echo.
+  echo.
+  echo +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+  echo ++                     Build File                        ++
+  echo +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
   cd %projectroot%Temp
   7z.exe -bb0 u "%%I" *
 )
-
+  
 cd %projectroot%
 rmdir /S /Q Temp
 
