@@ -13,17 +13,20 @@
 --
 --
 
-local MissionTimer = {}
-MissionTimer.durationHrs = 11 -- Mission run time in HOURS
-MissionTimer.msgSchedule = {60, 30, 10, 5} -- Schedule for mission restart warning messages. Time in minutes.
-MissionTimer.durationSecs = MissionTimer.durationHrs * 3600 -- Mission run time in seconds
-MissionTimer.msgWarning = {} -- schedule container
-MissionTimer.missionRestart = ( JTF1.missionRestart and JTF1.missionRestart or "ADMIN9999" ) -- Message to trigger mission restart via jtf1-hooks
+MISSIONTIMER = {}
+
+MISSIONTIMER.durationHrs = 11 -- Mission run time in HOURS
+MISSIONTIMER.msgSchedule = {60, 30, 10, 5} -- Schedule for mission restart warning messages. Time in minutes.
+MISSIONTIMER.durationSecs = MISSIONTIMER.durationHrs * 3600 -- Mission run time in seconds
+MISSIONTIMER.msgWarning = {} -- schedule container
+MISSIONTIMER.missionRestart = ( JTF1.missionRestart and JTF1.missionRestart or "ADMIN9999" ) -- Message to trigger mission restart via jtf1-hooks
+MISSIONTIMER.restartDelay = 300 -- time in seconds to delay restart if active clients are present.
+
 
 --- add scheduled messages for mission restart warnings and restart at end of mission duration
-function MissionTimer:AddSchedules()
+function MISSIONTIMER:AddSchedules()
 
-  if MissionTimer.msgSchedule ~= nil then
+  if MISSIONTIMER.msgSchedule ~= nil then
     for i, msgTime in ipairs(self.msgSchedule) do
       self.msgWarning[i] = SCHEDULER:New( nil, 
         function()
@@ -35,13 +38,36 @@ function MissionTimer:AddSchedules()
 
   self.msgWarning["restart"] = SCHEDULER:New( nil,
     function()
-      env.info("[JTF-1] MISSION RESTART CALLED")
-      MESSAGE:New(MissionTimer.missionRestart):ToAll()
+      MISSIONTIMER:Restart()
     end,
     { }, self.durationSecs)
 
+end
+
+function MISSIONTIMER:Restart()
+
+  local clientList = SET_CLIENT:New()
+  clientList:FilterActive()
+  clientList:FilterStart()
+
+  if clientList:CountAlive() > 1 then
+    
+    local msg  = "Mission will restart when no active clients are present. Next check will be in " .. tostring(self.restartDelay / 60) .." minutes." 
+    MESSAGE:New(msg):ToAll()
+
+    self.msgWarning["restart"] = SCHEDULER:New( nil,
+      function()
+        MISSIONTIMER:Restart()
+      end,
+      { }, self.restartDelay)
+
+  else
+    env.info("[JTF-1] MISSION RESTART CALLED")
+    MESSAGE:New(MISSIONTIMER.missionRestart):ToAll()
   end
 
-MissionTimer:AddSchedules()
+end
+
+MISSIONTIMER:AddSchedules()
 
 --- END MISSION TIMER

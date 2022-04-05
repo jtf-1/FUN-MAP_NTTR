@@ -30,25 +30,13 @@ STATICRANGES.Ranges = {
     strafepits = {
     },
   },--R61 END
-  { --R62A
-    rangeId               = "R62A",
-    rangeName             = "Range 62A",
-    rangeZone             = "R62A",
+  { --R62
+    rangeId               = "R62",
+    rangeName             = "Range 62",
+    rangeZone             = "R62",
     rangeControlFrequency = 234.250,
     groups = {
       "62-01", "62-02", "62-04",
-    },
-    units = {
-    },
-    strafepits = {
-    },
-  },--R62A END
-  { --R62B
-    rangeId               = "R62B",
-    rangeName             = "Range 62B",
-    rangeZone             = "R62B",
-    rangeControlFrequency = 234.250,
-    groups = {
       "62-03", "62-08", "62-09", "62-11", 
       "62-12", "62-13", "62-14", "62-21", 
       "62-21-01", "62-22", "62-31", "62-32",
@@ -65,7 +53,30 @@ STATICRANGES.Ranges = {
     },
     strafepits = {
     },
-  },--R62B END
+  },--R62 END
+  -- { --R62B
+  --   rangeId               = "R62B",
+  --   rangeName             = "Range 62B",
+  --   rangeZone             = "R62B",
+  --   rangeControlFrequency = 234.250,
+  --   groups = {
+  --     "62-03", "62-08", "62-09", "62-11", 
+  --     "62-12", "62-13", "62-14", "62-21", 
+  --     "62-21-01", "62-22", "62-31", "62-32",
+  --     "62-41", "62-42", "62-43", "62-44", 
+  --     "62-45", "62-51", "62-52", "62-53", 
+  --     "62-54", "62-55", "62-56", "62-61", 
+  --     "62-62", "62-63", "62-71", "62-72", 
+  --     "62-73", "62-74", "62-75", "62-76", 
+  --     "62-77", "62-78", "62-79", "62-81", 
+  --     "62-83", "62-91", "62-92", "62-93",
+  --   },
+  --   units = {
+  --     "62-32-01", "62-32-02", "62-32-03", "62-99",  
+  --   },
+  --   strafepits = {
+  --   },
+  -- },--R62B END
   { --R63
     rangeId               = "R63",
     rangeName             = "Range 63",
@@ -167,6 +178,10 @@ function STATICRANGES:AddStaticRanges(TableRanges)
       end  
     end
     
+    if rangeData.rangeControlFrequency ~= nil then
+      
+    end
+
     self[rangeObject]:Start()
   end
 

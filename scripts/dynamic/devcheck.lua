@@ -13,7 +13,7 @@ if devState == 1 then
   env.warning('[JTF-1] *** JTF-1 - DEV flag is ON! ***')
   MESSAGE:New("Dev Mode is ON!"):ToAll()
 
-  local DEV_MENU = {
+  DEV_MENU = {
     traceOn = true, -- default tracestate false == trace off, true == trace on.
     flagLoadMission = (JTF1.flagLoadMission and JTF1.flagLoadMission or 9999), -- flag for load misison trigger
     missionRestartMsg = (JTF1.missionRestartMsg and JTF1.missionRestartMsg or "ADMIN9999"), -- Message to trigger mission restart via jtf1-hooks
@@ -30,18 +30,20 @@ if devState == 1 then
     self.traceOn = not traceOn
   end
 
-  local base = _G
 
-  function DEV_MENU:testLua(IncludeFile)
+  function DEV_MENU:testLua()
+
     local base = _G
-    local __filepath = 'E:/GitHub/FUN-MAP_NTTR/scripts/dynamic/'
-		local f = assert( base.loadfile( __filepath .. IncludeFile ) )
+
+    local f = assert( base.loadfile( 'E:/GitHub/FUN-MAP_NTTR/scripts/dynamic/test.lua' ) )
+
     if f == nil then
-      error ("[JTF-1] Loader: could not load mission file " .. IncludeFile )
-    else
-      env.info( "[JTF-1] Loader: " .. IncludeFile .. " dynamically loaded." )
-			return f()
-    end
+			error ("Mission Loader: could not load test.lua." )
+		else
+			env.info( "[JTF-1] Mission Loader: test.lua dynamically loaded." )
+			--return f()
+		end
+
   end
 
   function DEV_MENU:restartMission()
@@ -51,7 +53,7 @@ if devState == 1 then
   -- Add Dev submenu to F10 Other
   DEV_MENU.topmenu = MENU_MISSION:New("DEVMENU")
   MENU_MISSION_COMMAND:New("Toggle TRACE.", DEV_MENU.topmenu, DEV_MENU.toggleTrace, DEV_MENU, DEV_MENU.traceOn)
-  MENU_MISSION_COMMAND:New("Load Test LUA.", DEV_MENU.topmenu, DEV_MENU.testLua, 'test.lua')
+  MENU_MISSION_COMMAND:New("Reload Test LUA.", DEV_MENU.topmenu, DEV_MENU.testLua)
   MENU_MISSION_COMMAND:New("Restart Mission", DEV_MENU.topmenu, DEV_MENU.restartMission)
 
   -- trace all events
