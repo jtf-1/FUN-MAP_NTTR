@@ -95,8 +95,10 @@ function ADMIN:BuildAdminMenu(unit,playername)
     -- Create menu for admin slot
     local adminGroup = unit:GetGroup()
     local adminMenu = MENU_GROUP:New(adminGroup, "Admin")
+    local testMenu = MENU_GROUP:New(adminGroup, "Test", adminMenu)
     for i, menuCommand in ipairs(ADMIN.missionList) do
       MENU_GROUP_COMMAND:New( adminGroup, menuCommand.menuText, adminMenu, ADMIN.LoadMission, self, playername, menuCommand.missionFlagValue )
+      MENU_GROUP_COMMAND:New( adminGroup, "SRS test", testMenu, JTFMSRS.SendDefaultRadio, "99 all players, test broadcast over default radio.")
     end
   end
 end

@@ -58,11 +58,6 @@ function JTFMSRS.SendDefaultRadio(msgText)
   BASE:T("[JTFMSRS] SendDefaultRadio : " .. tostring(msgText))
   local text = SOUNDTEXT:New(msgText)
   JTFMSRS.DefaultRadio:PlaySoundText(text)
-  
-  --STTS.DIRECTORY = JTFMSRS.SRS_DIRECTORY
-  --STTS.SRS_PORT = JTFMSRS.SRS_PORT
-  --STTS.TextToSpeech(msgText,JTFMSRS.defaultFreqs, JTFMSRS.defaultModulation, JTFMSRS.defaultVol, JTFMSRS.defaultName, 2)
-  --BASE:T({STTS})
 end
 
 JTFMSRS:LoadSettings()

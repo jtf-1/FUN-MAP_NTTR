@@ -1,4 +1,4 @@
-env.info( '[JTF-1] *** MISSION FILE BUILD DATE: 2022-03-09T22:43:50.87Z ***') 
+env.info( '[JTF-1] *** MISSION FILE BUILD DATE: 2022-04-06T16:09:09.27Z ***') 
 env.info( '[JTF-1] *** JTF-1 STATIC MISSION SCRIPT START ***' )
 
 -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
@@ -28,17 +28,13 @@ local devFlag = 8888
 local devState = trigger.misc.getUserFlag(devFlag)
 
 if devState == 1 then
-
   env.warning('[JTF-1] *** JTF-1 - DEV flag is ON! ***')
   MESSAGE:New("Dev Mode is ON!"):ToAll()
-
-  local DEV_MENU = {
+  DEV_MENU = {
     traceOn = true, -- default tracestate false == trace off, true == trace on.
     flagLoadMission = (JTF1.flagLoadMission and JTF1.flagLoadMission or 9999), -- flag for load misison trigger
     missionRestartMsg = (JTF1.missionRestartMsg and JTF1.missionRestartMsg or "ADMIN9999"), -- Message to trigger mission restart via jtf1-hooks
   }
-
-  
   
   function DEV_MENU:toggleTrace(traceOn)
     if traceOn then
@@ -49,18 +45,15 @@ if devState == 1 then
     self.traceOn = not traceOn
   end
 
-  local base = _G
-
-  function DEV_MENU:testLua(IncludeFile)
+  function DEV_MENU:testLua()
     local base = _G
-    local __filepath = 'E:/GitHub/FUN-MAP_NTTR/scripts/dynamic/'
-                local f = assert( base.loadfile( __filepath .. IncludeFile ) )
+    local f = assert( base.loadfile( 'E:/GitHub/FUN-MAP_NTTR/scripts/dynamic/test.lua' ) )
     if f == nil then
-      error ("[JTF-1] Loader: could not load mission file " .. IncludeFile )
-    else
-      env.info( "[JTF-1] Loader: " .. IncludeFile .. " dynamically loaded." )
-                        return f()
-    end
+                        error ("Mission Loader: could not load test.lua." )
+                else
+                        env.info( "[JTF-1] Mission Loader: test.lua dynamically loaded." )
+                        --return f()
+                end
   end
 
   function DEV_MENU:restartMission()
@@ -70,7 +63,7 @@ if devState == 1 then
   -- Add Dev submenu to F10 Other
   DEV_MENU.topmenu = MENU_MISSION:New("DEVMENU")
   MENU_MISSION_COMMAND:New("Toggle TRACE.", DEV_MENU.topmenu, DEV_MENU.toggleTrace, DEV_MENU, DEV_MENU.traceOn)
-  MENU_MISSION_COMMAND:New("Load Test LUA.", DEV_MENU.topmenu, DEV_MENU.testLua, 'test.lua')
+  MENU_MISSION_COMMAND:New("Reload Test LUA.", DEV_MENU.topmenu, DEV_MENU.testLua)
   MENU_MISSION_COMMAND:New("Restart Mission", DEV_MENU.topmenu, DEV_MENU.restartMission)
 
   -- trace all events
@@ -104,6 +97,71 @@ setGroupGroundActive:ForEachGroup(
 )
 
 ---  END DISABLE AI
+ 
+-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+--- Default SRS Text-to-Speech
+-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+--
+-- Send messages through SRS using STTS
+-- Script will try to load the file specified with LocalServerConfigFile [name of settings file] 
+-- and LocalServerConfigPath [path to file]. This file should define the path to the SRS installation 
+-- directory and the port used by the DCS server instance running the mission. 
+--
+-- If the settings file is not found, the defaults for srs_path and srs_port will be used.
+
+JTFMSRS = {
+  fileName = "ServerLocalSettings.lua", -- name of file containing local server settings
+  LocalServerConfigPath = nil, --"C:/Users/rober/Saved Games/DCS.openbeta_server/Scripts", -- path to server srs settings
+  LocalServerConfigFile = "LocalServerSettings.txt", -- srs server settings file name
+  defaultSrsPath = "C:/Program Files/DCS-SimpleRadio-Standalone", -- default path to SRS install directory if setting file is not avaialable "C:/Program Files/DCS-SimpleRadio-Standalone"
+  defaultSrsPort = 5002, -- default SRS port to use if settings file is not available
+  defaultText = "No Message Defined!",
+  defaultFreqs = "243,251,327,377.8", -- transmit on guard, CTAF, NTTR TWR and NTTR BLACKJACK as default frequencies
+  defaultModulation = "AM,AM,AM,AM", -- default modulation (count *must* match qty of freqs)
+  defaultVol = "1.0", -- default to full volume
+  defaultName = "Server", -- default to server as sender
+  defaultCoalition = 0, -- default to spectators
+  defaultVec3 = nil, -- point from which transmission originates
+  defaultSpeed = 2, -- speed at which message should be played
+  defaultGender = "female", -- default gender of sender
+  defaultCulture = "en-US", -- default culture of sender
+  defaultVoice = "", -- default voice to use
+}
+
+function JTFMSRS:LoadSettings()
+  local loadFile  = JTFMSRS.LocalServerConfigFile
+  if UTILS.CheckFileExists(JTFMSRS.LocalServerConfigPath, JTFMSRS.LocalServerConfigFile) then
+    local loadFile, serverSettings = UTILS.LoadFromFile(JTFMSRS.LocalServerConfigPath, JTFMSRS.LocalServerConfigFile)
+    BASE:T({"[JTFMSRS] Load Server Settings",{serverSettings}})
+    if not loadFile then
+      BASE:E(string.format("[JTFMSRS] ERROR: Could not load %s", loadFile))
+    else
+      JTFMSRS.SRS_DIRECTORY = serverSettings[1] or JTFMSRS.defaultSrsPath
+      JTFMSRS.SRS_PORT = serverSettings[2] or JTFMSRS.defaultSrsPort
+      JTFMSRS:AddDefaultRadio()
+      BASE:T({"[JTFMSRS]",{JTFMSRS}})
+    end
+  else
+    BASE:E(string.format("[JTFMSRS] ERROR: Could not find %s", loadFile))
+  end
+end
+
+function JTFMSRS:AddDefaultRadio()
+  JTFMSRS.DefaultRadio = MSRS:New(JTFMSRS.SRS_DIRECTORY, JTFMSRS.defaultFreqs, JTFMSRS.defaultModulation)
+  JTFMSRS.DefaultRadio:SetPort(JTFMSRS.SRS_PORT)
+  JTFMSRS.DefaultRadio:SetGender(JTFMSRS.defaultGender)
+  JTFMSRS.DefaultRadio:SetCulture(JTFMSRS.defaultCulture)
+  JTFMSRS.DefaultRadio.name = JTFMSRS.defaultName
+end
+
+function JTFMSRS.SendDefaultRadio(msgText)
+  BASE:T("[JTFMSRS] SendDefaultRadio : " .. tostring(msgText))
+  local text = SOUNDTEXT:New(msgText)
+  JTFMSRS.DefaultRadio:PlaySoundText(text)
+end
+
+JTFMSRS:LoadSettings()
+
  
 -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 --- BEGIN ADMIN MENU SECTION
@@ -202,8 +260,10 @@ function ADMIN:BuildAdminMenu(unit,playername)
     -- Create menu for admin slot
     local adminGroup = unit:GetGroup()
     local adminMenu = MENU_GROUP:New(adminGroup, "Admin")
+    local testMenu = MENU_GROUP:New(adminGroup, "Test", adminMenu)
     for i, menuCommand in ipairs(ADMIN.missionList) do
       MENU_GROUP_COMMAND:New( adminGroup, menuCommand.menuText, adminMenu, ADMIN.LoadMission, self, playername, menuCommand.missionFlagValue )
+      MENU_GROUP_COMMAND:New( adminGroup, "SRS test", testMenu, JTFMSRS.SendDefaultRadio, "99 all players, test broadcast over default radio.")
     end
   end
 end
@@ -222,43 +282,69 @@ end
 --
 -- Add schedules to display messages at set intervals prior to restarting the base mission.
 -- ME switched triggers should be set to a FLAG EQUALS condition for the flag flagLoadMission
--- value (defined in script header). The flag value 1 should trigger a LOAD MISSION for the
--- base (default) map.
---
--- Uses jtf1-hooks.lua to restart curent mission at end of mission runtime.
---
+-- value (defined in script header). Sending missionRestart text will trigger restarting the
+-- current mission via jtf1-hooks.lua.
 --
 
-local MissionTimer = {}
-MissionTimer.durationHrs = 11 -- Mission run time in HOURS
-MissionTimer.msgSchedule = {60, 30, 10, 5} -- Schedule for mission restart warning messages. Time in minutes.
-MissionTimer.durationSecs = MissionTimer.durationHrs * 3600 -- Mission run time in seconds
-MissionTimer.msgWarning = {} -- schedule container
-MissionTimer.missionRestart = ( JTF1.missionRestart and JTF1.missionRestart or "ADMIN9999" ) -- Message to trigger mission restart via jtf1-hooks
+MISSIONTIMER = {}
+
+MISSIONTIMER.durationHrs = 11 -- Mission run time in HOURS
+MISSIONTIMER.msgSchedule = {60, 30, 10, 5} -- Schedule for mission restart warning messages. Time in minutes.
+MISSIONTIMER.durationSecs = MISSIONTIMER.durationHrs * 3600 -- Mission run time in seconds
+MISSIONTIMER.msgWarning = {} -- schedule container
+MISSIONTIMER.missionRestart = ( JTF1.missionRestart and JTF1.missionRestart or "ADMIN9999" ) -- Message to trigger mission restart via jtf1-hooks
+MISSIONTIMER.restartDelay = 4 -- time in minutes to delay restart if active clients are present.
+
+BASE:T({"[MISSIONTIMER]",{MISSIONTIMER}})
 
 --- add scheduled messages for mission restart warnings and restart at end of mission duration
-function MissionTimer:AddSchedules()
-
-  if MissionTimer.msgSchedule ~= nil then
+function MISSIONTIMER:AddSchedules()
+  if MISSIONTIMER.msgSchedule ~= nil then
     for i, msgTime in ipairs(self.msgSchedule) do
       self.msgWarning[i] = SCHEDULER:New( nil, 
         function()
-          MESSAGE:New("Mission will restart in " .. msgTime .. " minutes!"):ToAll()
+          BASE:T("[MISSIONTIMER] TIMER WARNING CALLED at " .. tostring(msgTime) .. " minutes remaining.")
+          local msg = "99 all players, mission will restart in  " .. msgTime .. " minutes!"
+          if JTFMSRS.DefaultRadio then -- if JTFMSRS default radio object has been created, send message via default broadcast.
+            JTFMSRS.SendDefaultRadio(msg)
+          else -- otherwise, send in-game text message
+            MESSAGE:New(msg):ToAll()
+          end
         end,
       {msgTime}, self.durationSecs - (msgTime * 60))
     end
   end
-
   self.msgWarning["restart"] = SCHEDULER:New( nil,
     function()
-      env.info("[JTF-1] MISSION RESTART CALLED")
-      MESSAGE:New(MissionTimer.missionRestart):ToAll()
+      MISSIONTIMER:Restart()
     end,
     { }, self.durationSecs)
+end
 
+function MISSIONTIMER:Restart()
+  local clientList = SET_CLIENT:New()
+  clientList:FilterActive()
+  clientList:FilterStart()
+  if clientList:CountAlive() > 0 then
+    local delayTime = self.restartDelay
+    local msg  = "99 all players, mission will restart when no active clients are present. Next check will be in " .. tostring(delayTime) .." minutes." 
+    if JTFMSRS.DefaultRadio then -- if JTFMSRS default radio object has been created, send message via default broadcast.
+      JTFMSRS.SendDefaultRadio(msg)
+    else -- otherwise, send in-game text message
+      MESSAGE:New(msg):ToAll()
+    end
+    self.msgWarning["restart"] = SCHEDULER:New( nil,
+      function()
+        MISSIONTIMER:Restart()
+      end,
+      { }, (self.restartDelay * 60))
+  else
+    BASE:T("[MISSIONTIMER] RESTART MISSION")
+    MESSAGE:New(MISSIONTIMER.missionRestart):ToAll()
   end
+end
 
-MissionTimer:AddSchedules()
+MISSIONTIMER:AddSchedules()
 
 --- END MISSION TIMER
  
@@ -535,25 +621,13 @@ STATICRANGES.Ranges = {
     strafepits = {
     },
   },--R61 END
-  { --R62A
-    rangeId               = "R62A",
-    rangeName             = "Range 62A",
-    rangeZone             = "R62A",
+  { --R62
+    rangeId               = "R62",
+    rangeName             = "Range 62",
+    rangeZone             = "R62",
     rangeControlFrequency = 234.250,
     groups = {
       "62-01", "62-02", "62-04",
-    },
-    units = {
-    },
-    strafepits = {
-    },
-  },--R62A END
-  { --R62B
-    rangeId               = "R62B",
-    rangeName             = "Range 62B",
-    rangeZone             = "R62B",
-    rangeControlFrequency = 234.250,
-    groups = {
       "62-03", "62-08", "62-09", "62-11", 
       "62-12", "62-13", "62-14", "62-21", 
       "62-21-01", "62-22", "62-31", "62-32",
@@ -570,7 +644,30 @@ STATICRANGES.Ranges = {
     },
     strafepits = {
     },
-  },--R62B END
+  },--R62 END
+  -- { --R62B
+  --   rangeId               = "R62B",
+  --   rangeName             = "Range 62B",
+  --   rangeZone             = "R62B",
+  --   rangeControlFrequency = 234.250,
+  --   groups = {
+  --     "62-03", "62-08", "62-09", "62-11", 
+  --     "62-12", "62-13", "62-14", "62-21", 
+  --     "62-21-01", "62-22", "62-31", "62-32",
+  --     "62-41", "62-42", "62-43", "62-44", 
+  --     "62-45", "62-51", "62-52", "62-53", 
+  --     "62-54", "62-55", "62-56", "62-61", 
+  --     "62-62", "62-63", "62-71", "62-72", 
+  --     "62-73", "62-74", "62-75", "62-76", 
+  --     "62-77", "62-78", "62-79", "62-81", 
+  --     "62-83", "62-91", "62-92", "62-93",
+  --   },
+  --   units = {
+  --     "62-32-01", "62-32-02", "62-32-03", "62-99",  
+  --   },
+  --   strafepits = {
+  --   },
+  -- },--R62B END
   { --R63
     rangeId               = "R63",
     rangeName             = "Range 63",
@@ -672,6 +769,10 @@ function STATICRANGES:AddStaticRanges(TableRanges)
       end  
     end
     
+    if rangeData.rangeControlFrequency ~= nil then
+      
+    end
+
     self[rangeObject]:Start()
   end
 

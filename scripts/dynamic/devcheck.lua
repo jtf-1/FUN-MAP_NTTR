@@ -9,17 +9,13 @@ local devFlag = 8888
 local devState = trigger.misc.getUserFlag(devFlag)
 
 if devState == 1 then
-
   env.warning('[JTF-1] *** JTF-1 - DEV flag is ON! ***')
   MESSAGE:New("Dev Mode is ON!"):ToAll()
-
   DEV_MENU = {
     traceOn = true, -- default tracestate false == trace off, true == trace on.
     flagLoadMission = (JTF1.flagLoadMission and JTF1.flagLoadMission or 9999), -- flag for load misison trigger
     missionRestartMsg = (JTF1.missionRestartMsg and JTF1.missionRestartMsg or "ADMIN9999"), -- Message to trigger mission restart via jtf1-hooks
   }
-
-  
   
   function DEV_MENU:toggleTrace(traceOn)
     if traceOn then
@@ -30,20 +26,15 @@ if devState == 1 then
     self.traceOn = not traceOn
   end
 
-
   function DEV_MENU:testLua()
-
     local base = _G
-
     local f = assert( base.loadfile( 'E:/GitHub/FUN-MAP_NTTR/scripts/dynamic/test.lua' ) )
-
     if f == nil then
 			error ("Mission Loader: could not load test.lua." )
 		else
 			env.info( "[JTF-1] Mission Loader: test.lua dynamically loaded." )
 			--return f()
 		end
-
   end
 
   function DEV_MENU:restartMission()

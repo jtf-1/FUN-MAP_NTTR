@@ -38,9 +38,9 @@ ECHO.
 CALL :buildfile mission_init.lua
 CALL :buildfile devcheck.lua
 CALL :buildfile disableai.lua
+CALL :buildfile msrs.lua
 CALL :buildfile adminmenu.lua
 CALL :buildfile missiontimer.lua
-CALL :buildfile msrs.lua
 CALL :buildfile missiletrainer.lua
 CALL :buildfile supportaircraft.lua
 CALL :buildfile staticranges.lua
