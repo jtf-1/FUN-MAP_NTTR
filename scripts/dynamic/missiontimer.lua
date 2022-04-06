@@ -29,8 +29,8 @@ function MISSIONTIMER:AddSchedules()
         function()
           BASE:T("[MISSIONTIMER] TIMER WARNING CALLED at " .. tostring(msgTime) .. " minutes remaining.")
           local msg = "99 all players, mission will restart in  " .. msgTime .. " minutes!"
-          if JTFMSRS.DefaultRadio then -- if JTFMSRS default radio object has been created, send message via default broadcast.
-            JTFMSRS.SendDefaultRadio(msg)
+          if MISSIONSRS.Radio then -- if MISSIONSRS radio object has been created, send message via default broadcast.
+            MISSIONSRS.SendRadio(msg)
           else -- otherwise, send in-game text message
             MESSAGE:New(msg):ToAll()
           end
@@ -52,8 +52,8 @@ function MISSIONTIMER:Restart()
   if clientList:CountAlive() > 0 then
     local delayTime = self.restartDelay
     local msg  = "99 all players, mission will restart when no active clients are present. Next check will be in " .. tostring(delayTime) .." minutes." 
-    if JTFMSRS.DefaultRadio then -- if JTFMSRS default radio object has been created, send message via default broadcast.
-      JTFMSRS.SendDefaultRadio(msg)
+    if MISSIONSRS.Radio then -- if MISSIONSRS radio object has been created, send message via default broadcast.
+      MISSIONSRS.SendRadio(msg)
     else -- otherwise, send in-game text message
       MESSAGE:New(msg):ToAll()
     end

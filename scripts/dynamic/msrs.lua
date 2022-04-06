@@ -8,8 +8,12 @@
 -- directory and the port used by the DCS server instance running the mission. 
 --
 -- If the settings file is not found, the defaults for srs_path and srs_port will be used.
+--
+-- Message text will be formatted as a SOUNDTEXT object.
+-- 
 
-JTFMSRS = {
+
+MISSIONSRS = {
   fileName = "ServerLocalSettings.lua", -- name of file containing local server settings
   LocalServerConfigPath = nil, --"C:/Users/rober/Saved Games/DCS.openbeta_server/Scripts", -- path to server srs settings
   LocalServerConfigFile = "LocalServerSettings.txt", -- srs server settings file name
@@ -28,36 +32,37 @@ JTFMSRS = {
   defaultVoice = "", -- default voice to use
 }
 
-function JTFMSRS:LoadSettings()
-  local loadFile  = JTFMSRS.LocalServerConfigFile
-  if UTILS.CheckFileExists(JTFMSRS.LocalServerConfigPath, JTFMSRS.LocalServerConfigFile) then
-    local loadFile, serverSettings = UTILS.LoadFromFile(JTFMSRS.LocalServerConfigPath, JTFMSRS.LocalServerConfigFile)
-    BASE:T({"[JTFMSRS] Load Server Settings",{serverSettings}})
+function MISSIONSRS:LoadSettings()
+  local loadFile  = MISSIONSRS.LocalServerConfigFile
+  if UTILS.CheckFileExists(MISSIONSRS.LocalServerConfigPath, MISSIONSRS.LocalServerConfigFile) then
+    local loadFile, serverSettings = UTILS.LoadFromFile(MISSIONSRS.LocalServerConfigPath, MISSIONSRS.LocalServerConfigFile)
+    BASE:T({"[MISSIONSRS] Load Server Settings",{serverSettings}})
     if not loadFile then
-      BASE:E(string.format("[JTFMSRS] ERROR: Could not load %s", loadFile))
+      BASE:E(string.format("[MISSIONSRS] ERROR: Could not load %s", loadFile))
     else
-      JTFMSRS.SRS_DIRECTORY = serverSettings[1] or JTFMSRS.defaultSrsPath
-      JTFMSRS.SRS_PORT = serverSettings[2] or JTFMSRS.defaultSrsPort
-      JTFMSRS:AddDefaultRadio()
-      BASE:T({"[JTFMSRS]",{JTFMSRS}})
+      MISSIONSRS.SRS_DIRECTORY = serverSettings[1] or MISSIONSRS.defaultSrsPath
+      MISSIONSRS.SRS_PORT = serverSettings[2] or MISSIONSRS.defaultSrsPort
+      MISSIONSRS:AddRadio()
+      BASE:T({"[MISSIONSRS]",{MISSIONSRS}})
     end
   else
-    BASE:E(string.format("[JTFMSRS] ERROR: Could not find %s", loadFile))
+    BASE:E(string.format("[MISSIONSRS] ERROR: Could not find %s", loadFile))
   end
 end
 
-function JTFMSRS:AddDefaultRadio()
-  JTFMSRS.DefaultRadio = MSRS:New(JTFMSRS.SRS_DIRECTORY, JTFMSRS.defaultFreqs, JTFMSRS.defaultModulation)
-  JTFMSRS.DefaultRadio:SetPort(JTFMSRS.SRS_PORT)
-  JTFMSRS.DefaultRadio:SetGender(JTFMSRS.defaultGender)
-  JTFMSRS.DefaultRadio:SetCulture(JTFMSRS.defaultCulture)
-  JTFMSRS.DefaultRadio.name = JTFMSRS.defaultName
+function MISSIONSRS:AddRadio()
+  MISSIONSRS.Radio = MSRS:New(MISSIONSRS.SRS_DIRECTORY, MISSIONSRS.defaultFreqs, MISSIONSRS.defaultModulation)
+  MISSIONSRS.Radio:SetPort(MISSIONSRS.SRS_PORT)
+  MISSIONSRS.Radio:SetGender(MISSIONSRS.defaultGender)
+  MISSIONSRS.Radio:SetCulture(MISSIONSRS.defaultCulture)
+  MISSIONSRS.Radio.name = MISSIONSRS.defaultName
 end
 
-function JTFMSRS.SendDefaultRadio(msgText)
-  BASE:T("[JTFMSRS] SendDefaultRadio : " .. tostring(msgText))
+function MISSIONSRS.SendRadio(msgText)
+  BASE:T({"[MISSIONSRS] SendRadio", {msgText, msgFreqs, msgModulations}})
   local text = SOUNDTEXT:New(msgText)
-  JTFMSRS.DefaultRadio:PlaySoundText(text)
+  MISSIONSRS.Radio:PlaySoundText(text)
 end
 
-JTFMSRS:LoadSettings()
+
+MISSIONSRS:LoadSettings()
