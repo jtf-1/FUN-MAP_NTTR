@@ -12,4 +12,3 @@
 
 JTFTEST = {}
 JTFTEST.Menu = MENU_MISSION:New("TEST", DEV_MENU.topmenu)
-MENU_MISSION_COMMAND:New("STTS test 1.", JTFTEST.Menu, JTFMSRS.SendDefaultRadio, "99 all players, test broadcast over default radio.")

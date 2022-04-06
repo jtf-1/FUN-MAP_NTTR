@@ -59,7 +59,7 @@ function MISSIONSRS:AddRadio()
 end
 
 function MISSIONSRS.SendRadio(msgText)
-  BASE:T({"[MISSIONSRS] SendRadio", {msgText, msgFreqs, msgModulations}})
+  BASE:T({"[MISSIONSRS] SendRadio", msgText})
   local text = SOUNDTEXT:New(msgText)
   MISSIONSRS.Radio:PlaySoundText(text)
 end
