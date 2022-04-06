@@ -6,11 +6,8 @@
 --
 -- Add schedules to display messages at set intervals prior to restarting the base mission.
 -- ME switched triggers should be set to a FLAG EQUALS condition for the flag flagLoadMission
--- value (defined in script header). The flag value 1 should trigger a LOAD MISSION for the
--- base (default) map.
---
--- Uses jtf1-hooks.lua to restart curent mission at end of mission runtime.
---
+-- value (defined in script header). Sending missionRestart text will trigger restarting the
+-- current mission via jtf1-hooks.lua.
 --
 
 MISSIONTIMER = {}
@@ -20,8 +17,9 @@ MISSIONTIMER.msgSchedule = {60, 30, 10, 5} -- Schedule for mission restart warni
 MISSIONTIMER.durationSecs = MISSIONTIMER.durationHrs * 3600 -- Mission run time in seconds
 MISSIONTIMER.msgWarning = {} -- schedule container
 MISSIONTIMER.missionRestart = ( JTF1.missionRestart and JTF1.missionRestart or "ADMIN9999" ) -- Message to trigger mission restart via jtf1-hooks
-MISSIONTIMER.restartDelay = 300 -- time in seconds to delay restart if active clients are present.
-
+MISSIONTIMER.restartDelay = 4 -- time in minutes to delay restart if active clients are present.
+BASE:T("[MISSIONTIMER]")
+BASE:T({MISSIONTIMER})
 
 --- add scheduled messages for mission restart warnings and restart at end of mission duration
 function MISSIONTIMER:AddSchedules()
@@ -30,7 +28,14 @@ function MISSIONTIMER:AddSchedules()
     for i, msgTime in ipairs(self.msgSchedule) do
       self.msgWarning[i] = SCHEDULER:New( nil, 
         function()
-          MESSAGE:New("Mission will restart in " .. msgTime .. " minutes!"):ToAll()
+          BASE:T("[MISSIONTIMER] TIMER WARNING CALLED at " .. tostring(msgTime) .. " minutes remaining.")
+          local msg = "99 all players, mission will restart in  " .. msgTime .. " minutes!"
+          if JTFMSRS.DefaultRadio then -- if JTFMSRS default radio object has been created, send message via default broadcast.
+            JTFMSRS.SendDefaultRadio(msg)
+          else -- otherwise, send in-game text message
+            MESSAGE:New(msg):ToAll()
+          end
+
         end,
       {msgTime}, self.durationSecs - (msgTime * 60))
     end
@@ -50,19 +55,25 @@ function MISSIONTIMER:Restart()
   clientList:FilterActive()
   clientList:FilterStart()
 
-  if clientList:CountAlive() > 1 then
+  if clientList:CountAlive() > 0 then
     
-    local msg  = "Mission will restart when no active clients are present. Next check will be in " .. tostring(self.restartDelay / 60) .." minutes." 
-    MESSAGE:New(msg):ToAll()
+    local delayTime = self.restartDelay
+    local msg  = "99 all players, mission will restart when no active clients are present. Next check will be in " .. tostring(delayTime) .." minutes." 
+
+    if JTFMSRS.DefaultRadio then -- if JTFMSRS default radio object has been created, send message via default broadcast.
+      JTFMSRS.SendDefaultRadio(msg)
+    else -- otherwise, send in-game text message
+      MESSAGE:New(msg):ToAll()
+    end
 
     self.msgWarning["restart"] = SCHEDULER:New( nil,
       function()
         MISSIONTIMER:Restart()
       end,
-      { }, self.restartDelay)
+      { }, (self.restartDelay * 60))
 
   else
-    env.info("[JTF-1] MISSION RESTART CALLED")
+    BASE:T("[MISSIONTIMER] RESTART MISSION")
     MESSAGE:New(MISSIONTIMER.missionRestart):ToAll()
   end
 

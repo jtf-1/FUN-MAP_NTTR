@@ -17,7 +17,7 @@ JTFMSRS = {
   defaultSrsPort = 5002, -- default SRS port to use if settings file is not available
   defaultText = "No Message Defined!",
   defaultFreqs = "243,251,327,377.8", -- transmit on guard, CTAF, NTTR TWR and NTTR BLACKJACK as default frequencies
-  defaultModulation = "AM,AM,AM,AM", -- default modulation
+  defaultModulation = "AM,AM,AM,AM", -- default modulation (count *must* match qty of freqs)
   defaultVol = "1.0", -- default to full volume
   defaultName = "Server", -- default to server as sender
   defaultCoalition = 0, -- default to spectators
@@ -32,14 +32,14 @@ function JTFMSRS:LoadSettings()
   local loadFile  = JTFMSRS.LocalServerConfigFile
   if UTILS.CheckFileExists(JTFMSRS.LocalServerConfigPath, JTFMSRS.LocalServerConfigFile) then
     local loadFile, serverSettings = UTILS.LoadFromFile(JTFMSRS.LocalServerConfigPath, JTFMSRS.LocalServerConfigFile)
-    BASE:T({serverSettings})
+    BASE:T({"[JTFMSRS] Load Server Settings",{serverSettings}})
     if not loadFile then
       BASE:E(string.format("[JTFMSRS] ERROR: Could not load %s", loadFile))
     else
       JTFMSRS.SRS_DIRECTORY = serverSettings[1] or JTFMSRS.defaultSrsPath
       JTFMSRS.SRS_PORT = serverSettings[2] or JTFMSRS.defaultSrsPort
       JTFMSRS:AddDefaultRadio()
-      BASE:T({JTFMSRS})
+      BASE:T({"[JTFMSRS]",{JTFMSRS}})
     end
   else
     BASE:E(string.format("[JTFMSRS] ERROR: Could not find %s", loadFile))
@@ -55,8 +55,7 @@ function JTFMSRS:AddDefaultRadio()
 end
 
 function JTFMSRS.SendDefaultRadio(msgText)
-  BASE:T("[JTFMSRS] SendDefaultRadio")
-  BASE:T("msgText = " .. msgText )
+  BASE:T("[JTFMSRS] SendDefaultRadio : " .. tostring(msgText))
   local text = SOUNDTEXT:New(msgText)
   JTFMSRS.DefaultRadio:PlaySoundText(text)
   
