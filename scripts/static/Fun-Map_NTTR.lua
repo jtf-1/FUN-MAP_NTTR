@@ -1,4 +1,4 @@
-env.info( '[JTF-1] *** MISSION FILE BUILD DATE: 2022-04-06T19:13:07.36Z ***') 
+env.info( '[JTF-1] *** MISSION FILE BUILD DATE: 2022-04-07T20:11:53.53Z ***') 
 env.info( '[JTF-1] *** JTF-1 STATIC MISSION SCRIPT START ***' )
 
 -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
@@ -111,39 +111,45 @@ setGroupGroundActive:ForEachGroup(
 --
 -- Message text will be formatted as a SOUNDTEXT object.
 -- 
+-- Use MISSIONSRS:SendRadio() to transmit on SRS
+--
+-- msgText        - [required] STRING. Text of message. Can be plain text or a MOOSE SOUNDTEXT obkect
+-- msfFreqs       - [optional] STRING. frequency, or table of frequencies (without any spaces). Default freqs AND modulations will be applied if this is not specified.
+-- msgModulations - [optional] STRING. modulation, or table of modulations (without any spaces) if multiple freqs passed. Ignored if msgFreqs is not defined. Default modulations will be applied if this is not specified
+--
 
 
 MISSIONSRS = {
-  fileName = "ServerLocalSettings.lua", -- name of file containing local server settings
-  LocalServerConfigPath = nil, --"C:/Users/rober/Saved Games/DCS.openbeta_server/Scripts", -- path to server srs settings
-  LocalServerConfigFile = "LocalServerSettings.txt", -- srs server settings file name
+  fileName = "ServerLocalSettings.lua",                           -- name of file containing local server settings
+  LocalServerConfigPath = nil,                                    -- path to server srs settings. nil if file is in root of server's savedgames profile.
+  LocalServerConfigFile = "LocalServerSettings.txt",              -- srs server settings file name
   defaultSrsPath = "C:/Program Files/DCS-SimpleRadio-Standalone", -- default path to SRS install directory if setting file is not avaialable "C:/Program Files/DCS-SimpleRadio-Standalone"
-  defaultSrsPort = 5002, -- default SRS port to use if settings file is not available
-  defaultText = "No Message Defined!",
-  defaultFreqs = "243,251,327,377.8", -- transmit on guard, CTAF, NTTR TWR and NTTR BLACKJACK as default frequencies
-  defaultModulation = "AM,AM,AM,AM", -- default modulation (count *must* match qty of freqs)
-  defaultVol = "1.0", -- default to full volume
-  defaultName = "Server", -- default to server as sender
-  defaultCoalition = 0, -- default to spectators
-  defaultVec3 = nil, -- point from which transmission originates
-  defaultSpeed = 2, -- speed at which message should be played
-  defaultGender = "female", -- default gender of sender
-  defaultCulture = "en-US", -- default culture of sender
-  defaultVoice = "", -- default voice to use
+  defaultSrsPort = 5002,                                          -- default SRS port to use if settings file is not available
+  defaultText = "No Message Defined!",                            -- default message if text is nil
+  defaultFreqs = "243,251,327,377.8,30",                          -- transmit on guard, CTAF, NTTR TWR and NTTR BLACKJACK as default frequencies
+  defaultModulations = "AM,AM,AM,AM,FM",                          -- default modulation (count *must* match qty of freqs)
+  defaultVol = "1.0",                                             -- default to full volume
+  defaultName = "Server",                                         -- default to server as sender
+  defaultCoalition = 0,                                           -- default to spectators
+  defaultVec3 = nil,                                              -- point from which transmission originates
+  defaultSpeed = 2,                                               -- speed at which message should be played
+  defaultGender = "female",                                       -- default gender of sender
+  defaultCulture = "en-US",                                       -- default culture of sender
+  defaultVoice = "",                                              -- default voice to use
 }
 
 function MISSIONSRS:LoadSettings()
-  local loadFile  = MISSIONSRS.LocalServerConfigFile
-  if UTILS.CheckFileExists(MISSIONSRS.LocalServerConfigPath, MISSIONSRS.LocalServerConfigFile) then
-    local loadFile, serverSettings = UTILS.LoadFromFile(MISSIONSRS.LocalServerConfigPath, MISSIONSRS.LocalServerConfigFile)
+  local loadFile  = self.LocalServerConfigFile
+  if UTILS.CheckFileExists(self.LocalServerConfigPath, self.LocalServerConfigFile) then
+    local loadFile, serverSettings = UTILS.LoadFromFile(self.LocalServerConfigPath, self.LocalServerConfigFile)
     BASE:T({"[MISSIONSRS] Load Server Settings",{serverSettings}})
     if not loadFile then
       BASE:E(string.format("[MISSIONSRS] ERROR: Could not load %s", loadFile))
     else
-      MISSIONSRS.SRS_DIRECTORY = serverSettings[1] or MISSIONSRS.defaultSrsPath
-      MISSIONSRS.SRS_PORT = serverSettings[2] or MISSIONSRS.defaultSrsPort
-      MISSIONSRS:AddRadio()
-      BASE:T({"[MISSIONSRS]",{MISSIONSRS}})
+      self.SRS_DIRECTORY = serverSettings[1] or self.defaultSrsPath
+      self.SRS_PORT = serverSettings[2] or self.defaultSrsPort
+      self:AddRadio()
+      BASE:T({"[MISSIONSRS]",{self}})
     end
   else
     BASE:E(string.format("[MISSIONSRS] ERROR: Could not find %s", loadFile))
@@ -151,17 +157,38 @@ function MISSIONSRS:LoadSettings()
 end
 
 function MISSIONSRS:AddRadio()
-  MISSIONSRS.Radio = MSRS:New(MISSIONSRS.SRS_DIRECTORY, MISSIONSRS.defaultFreqs, MISSIONSRS.defaultModulation)
-  MISSIONSRS.Radio:SetPort(MISSIONSRS.SRS_PORT)
-  MISSIONSRS.Radio:SetGender(MISSIONSRS.defaultGender)
-  MISSIONSRS.Radio:SetCulture(MISSIONSRS.defaultCulture)
-  MISSIONSRS.Radio.name = MISSIONSRS.defaultName
+  self.Radio = MSRS:New(self.SRS_DIRECTORY, self.defaultFreqs, self.defaultModulations)
+  self.Radio:SetPort(self.SRS_PORT)
+  self.Radio:SetGender(self.defaultGender)
+  self.Radio:SetCulture(self.defaultCulture)
+  self.Radio.name = self.defaultName
 end
 
-function MISSIONSRS.SendRadio(msgText)
-  BASE:T({"[MISSIONSRS] SendRadio", msgText})
-  local text = SOUNDTEXT:New(msgText)
-  MISSIONSRS.Radio:PlaySoundText(text)
+function MISSIONSRS:SendRadio(msgText, msgFreqs, msgModulations)
+
+  BASE:T({"[MISSIONSRS] SendRadio", {msgText}, {msgFreqs}, {msgModulations}})
+  if msgFreqs then
+    BASE:T("[MISSIONSRS] tx with freqs change.")
+    if msgModulations then
+      BASE:T("[MISSIONSRS] tx with mods change.")
+    end
+  end
+  if msgText == (nil or "") then 
+    msgText = self.defaultText
+  end
+  local text = msgText
+  local tempFreqs = (msgFreqs or self.defaultFreqs)
+  local tempModulations = (msgModulations or self.defaultModulations)
+  if not msgText.ClassName then
+    BASE:T("[MISSIONSRS] msgText NOT SoundText object.")
+    text = SOUNDTEXT:New(msgText) -- convert msgText to SOundText object
+  end
+  self.Radio:SetFrequencies(tempFreqs)
+  self.Radio:SetModulations(tempModulations)
+  self.Radio:PlaySoundText(text)
+  self.Radio:SetFrequencies(self.defaultFreqs) -- reset freqs to default
+  self.Radio:SetModulations(self.defaultModulations) -- rest modulation to default
+
 end
 
 
@@ -291,27 +318,28 @@ end
 -- current mission via jtf1-hooks.lua.
 --
 
-MISSIONTIMER = {}
+MISSIONTIMER = {
+  durationHrs = 11, -- Mission run time in HOURS
+  msgSchedule = {60, 30, 10, 5}, -- Schedule for mission restart warning messages. Time in minutes.
+  msgWarning = {}, -- schedule container
+  missionRestart = ( JTF1.missionRestart and JTF1.missionRestart or "ADMIN9999" ), -- Message to trigger mission restart via jtf1-hooks
+  restartDelay = 4, -- time in minutes to delay restart if active clients are present.
+}
 
-MISSIONTIMER.durationHrs = 11 -- Mission run time in HOURS
-MISSIONTIMER.msgSchedule = {60, 30, 10, 5} -- Schedule for mission restart warning messages. Time in minutes.
 MISSIONTIMER.durationSecs = MISSIONTIMER.durationHrs * 3600 -- Mission run time in seconds
-MISSIONTIMER.msgWarning = {} -- schedule container
-MISSIONTIMER.missionRestart = ( JTF1.missionRestart and JTF1.missionRestart or "ADMIN9999" ) -- Message to trigger mission restart via jtf1-hooks
-MISSIONTIMER.restartDelay = 4 -- time in minutes to delay restart if active clients are present.
 
 BASE:T({"[MISSIONTIMER]",{MISSIONTIMER}})
 
 --- add scheduled messages for mission restart warnings and restart at end of mission duration
 function MISSIONTIMER:AddSchedules()
-  if MISSIONTIMER.msgSchedule ~= nil then
+  if self.msgSchedule ~= nil then
     for i, msgTime in ipairs(self.msgSchedule) do
       self.msgWarning[i] = SCHEDULER:New( nil, 
         function()
           BASE:T("[MISSIONTIMER] TIMER WARNING CALLED at " .. tostring(msgTime) .. " minutes remaining.")
           local msg = "99 all players, mission will restart in  " .. msgTime .. " minutes!"
           if MISSIONSRS.Radio then -- if MISSIONSRS radio object has been created, send message via default broadcast.
-            MISSIONSRS.SendRadio(msg)
+            MISSIONSRS:SendRadio(msg)
           else -- otherwise, send in-game text message
             MESSAGE:New(msg):ToAll()
           end
@@ -334,7 +362,7 @@ function MISSIONTIMER:Restart()
     local delayTime = self.restartDelay
     local msg  = "99 all players, mission will restart when no active clients are present. Next check will be in " .. tostring(delayTime) .." minutes." 
     if MISSIONSRS.Radio then -- if MISSIONSRS radio object has been created, send message via default broadcast.
-      MISSIONSRS.SendRadio(msg)
+      MISSIONSRS:SendRadio(msg)
     else -- otherwise, send in-game text message
       MESSAGE:New(msg):ToAll()
     end
@@ -345,7 +373,7 @@ function MISSIONTIMER:Restart()
       { }, (self.restartDelay * 60))
   else
     BASE:T("[MISSIONTIMER] RESTART MISSION")
-    MESSAGE:New(MISSIONTIMER.missionRestart):ToAll()
+    MESSAGE:New(self.missionRestart):ToAll()
   end
 end
 
