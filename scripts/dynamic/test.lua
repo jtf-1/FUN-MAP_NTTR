@@ -64,6 +64,7 @@ end
 -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
 JTFTEST.Menu = MENU_MISSION:New("TEST", DEV_MENU.topmenu)
+MENU_MISSION_COMMAND:New("Mission Restart", JTFTEST.Menu, MISSIONTIMER.Restart, MISSIONTIMER )
 MENU_MISSION_COMMAND:New("Radio Text DEFAULTS", JTFTEST.Menu, JTFTEST.testRadioTextDefault, MISSIONSRS )
 MENU_MISSION_COMMAND:New("Radio SoundText DEFAULTS", JTFTEST.Menu, JTFTEST.testRadioSoundTextDefault, MISSIONSRS )
 MENU_MISSION_COMMAND:New("Radio Text Freqs default mods", JTFTEST.Menu, JTFTEST.testRadioTextFreqsNoMod, MISSIONSRS )
