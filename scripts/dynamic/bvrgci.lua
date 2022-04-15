@@ -28,8 +28,11 @@ local BVRGCI = {
     Spawn           = {},
     headingDefault  = 150,
     Destroy         = false,
+    defaultRadio = "377.8",
   }
    
+BVRGCI.rangeRadio = (JTF1.rangeRadio and JTF1.rangeRadio or BVRGCI.defaultRadio)
+
   --- ME Zone object for BVRGCI area boundary
   -- @field #string ZoneBvr 
   BVRGCI.ZoneBvr = ZONE:FindByName("ZONE_BVR")
@@ -107,11 +110,17 @@ local BVRGCI = {
                 -- remove adversary group if it has left the BVR/GCI zone, or the remove all adversaries menu option has been selected
                 if (SpawnGroup:IsNotInZone(BVRGCI.ZoneBvr) or (BVRGCI.Destroy)) then 
                   local groupName = SpawnGroup.GroupName
-                  local msgDestroy = "BVR adversary group " .. groupName .. " removed."
-                  local msgLeftZone = "BVR adversary group " .. groupName .. " left zone and was removed."
+                  local msgDestroy = "99 all players, BVR adversary group " .. groupName .. " removed."
+                  local msgLeftZone = "99 all players, BVR adversary group " .. groupName .. " left zone and was removed."
                   SpawnGroup:Destroy()
                   SpawnGroup = nil
-                  MESSAGE:New(BVRGCI.Destroy and msgDestroy or msgLeftZone):ToAll()
+                  local msg = (BVRGCI.Destroy and msgDestroy or msgLeftZone)
+                  if MISSIONSRS.Radio then -- if MISSIONSRS radio object has been created, send message via default broadcast.
+                    MISSIONSRS:SendRadio(msg, BVRGCI.rangeRadio)
+                  else -- otherwise, send in-game text message
+                    MESSAGE:New(msg):ToAll()
+                  end
+                  --MESSAGE:New(BVRGCI.Destroy and msgDestroy or msgLeftZone):ToAll()
                 end
               end
             end,
@@ -120,8 +129,13 @@ local BVRGCI = {
         Formation, typeName
       )
     spawnAdversary:SpawnFromVec3(spawnVec3)
-    local _msg = "BVR Adversary group spawned."
-    MESSAGE:New(_msg):ToAll()
+    local msg = "99 all players, BVR Adversary group spawned."
+    if MISSIONSRS.Radio then -- if MISSIONSRS radio object has been created, send message via default broadcast.
+      MISSIONSRS:SendRadio(msg, BVRGCI.rangeRadio)
+    else -- otherwise, send in-game text message
+      MESSAGE:New(msg):ToAll()
+    end
+    --MESSAGE:New(_msg):ToAll()
   end
   
   --- Remove all spawned BVRGCI adversaries

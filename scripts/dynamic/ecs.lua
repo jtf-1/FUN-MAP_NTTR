@@ -37,10 +37,16 @@ function activateEcsThreat(samTemplate, samZone, activeThreat, isReset)
       function (spawnGroup)
         MENU_COALITION_COMMAND:New(coalition.side.BLUE, "Deactivate 77-69", ECS.menuEscTop, resetEcsThreat, spawnGroup, ecsSpawn, activeThreat, false)
         MENU_COALITION_COMMAND:New(coalition.side.BLUE, "Reset 77-69", ECS.menuEscTop, resetEcsThreat, spawnGroup, ecsSpawn, activeThreat, true, samZone)
-        MESSAGE:New("EC South is active with " .. activeThreat):ToAll()
+        local msg = "99 all players, EC South is active with " .. activeThreat
+        if MISSIONSRS.Radio then -- if MISSIONSRS radio object has been created, send message via default broadcast.
+          MISSIONSRS:SendRadio(msg)
+        else -- otherwise, send in-game text message
+          MESSAGE:New(msg):ToAll()
+        end
+        --MESSAGE:New("EC South is active with " .. activeThreat):ToAll()
         ECS.rIADS = SkynetIADS:create("ECSOUTH")
         ECS.rIADS:setUpdateInterval(5)
-        ECS.rIADS:addEarlyWarningRadar("GCI2")
+        --ECS.rIADS:addEarlyWarningRadar("GCI2")
         ECS.rIADS:addSAMSite(spawnGroup.GroupName)
         ECS.rIADS:getSAMSiteByGroupName(spawnGroup.GroupName):setGoLiveRangeInPercent(80)
         ECS.rIADS:activate()        
@@ -67,7 +73,13 @@ function resetEcsThreat(spawnGroup, ecsSpawn, activeThreat, refreshEcs, samZone)
     ecsSpawn:SpawnInZone(samZone, true)
   else
     addEcsThreatMenu()
-    MESSAGE:New("EC South "  .. activeThreat .." has been deactived."):ToAll()
+    local msg = "99 all players, EC South "  .. activeThreat .." has been deactivated."
+    if MISSIONSRS.Radio then -- if MISSIONSRS radio object has been created, send message via default broadcast.
+      MISSIONSRS:SendRadio(msg)
+    else -- otherwise, send in-game text message
+      MESSAGE:New(msg):ToAll()
+    end
+    --MESSAGE:New("EC South "  .. activeThreat .." has been deactived."):ToAll()
   end    
 
 end

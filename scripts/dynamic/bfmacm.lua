@@ -24,9 +24,12 @@ BFMACM = {
       {template = "ADV_F18", menuText = "Adversary F-18"},
     },
     range = {5, 10, 20}, -- ranges at which to spawn adversaries in nautical miles
-    spawn = {} -- container for aversary spawn objects
+    spawn = {}, -- container for aversary spawn objects
+    defaultRadio = "377.8",
   },
 }
+
+BFMACM.rangeRadio = (JTF1.rangeRadio and JTF1.rangeRadio or BFMACM.defaultRadio)
 
 -- add event handler
 BFMACM.eventHandler = EVENTHANDLER:New()
@@ -100,7 +103,7 @@ function BFMACM.SpawnAdv(adv,qty,group,rng,unit)
 
   -- check player is in BFM ACM zone.
   local spawnAllowed = unit:IsInZone(BFMACM.zoneBfmAcm)
-  local msgNoSpawn = " - Cannot spawn adversary aircraft if you are outside the BFM/ACM zone!"
+  local msgNoSpawn = ", Cannot spawn adversary aircraft if you are outside the BFM/ACM zone!"
 
   -- Check spawn location is not in an exclusion zone
   if spawnAllowed then
@@ -108,14 +111,14 @@ function BFMACM.SpawnAdv(adv,qty,group,rng,unit)
       for i, zoneExclusion in ipairs(BFMACM.zonesNoSpawn) do
         spawnAllowed = not zoneExclusion:IsVec3InZone(spawnVec3)
       end
-      msgNoSpawn = " - Cannot spawn adversary aircraft in an exclusion zone. Change course, or increase your range from the zone, and try again."
+      msgNoSpawn = ", Cannot spawn adversary aircraft in an exclusion zone. Change course, or increase your range from the zone, and try again."
     end
   end
 
   -- Check spawn location is inside the BFM/ACM zone
   if spawnAllowed then
     spawnAllowed = BFMACM.zoneBfmAcm:IsVec3InZone(spawnVec3)
-    msgNoSpawn = " - Cannot spawn adversary aircraft outside the BFM/ACM zone. Change course and try again."
+    msgNoSpawn = ", Cannot spawn adversary aircraft outside the BFM/ACM zone. Change course and try again."
   end
 
   -- Spawn the adversary, if not in an exclusion zone or outside the BFM/ACM zone.
@@ -128,7 +131,13 @@ function BFMACM.SpawnAdv(adv,qty,group,rng,unit)
         function (CheckAdversary)
           if SpawnGroup then
             if SpawnGroup:IsNotInZone( BFMACM.zoneBfmAcm ) then
-              MESSAGE:New("Adversary left BFM Zone and was removed!"):ToAll()
+              local msg = "99 all players, BFM Adversary left BFM Zone and was removed!"
+              if MISSIONSRS.Radio then -- if MISSIONSRS radio object has been created, send message via default broadcast.
+                MISSIONSRS:SendRadio(msg,BFMACM.rangeRadio)
+              else -- otherwise, send in-game text message
+                MESSAGE:New(msg):ToAll()
+              end
+              --MESSAGE:New("Adversary left BFM Zone and was removed!"):ToAll()
               SpawnGroup:Destroy()
               SpawnGroup = nil
             end
@@ -138,9 +147,21 @@ function BFMACM.SpawnAdv(adv,qty,group,rng,unit)
       end
     )
     :SpawnFromVec3(spawnVec3)
-    MESSAGE:New(playerName .. " has spawned Adversary."):ToGroup(group)
+    local msg = "99 all players, " .. playerName .. " has spawned BFM Adversary."
+    if MISSIONSRS.Radio then -- if MISSIONSRS radio object has been created, send message via default broadcast.
+      MISSIONSRS:SendRadio(msg,BFMACM.rangeRadio)
+    else -- otherwise, send in-game text message
+      MESSAGE:New(msg):ToAll()
+    end
+    --MESSAGE:New(playerName .. " has spawned Adversary."):ToGroup(group)
   else
-    MESSAGE:New(playerName .. msgNoSpawn):ToGroup(group)
+    local msg = playerName .. msgNoSpawn
+    if MISSIONSRS.Radio then -- if MISSIONSRS radio object has been created, send message via default broadcast.
+      MISSIONSRS:SendRadio(msg,BFMACM.rangeRadio)
+    else -- otherwise, send in-game text message
+      MESSAGE:New(msg):ToAll()
+    end
+    --MESSAGE:New(playerName .. msgNoSpawn):ToGroup(group)
   end
 end
   

@@ -1,4 +1,4 @@
-env.info( '[JTF-1] *** MISSION FILE BUILD DATE: 2022-04-08T12:57:37.42Z ***') 
+env.info( '[JTF-1] *** MISSION FILE BUILD DATE: 2022-04-15T15:14:10.38Z ***') 
 env.info( '[JTF-1] *** JTF-1 STATIC MISSION SCRIPT START ***' )
 
 -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
@@ -14,6 +14,7 @@ BASE:TraceOnOff(false)
 JTF1 = {
     missionRestart = "ADMIN9999", -- Message to trigger mission restart via jtf1-hooks
     flagLoadMission = 9999, -- flag for load misison trigger
+    rangeRadio = "377.8", -- default frequency for range radio comms
 }
 --- END INIT
  
@@ -823,7 +824,8 @@ STATICRANGES:AddStaticRanges(STATICRANGES.Ranges)
 -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
 local ACTIVERANGES = {
-    menu = {}
+    menu = {},
+    rangeRadio = "377.8",
   }
   
   
@@ -849,7 +851,13 @@ local ACTIVERANGES = {
         reactivateRangeGroup:OptionROE(ENUMS.ROE.WeaponHold)
         reactivateRangeGroup:OptionROTEvadeFire()
         reactivateRangeGroup:OptionAlarmStateGreen()
-        MESSAGE:New("Target " .. rangePrefix .. " has been deactivated."):ToAll()
+        local msg = "99 all players, Target " .. rangePrefix .. " has been deactivated."
+        if MISSIONSRS.Radio then -- if MISSIONSRS radio object has been created, send message via default broadcast.
+          MISSIONSRS:SendRadio(msg, ACTIVERANGES.rangeRadio)
+        else -- otherwise, send in-game text message
+          MESSAGE:New(msg):ToAll()
+        end
+        --MESSAGE:New("Target " .. rangePrefix .. " has been deactivated."):ToAll()
       else
         local refreshRangeGroup = initActiveRange(GROUP:FindByName("ACTIVE_" .. rangePrefix), true)
         activateRangeTarget(refreshRangeGroup, rangePrefix, rangeMenu, withSam, true)      
@@ -887,7 +895,13 @@ local ACTIVERANGES = {
         function (spawnGroup)
           MENU_COALITION_COMMAND:New(coalition.side.BLUE, deactivateText , ACTIVERANGES.menu["rangeMenu_" .. rangePrefix], resetRangeTarget, rangeGroup, rangePrefix, ACTIVERANGES.menu["rangeMenu_" .. rangePrefix], spawnGroup, false)
           MENU_COALITION_COMMAND:New(coalition.side.BLUE, refreshText .. " with SAM" , ACTIVERANGES.menu["rangeMenu_" .. rangePrefix], resetRangeTarget, rangeGroup, rangePrefix, ACTIVERANGES.menu["rangeMenu_" .. rangePrefix], spawnGroup, true)
-          MESSAGE:New("Target " .. rangePrefix .. " is active, with SAM."):ToAll()
+          local msg = "99 all players, dynamic target " .. rangePrefix .. " is active, with SAM."
+          if MISSIONSRS.Radio then -- if MISSIONSRS radio object has been created, send message via default broadcast.
+            MISSIONSRS:SendRadio(msg, ACTIVERANGES.rangeRadio)
+          else -- otherwise, send in-game text message
+            MESSAGE:New(msg):ToAll()
+          end
+          --MESSAGE:New("Target " .. rangePrefix .. " is active, with SAM."):ToAll()
           spawnGroup:OptionROE(ENUMS.ROE.WeaponFree)
           spawnGroup:OptionROTEvadeFire()
           spawnGroup:OptionAlarmStateRed()
@@ -902,7 +916,13 @@ local ACTIVERANGES = {
       else
         MENU_COALITION_COMMAND:New(coalition.side.BLUE, refreshText , ACTIVERANGES.menu["rangeMenu_" .. rangePrefix], resetRangeTarget, rangeGroup, rangePrefix, ACTIVERANGES.menu["rangeMenu_" .. rangePrefix], withSam, true)
       end
-      MESSAGE:New("Target " .. rangePrefix .. " is active."):ToAll()
+      local msg = "99 all players, dynamic target " .. rangePrefix .. " is active."
+      if MISSIONSRS.Radio then -- if MISSIONSRS radio object has been created, send message via default broadcast.
+        MISSIONSRS:SendRadio(msg, ACTIVERANGES.rangeRadio)
+      else -- otherwise, send in-game text message
+        MESSAGE:New(msg):ToAll()
+      end
+      -- MESSAGE:New("Target " .. rangePrefix .. " is active."):ToAll()
     end
     
   end
@@ -1035,10 +1055,16 @@ function activateEcsThreat(samTemplate, samZone, activeThreat, isReset)
       function (spawnGroup)
         MENU_COALITION_COMMAND:New(coalition.side.BLUE, "Deactivate 77-69", ECS.menuEscTop, resetEcsThreat, spawnGroup, ecsSpawn, activeThreat, false)
         MENU_COALITION_COMMAND:New(coalition.side.BLUE, "Reset 77-69", ECS.menuEscTop, resetEcsThreat, spawnGroup, ecsSpawn, activeThreat, true, samZone)
-        MESSAGE:New("EC South is active with " .. activeThreat):ToAll()
+        local msg = "99 all players, EC South is active with " .. activeThreat
+        if MISSIONSRS.Radio then -- if MISSIONSRS radio object has been created, send message via default broadcast.
+          MISSIONSRS:SendRadio(msg)
+        else -- otherwise, send in-game text message
+          MESSAGE:New(msg):ToAll()
+        end
+        --MESSAGE:New("EC South is active with " .. activeThreat):ToAll()
         ECS.rIADS = SkynetIADS:create("ECSOUTH")
         ECS.rIADS:setUpdateInterval(5)
-        ECS.rIADS:addEarlyWarningRadar("GCI2")
+        --ECS.rIADS:addEarlyWarningRadar("GCI2")
         ECS.rIADS:addSAMSite(spawnGroup.GroupName)
         ECS.rIADS:getSAMSiteByGroupName(spawnGroup.GroupName):setGoLiveRangeInPercent(80)
         ECS.rIADS:activate()        
@@ -1065,7 +1091,13 @@ function resetEcsThreat(spawnGroup, ecsSpawn, activeThreat, refreshEcs, samZone)
     ecsSpawn:SpawnInZone(samZone, true)
   else
     addEcsThreatMenu()
-    MESSAGE:New("EC South "  .. activeThreat .." has been deactived."):ToAll()
+    local msg = "99 all players, EC South "  .. activeThreat .." has been deactivated."
+    if MISSIONSRS.Radio then -- if MISSIONSRS radio object has been created, send message via default broadcast.
+      MISSIONSRS:SendRadio(msg)
+    else -- otherwise, send in-game text message
+      MESSAGE:New(msg):ToAll()
+    end
+    --MESSAGE:New("EC South "  .. activeThreat .." has been deactived."):ToAll()
   end    
 
 end
@@ -1108,9 +1140,12 @@ BFMACM = {
       {template = "ADV_F18", menuText = "Adversary F-18"},
     },
     range = {5, 10, 20}, -- ranges at which to spawn adversaries in nautical miles
-    spawn = {} -- container for aversary spawn objects
+    spawn = {}, -- container for aversary spawn objects
+    defaultRadio = "377.8",
   },
 }
+
+BFMACM.rangeRadio = (JTF1.rangeRadio and JTF1.rangeRadio or BFMACM.defaultRadio)
 
 -- add event handler
 BFMACM.eventHandler = EVENTHANDLER:New()
@@ -1184,7 +1219,7 @@ function BFMACM.SpawnAdv(adv,qty,group,rng,unit)
 
   -- check player is in BFM ACM zone.
   local spawnAllowed = unit:IsInZone(BFMACM.zoneBfmAcm)
-  local msgNoSpawn = " - Cannot spawn adversary aircraft if you are outside the BFM/ACM zone!"
+  local msgNoSpawn = ", Cannot spawn adversary aircraft if you are outside the BFM/ACM zone!"
 
   -- Check spawn location is not in an exclusion zone
   if spawnAllowed then
@@ -1192,14 +1227,14 @@ function BFMACM.SpawnAdv(adv,qty,group,rng,unit)
       for i, zoneExclusion in ipairs(BFMACM.zonesNoSpawn) do
         spawnAllowed = not zoneExclusion:IsVec3InZone(spawnVec3)
       end
-      msgNoSpawn = " - Cannot spawn adversary aircraft in an exclusion zone. Change course, or increase your range from the zone, and try again."
+      msgNoSpawn = ", Cannot spawn adversary aircraft in an exclusion zone. Change course, or increase your range from the zone, and try again."
     end
   end
 
   -- Check spawn location is inside the BFM/ACM zone
   if spawnAllowed then
     spawnAllowed = BFMACM.zoneBfmAcm:IsVec3InZone(spawnVec3)
-    msgNoSpawn = " - Cannot spawn adversary aircraft outside the BFM/ACM zone. Change course and try again."
+    msgNoSpawn = ", Cannot spawn adversary aircraft outside the BFM/ACM zone. Change course and try again."
   end
 
   -- Spawn the adversary, if not in an exclusion zone or outside the BFM/ACM zone.
@@ -1212,7 +1247,13 @@ function BFMACM.SpawnAdv(adv,qty,group,rng,unit)
         function (CheckAdversary)
           if SpawnGroup then
             if SpawnGroup:IsNotInZone( BFMACM.zoneBfmAcm ) then
-              MESSAGE:New("Adversary left BFM Zone and was removed!"):ToAll()
+              local msg = "99 all players, BFM Adversary left BFM Zone and was removed!"
+              if MISSIONSRS.Radio then -- if MISSIONSRS radio object has been created, send message via default broadcast.
+                MISSIONSRS:SendRadio(msg,BFMACM.rangeRadio)
+              else -- otherwise, send in-game text message
+                MESSAGE:New(msg):ToAll()
+              end
+              --MESSAGE:New("Adversary left BFM Zone and was removed!"):ToAll()
               SpawnGroup:Destroy()
               SpawnGroup = nil
             end
@@ -1222,9 +1263,21 @@ function BFMACM.SpawnAdv(adv,qty,group,rng,unit)
       end
     )
     :SpawnFromVec3(spawnVec3)
-    MESSAGE:New(playerName .. " has spawned Adversary."):ToGroup(group)
+    local msg = "99 all players, " .. playerName .. " has spawned BFM Adversary."
+    if MISSIONSRS.Radio then -- if MISSIONSRS radio object has been created, send message via default broadcast.
+      MISSIONSRS:SendRadio(msg,BFMACM.rangeRadio)
+    else -- otherwise, send in-game text message
+      MESSAGE:New(msg):ToAll()
+    end
+    --MESSAGE:New(playerName .. " has spawned Adversary."):ToGroup(group)
   else
-    MESSAGE:New(playerName .. msgNoSpawn):ToGroup(group)
+    local msg = playerName .. msgNoSpawn
+    if MISSIONSRS.Radio then -- if MISSIONSRS radio object has been created, send message via default broadcast.
+      MISSIONSRS:SendRadio(msg,BFMACM.rangeRadio)
+    else -- otherwise, send in-game text message
+      MESSAGE:New(msg):ToAll()
+    end
+    --MESSAGE:New(playerName .. msgNoSpawn):ToGroup(group)
   end
 end
   
@@ -1334,8 +1387,11 @@ local BVRGCI = {
     Spawn           = {},
     headingDefault  = 150,
     Destroy         = false,
+    defaultRadio = "377.8",
   }
    
+BVRGCI.rangeRadio = (JTF1.rangeRadio and JTF1.rangeRadio or BVRGCI.defaultRadio)
+
   --- ME Zone object for BVRGCI area boundary
   -- @field #string ZoneBvr 
   BVRGCI.ZoneBvr = ZONE:FindByName("ZONE_BVR")
@@ -1413,11 +1469,17 @@ local BVRGCI = {
                 -- remove adversary group if it has left the BVR/GCI zone, or the remove all adversaries menu option has been selected
                 if (SpawnGroup:IsNotInZone(BVRGCI.ZoneBvr) or (BVRGCI.Destroy)) then 
                   local groupName = SpawnGroup.GroupName
-                  local msgDestroy = "BVR adversary group " .. groupName .. " removed."
-                  local msgLeftZone = "BVR adversary group " .. groupName .. " left zone and was removed."
+                  local msgDestroy = "99 all players, BVR adversary group " .. groupName .. " removed."
+                  local msgLeftZone = "99 all players, BVR adversary group " .. groupName .. " left zone and was removed."
                   SpawnGroup:Destroy()
                   SpawnGroup = nil
-                  MESSAGE:New(BVRGCI.Destroy and msgDestroy or msgLeftZone):ToAll()
+                  local msg = (BVRGCI.Destroy and msgDestroy or msgLeftZone)
+                  if MISSIONSRS.Radio then -- if MISSIONSRS radio object has been created, send message via default broadcast.
+                    MISSIONSRS:SendRadio(msg, BVRGCI.rangeRadio)
+                  else -- otherwise, send in-game text message
+                    MESSAGE:New(msg):ToAll()
+                  end
+                  --MESSAGE:New(BVRGCI.Destroy and msgDestroy or msgLeftZone):ToAll()
                 end
               end
             end,
@@ -1426,8 +1488,13 @@ local BVRGCI = {
         Formation, typeName
       )
     spawnAdversary:SpawnFromVec3(spawnVec3)
-    local _msg = "BVR Adversary group spawned."
-    MESSAGE:New(_msg):ToAll()
+    local msg = "99 all players, BVR Adversary group spawned."
+    if MISSIONSRS.Radio then -- if MISSIONSRS radio object has been created, send message via default broadcast.
+      MISSIONSRS:SendRadio(msg, BVRGCI.rangeRadio)
+    else -- otherwise, send in-game text message
+      MESSAGE:New(msg):ToAll()
+    end
+    --MESSAGE:New(_msg):ToAll()
   end
   
   --- Remove all spawned BVRGCI adversaries

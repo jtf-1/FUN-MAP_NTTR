@@ -3,7 +3,8 @@
 -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
 local ACTIVERANGES = {
-    menu = {}
+    menu = {},
+    rangeRadio = "377.8",
   }
   
   
@@ -29,7 +30,13 @@ local ACTIVERANGES = {
         reactivateRangeGroup:OptionROE(ENUMS.ROE.WeaponHold)
         reactivateRangeGroup:OptionROTEvadeFire()
         reactivateRangeGroup:OptionAlarmStateGreen()
-        MESSAGE:New("Target " .. rangePrefix .. " has been deactivated."):ToAll()
+        local msg = "99 all players, Target " .. rangePrefix .. " has been deactivated."
+        if MISSIONSRS.Radio then -- if MISSIONSRS radio object has been created, send message via default broadcast.
+          MISSIONSRS:SendRadio(msg, ACTIVERANGES.rangeRadio)
+        else -- otherwise, send in-game text message
+          MESSAGE:New(msg):ToAll()
+        end
+        --MESSAGE:New("Target " .. rangePrefix .. " has been deactivated."):ToAll()
       else
         local refreshRangeGroup = initActiveRange(GROUP:FindByName("ACTIVE_" .. rangePrefix), true)
         activateRangeTarget(refreshRangeGroup, rangePrefix, rangeMenu, withSam, true)      
@@ -67,7 +74,13 @@ local ACTIVERANGES = {
         function (spawnGroup)
           MENU_COALITION_COMMAND:New(coalition.side.BLUE, deactivateText , ACTIVERANGES.menu["rangeMenu_" .. rangePrefix], resetRangeTarget, rangeGroup, rangePrefix, ACTIVERANGES.menu["rangeMenu_" .. rangePrefix], spawnGroup, false)
           MENU_COALITION_COMMAND:New(coalition.side.BLUE, refreshText .. " with SAM" , ACTIVERANGES.menu["rangeMenu_" .. rangePrefix], resetRangeTarget, rangeGroup, rangePrefix, ACTIVERANGES.menu["rangeMenu_" .. rangePrefix], spawnGroup, true)
-          MESSAGE:New("Target " .. rangePrefix .. " is active, with SAM."):ToAll()
+          local msg = "99 all players, dynamic target " .. rangePrefix .. " is active, with SAM."
+          if MISSIONSRS.Radio then -- if MISSIONSRS radio object has been created, send message via default broadcast.
+            MISSIONSRS:SendRadio(msg, ACTIVERANGES.rangeRadio)
+          else -- otherwise, send in-game text message
+            MESSAGE:New(msg):ToAll()
+          end
+          --MESSAGE:New("Target " .. rangePrefix .. " is active, with SAM."):ToAll()
           spawnGroup:OptionROE(ENUMS.ROE.WeaponFree)
           spawnGroup:OptionROTEvadeFire()
           spawnGroup:OptionAlarmStateRed()
@@ -82,7 +95,13 @@ local ACTIVERANGES = {
       else
         MENU_COALITION_COMMAND:New(coalition.side.BLUE, refreshText , ACTIVERANGES.menu["rangeMenu_" .. rangePrefix], resetRangeTarget, rangeGroup, rangePrefix, ACTIVERANGES.menu["rangeMenu_" .. rangePrefix], withSam, true)
       end
-      MESSAGE:New("Target " .. rangePrefix .. " is active."):ToAll()
+      local msg = "99 all players, dynamic target " .. rangePrefix .. " is active."
+      if MISSIONSRS.Radio then -- if MISSIONSRS radio object has been created, send message via default broadcast.
+        MISSIONSRS:SendRadio(msg, ACTIVERANGES.rangeRadio)
+      else -- otherwise, send in-game text message
+        MESSAGE:New(msg):ToAll()
+      end
+      -- MESSAGE:New("Target " .. rangePrefix .. " is active."):ToAll()
     end
     
   end

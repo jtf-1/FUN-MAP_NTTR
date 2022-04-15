@@ -115,7 +115,9 @@ R75W
 R76
 - 76-10, 76-20
 
-Two activation options are available for each Active Target that also has a separate SAM defence; Activate or Active with SAM. Activated targets will engage with firearms, AAA. If the SAM option is selected, SAM and MANPAD assets at or IVO the target will also engage. Dedicated SAM targets will become active when the Activate option is selected.
+Two activation options are available for each Active Target that also has a separate SAM defence; Activate or Active with SAM. Activated targets will engage with firearms, AAA. If the SAM option is selected, SAM and MANPAD assets at or IVO the target will also engage. Dedicated SAM targets will become active when the Activate option is selected. 
+
+Notifications relating to target activation, reset and deactivation will be broadcast on BLACKJACK.
 
 ELECTRONIC COMBAT SIMULATION RANGE
 ==================================
@@ -133,7 +135,9 @@ The following SAM threats can be activated IVO target 77-69;
 AI BFM/ACM
 ==========
 
-On-demand single or pair adversary spawns are available via the F10 menu while aircraft are within ranges Coyote Alpha, Bravo and Charlie. Adversaries will be spawned ahead of you at the selected distance (5NM, 10NM, 20NM).
+On-demand single or pair adversary spawns are available via the F10 menu while aircraft are within ranges Coyote Alpha, Bravo and Charlie. Adversaries will be spawned ahead of you at the selected distance (5NM, 10NM, 20NM). 
+
+Notifications relating to target activation, reset and deactivation will be broadcast on BLACKJACK.
 
 AI BVR/GCI
 ==========
@@ -141,3 +145,5 @@ AI BVR/GCI
 On-demand pair or four-ship BVR adversary spawns are available via the F10 menu in an 80NM wide BVR training corridor. The corridor runs from BEATTY VORTAC [BTY] to MINA VORTAC [MVA], approx 140NM, along the Western edge of the MOA. Adversaries will be spawned IVO MVA, and will flow towards BTY.
 
 The menu is structured to allow selection of Altitude [High: 30k, Medium: 20k, Low: 10k], Formation/Spacing, and Adversary Aircraft Type. Adversaries will spawn in Line Abreast, then manoeuvre into the selected formation. ROE is set to Return Fire, although adversaries should engage any training aircraft passing North-West of BTY. Adversary spawns can be removed via the F10 menu. They will also despawn if they are outside the BVR training corridor. The F10 menu is also available in GameMaster, Observer and JTAC slots.
+
+Notifications relating to target activation, reset and deactivation will be broadcast on BLACKJACK.
