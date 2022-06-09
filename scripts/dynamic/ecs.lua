@@ -13,6 +13,7 @@ ECS.menuEscTop = MENU_COALITION:New(coalition.side.BLUE, "EC South")
 
 -- SAM spawn emplates
 ECS.templates = {
+  {templateName = "ECS_SA11", threatName = "SA-11"},
   {templateName = "ECS_SA10", threatName = "SA-10"},
   {templateName = "ECS_SA2",  threatName = "SA-2"},
   {templateName = "ECS_SA3",  threatName = "SA-3"},

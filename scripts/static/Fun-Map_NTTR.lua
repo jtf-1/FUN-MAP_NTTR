@@ -1,4 +1,4 @@
-env.info( '[JTF-1] *** MISSION FILE BUILD DATE: 2022-04-15T15:14:10.38Z ***') 
+env.info( '[JTF-1] *** MISSION FILE BUILD DATE: 2022-05-31T22:24:54.01Z ***') 
 env.info( '[JTF-1] *** JTF-1 STATIC MISSION SCRIPT START ***' )
 
 -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
@@ -127,7 +127,7 @@ MISSIONSRS = {
   defaultSrsPath = "C:/Program Files/DCS-SimpleRadio-Standalone", -- default path to SRS install directory if setting file is not avaialable "C:/Program Files/DCS-SimpleRadio-Standalone"
   defaultSrsPort = 5002,                                          -- default SRS port to use if settings file is not available
   defaultText = "No Message Defined!",                            -- default message if text is nil
-  defaultFreqs = "243,251,327,377.8,30",                          -- transmit on guard, CTAF, NTTR TWR and NTTR BLACKJACK as default frequencies
+  defaultFreqs = "243,251,327,377.8,30",                          -- transmit on guard, CTAF, NTTR TWR, NTTR BLACKJACK and 30FM as default frequencies
   defaultModulations = "AM,AM,AM,AM,FM",                          -- default modulation (count *must* match qty of freqs)
   defaultVol = "1.0",                                             -- default to full volume
   defaultName = "Server",                                         -- default to server as sender
@@ -1031,6 +1031,7 @@ ECS.menuEscTop = MENU_COALITION:New(coalition.side.BLUE, "EC South")
 
 -- SAM spawn emplates
 ECS.templates = {
+  {templateName = "ECS_SA11", threatName = "SA-11"},
   {templateName = "ECS_SA10", threatName = "SA-10"},
   {templateName = "ECS_SA2",  threatName = "SA-2"},
   {templateName = "ECS_SA3",  threatName = "SA-3"},
