@@ -1,0 +1,12 @@
+mapResource = 
+{
+    ["ResKey_ImageBriefing_14781"] = "500px-USAF_-_Warfare_Center.png",
+    ["ResKey_ImageBriefing_14780"] = "500px-USAF_-_Warfare_Center.png",
+    ["ResKey_Action_23163"] = "mist.lua",
+    ["ResKey_Action_22987"] = "Fun-Map_NTTR.lua",
+    ["ResKey_ImageBriefing_23170"] = "R-2508_Green Flag_brief.png",
+    ["ResKey_ImageBriefing_23167"] = "JTF-1_NTTR.png",
+    ["ResKey_Action_23162"] = "skynet-iads-compiled.lua",
+    ["ResKey_ImageBriefing_21127"] = "NTTR Presets_1.jpg",
+    ["ResKey_Action_18825"] = "Moose_.lua",
+} -- end of mapResource
