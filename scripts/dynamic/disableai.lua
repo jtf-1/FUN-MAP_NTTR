@@ -15,4 +15,7 @@ setGroupGroundActive:ForEachGroup(
   end
 )
 
+-- remove set object
+setGroupGroundActive = nil
+
 ---  END DISABLE AI
