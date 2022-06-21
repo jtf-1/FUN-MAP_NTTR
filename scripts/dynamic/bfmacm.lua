@@ -131,7 +131,7 @@ function BFMACM.SpawnAdv(adv,qty,group,rng,unit)
         function (CheckAdversary)
           if SpawnGroup then
             if SpawnGroup:IsNotInZone( BFMACM.zoneBfmAcm ) then
-              local msg = "99 all players, BFM Adversary left BFM Zone and was removed!"
+              local msg = "All players, BFM Adversary left BFM Zone and was removed!"
               if MISSIONSRS.Radio then -- if MISSIONSRS radio object has been created, send message via default broadcast.
                 MISSIONSRS:SendRadio(msg,BFMACM.rangeRadio)
               else -- otherwise, send in-game text message
@@ -147,7 +147,7 @@ function BFMACM.SpawnAdv(adv,qty,group,rng,unit)
       end
     )
     :SpawnFromVec3(spawnVec3)
-    local msg = "99 all players, " .. playerName .. " has spawned BFM Adversary."
+    local msg = "All players, " .. playerName .. " has spawned BFM Adversary."
     if MISSIONSRS.Radio then -- if MISSIONSRS radio object has been created, send message via default broadcast.
       MISSIONSRS:SendRadio(msg,BFMACM.rangeRadio)
     else -- otherwise, send in-game text message

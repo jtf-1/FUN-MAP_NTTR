@@ -38,7 +38,7 @@ function activateEcsThreat(samTemplate, samZone, activeThreat, isReset)
       function (spawnGroup)
         MENU_COALITION_COMMAND:New(coalition.side.BLUE, "Deactivate 77-69", ECS.menuEscTop, resetEcsThreat, spawnGroup, ecsSpawn, activeThreat, false)
         MENU_COALITION_COMMAND:New(coalition.side.BLUE, "Reset 77-69", ECS.menuEscTop, resetEcsThreat, spawnGroup, ecsSpawn, activeThreat, true, samZone)
-        local msg = "99 all players, EC South is active with " .. activeThreat
+        local msg = "All players, EC South is active with " .. activeThreat
         if MISSIONSRS.Radio then -- if MISSIONSRS radio object has been created, send message via default broadcast.
           MISSIONSRS:SendRadio(msg)
         else -- otherwise, send in-game text message
@@ -74,7 +74,7 @@ function resetEcsThreat(spawnGroup, ecsSpawn, activeThreat, refreshEcs, samZone)
     ecsSpawn:SpawnInZone(samZone, true)
   else
     addEcsThreatMenu()
-    local msg = "99 all players, EC South "  .. activeThreat .." has been deactivated."
+    local msg = "All players, EC South "  .. activeThreat .." has been deactivated."
     if MISSIONSRS.Radio then -- if MISSIONSRS radio object has been created, send message via default broadcast.
       MISSIONSRS:SendRadio(msg)
     else -- otherwise, send in-game text message

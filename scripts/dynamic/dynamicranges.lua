@@ -30,7 +30,7 @@ local ACTIVERANGES = {
         reactivateRangeGroup:OptionROE(ENUMS.ROE.WeaponHold)
         reactivateRangeGroup:OptionROTEvadeFire()
         reactivateRangeGroup:OptionAlarmStateGreen()
-        local msg = "99 all players, Target " .. rangePrefix .. " has been deactivated."
+        local msg = "All players, Target " .. rangePrefix .. " has been deactivated."
         if MISSIONSRS.Radio then -- if MISSIONSRS radio object has been created, send message via default broadcast.
           MISSIONSRS:SendRadio(msg, ACTIVERANGES.rangeRadio)
         else -- otherwise, send in-game text message
@@ -74,7 +74,7 @@ local ACTIVERANGES = {
         function (spawnGroup)
           MENU_COALITION_COMMAND:New(coalition.side.BLUE, deactivateText , ACTIVERANGES.menu["rangeMenu_" .. rangePrefix], resetRangeTarget, rangeGroup, rangePrefix, ACTIVERANGES.menu["rangeMenu_" .. rangePrefix], spawnGroup, false)
           MENU_COALITION_COMMAND:New(coalition.side.BLUE, refreshText .. " with SAM" , ACTIVERANGES.menu["rangeMenu_" .. rangePrefix], resetRangeTarget, rangeGroup, rangePrefix, ACTIVERANGES.menu["rangeMenu_" .. rangePrefix], spawnGroup, true)
-          local msg = "99 all players, dynamic target " .. rangePrefix .. " is active, with SAM."
+          local msg = "All players, dynamic target " .. rangePrefix .. " is active, with SAM."
           if MISSIONSRS.Radio then -- if MISSIONSRS radio object has been created, send message via default broadcast.
             MISSIONSRS:SendRadio(msg, ACTIVERANGES.rangeRadio)
           else -- otherwise, send in-game text message
@@ -95,7 +95,7 @@ local ACTIVERANGES = {
       else
         MENU_COALITION_COMMAND:New(coalition.side.BLUE, refreshText , ACTIVERANGES.menu["rangeMenu_" .. rangePrefix], resetRangeTarget, rangeGroup, rangePrefix, ACTIVERANGES.menu["rangeMenu_" .. rangePrefix], withSam, true)
       end
-      local msg = "99 all players, dynamic target " .. rangePrefix .. " is active."
+      local msg = "All players, dynamic target " .. rangePrefix .. " is active."
       if MISSIONSRS.Radio then -- if MISSIONSRS radio object has been created, send message via default broadcast.
         MISSIONSRS:SendRadio(msg, ACTIVERANGES.rangeRadio)
       else -- otherwise, send in-game text message

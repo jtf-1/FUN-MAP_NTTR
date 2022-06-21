@@ -29,7 +29,7 @@ function MISSIONTIMER:AddSchedules()
       self.msgWarning[i] = SCHEDULER:New( nil, 
         function()
           BASE:T("[MISSIONTIMER] TIMER WARNING CALLED at " .. tostring(msgTime) .. " minutes remaining.")
-          local msg = "99 all players, mission is scheduled to restart in  " .. msgTime .. " minutes!"
+          local msg = "All players, mission is scheduled to restart in  " .. msgTime .. " minutes!"
           if MISSIONSRS.Radio then -- if MISSIONSRS radio object has been created, send message via default broadcast.
             MISSIONSRS:SendRadio(msg)
           else -- otherwise, send in-game text message
@@ -54,7 +54,7 @@ function MISSIONTIMER:Restart()
   end
   if self.clientList:CountAlive() > 0 then
     local delayTime = self.restartDelay
-    local msg  = "99 all players, mission will restart when no active clients are present. Next check will be in " .. tostring(delayTime) .." minutes." 
+    local msg  = "All players, mission will restart when no active clients are present. Next check will be in " .. tostring(delayTime) .." minutes." 
     if MISSIONSRS.Radio then -- if MISSIONSRS radio object has been created, send message via default broadcast.
       MISSIONSRS:SendRadio(msg)
     else -- otherwise, send in-game text message

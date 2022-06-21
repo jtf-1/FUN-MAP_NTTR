@@ -110,8 +110,8 @@ BVRGCI.rangeRadio = (JTF1.rangeRadio and JTF1.rangeRadio or BVRGCI.defaultRadio)
                 -- remove adversary group if it has left the BVR/GCI zone, or the remove all adversaries menu option has been selected
                 if (SpawnGroup:IsNotInZone(BVRGCI.ZoneBvr) or (BVRGCI.Destroy)) then 
                   local groupName = SpawnGroup.GroupName
-                  local msgDestroy = "99 all players, BVR adversary group " .. groupName .. " removed."
-                  local msgLeftZone = "99 all players, BVR adversary group " .. groupName .. " left zone and was removed."
+                  local msgDestroy = "All players, BVR adversary group " .. groupName .. " removed."
+                  local msgLeftZone = "All players, BVR adversary group " .. groupName .. " left zone and was removed."
                   SpawnGroup:Destroy()
                   SpawnGroup = nil
                   local msg = (BVRGCI.Destroy and msgDestroy or msgLeftZone)
@@ -129,7 +129,7 @@ BVRGCI.rangeRadio = (JTF1.rangeRadio and JTF1.rangeRadio or BVRGCI.defaultRadio)
         Formation, typeName
       )
     spawnAdversary:SpawnFromVec3(spawnVec3)
-    local msg = "99 all players, BVR Adversary group spawned."
+    local msg = "All players, BVR Adversary group spawned."
     if MISSIONSRS.Radio then -- if MISSIONSRS radio object has been created, send message via default broadcast.
       MISSIONSRS:SendRadio(msg, BVRGCI.rangeRadio)
     else -- otherwise, send in-game text message
@@ -217,6 +217,8 @@ BVRGCI.rangeRadio = (JTF1.rangeRadio and JTF1.rangeRadio or BVRGCI.defaultRadio)
     BVRGCI.BuildMenuLevel(BVRGCI.Altitude.Medium, "Medium", "Medium Level",  BVRGCI.SubMenu[MenuName])
     BVRGCI.BuildMenuLevel(BVRGCI.Altitude.Low, "Low", "Low Level",  BVRGCI.SubMenu[MenuName])
   end
+
+  
   
   --- Add BVRGCI MENU Root.
   function BVRGCI.BuildMenuRoot()
