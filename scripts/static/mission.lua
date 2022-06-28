@@ -1,4 +1,4 @@
-env.info( '[JTF-1] *** MISSION FILE BUILD DATE: 2022-06-28T12:28:24.79Z ***') 
+env.info( '[JTF-1] *** MISSION FILE BUILD DATE: 2022-06-28T12:53:44.03Z ***') 
 env.info( '[JTF-1] *** JTF-1 STATIC MISSION SCRIPT START ***' )
 
 -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
@@ -46,15 +46,15 @@ if devState == 1 then
     self.traceOn = not traceOn
   end
 
-  function DEV_MENU:testLua()
+  function DEV_MENU:testLua() --check encoding
     local base = _G
     local f = assert( base.loadfile( 'E:/GitHub/FUN-MAP_NTTR/scripts/dynamic/test.lua' ) )
     if f == nil then
-                        error ("Mission Loader: could not load test.lua." )
-                else
-                        env.info( "[JTF-1] Mission Loader: test.lua dynamically loaded." )
-                        --return f()
-                end
+      error ("Mission Loader: could not load test.lua." )
+          else
+      env.info( "[JTF-1] Mission Loader: test.lua dynamically loaded." )
+      --return f()
+    end
   end
 
   function DEV_MENU:restartMission()

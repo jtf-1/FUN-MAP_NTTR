@@ -26,15 +26,15 @@ if devState == 1 then
     self.traceOn = not traceOn
   end
 
-  function DEV_MENU:testLua()
+  function DEV_MENU:testLua() --check encoding
     local base = _G
     local f = assert( base.loadfile( 'E:/GitHub/FUN-MAP_NTTR/scripts/dynamic/test.lua' ) )
     if f == nil then
-			error ("Mission Loader: could not load test.lua." )
-		else
-			env.info( "[JTF-1] Mission Loader: test.lua dynamically loaded." )
-			--return f()
-		end
+      error ("Mission Loader: could not load test.lua." )
+	  else
+      env.info( "[JTF-1] Mission Loader: test.lua dynamically loaded." )
+      --return f()
+    end
   end
 
   function DEV_MENU:restartMission()
