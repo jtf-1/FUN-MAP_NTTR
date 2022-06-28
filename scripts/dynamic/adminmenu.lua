@@ -35,6 +35,7 @@ ADMIN.missionList = { -- List of missions for load mission menu commands
   {menuText = "Load DAY NTTR - IFR", missionFlagValue = 2},
   {menuText = "Load NIGHT NTTR", missionFlagValue = 3},
   {menuText = "Load NIGHT NTTR - No Moon", missionFlagValue = 4},
+  {menuText = "Load DAY NTTR - NO GPS (1980)", missionFlagValue = 5},
 }
 
 function ADMIN:GetPlayerUnitAndName(unitName)
