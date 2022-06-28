@@ -1,4 +1,4 @@
-env.info( '[JTF-1] *** MISSION FILE BUILD DATE: 2022-06-20T12:11:30.32Z ***') 
+env.info( '[JTF-1] *** MISSION FILE BUILD DATE: 2022-06-28T12:28:24.79Z ***') 
 env.info( '[JTF-1] *** JTF-1 STATIC MISSION SCRIPT START ***' )
 
 -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
@@ -236,6 +236,7 @@ ADMIN.missionList = { -- List of missions for load mission menu commands
   {menuText = "Load DAY NTTR - IFR", missionFlagValue = 2},
   {menuText = "Load NIGHT NTTR", missionFlagValue = 3},
   {menuText = "Load NIGHT NTTR - No Moon", missionFlagValue = 4},
+  {menuText = "Load DAY NTTR - NO GPS (1980)", missionFlagValue = 5},
 }
 
 function ADMIN:GetPlayerUnitAndName(unitName)
