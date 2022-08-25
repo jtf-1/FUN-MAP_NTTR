@@ -161,20 +161,20 @@ CMD ASPAWN: [type][, [option]: [value]][...]
 Airspawn Types
 --------------
 
-F4
-SU27
-MIG29
-SU25
-MIG23
+- F4
+- SU27
+- MIG29
+- SU25
+- MIG23
 
 Airspawn Options
 ----------------
 
-HDG: [degrees] - default 000
-ALT: [flight level] - default 280 (28,000ft)
-DIST:[nm] - default 0 (spawn on mark point)
-NUM: [1-4] - default 1
-SPD: [knots] - default 425
+- HDG: [degrees] - default 000
+- ALT: [flight level] - default 280 (28,000ft)
+- DIST:[nm] - default 0 (spawn on mark point)
+- NUM: [1-4] - default 1
+- SPD: [knots] - default 425
 
 Example;
 
