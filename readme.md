@@ -147,3 +147,49 @@ On-demand pair or four-ship BVR adversary spawns are available via the F10 menu 
 The menu is structured to allow selection of Altitude [High: 30k, Medium: 20k, Low: 10k], Formation/Spacing, and Adversary Aircraft Type. Adversaries will spawn in Line Abreast, then manoeuvre into the selected formation. ROE is set to Return Fire, although adversaries should engage any training aircraft passing North-West of BTY. Adversary spawns can be removed via the F10 menu. They will also despawn if they are outside the BVR training corridor. The F10 menu is also available in GameMaster, Observer and JTAC slots.
 
 Notifications relating to target activation, reset and deactivation will be broadcast on BLACKJACK.
+
+MAP MARK SPAWNING
+=================
+
+WIP - Use F10 map marks to spawn BVR opponents anywhere on the map. Add mark to map then type the CMD syntax below in the map mark text field. The command will execute on mouse-clicking out of the text box.
+
+Airspawn syntax
+---------------
+
+CMD ASPAWN: [type][, [option]: [value]][...]
+
+Airspawn Types
+--------------
+
+F4
+SU27
+MIG29
+SU25
+MIG23
+
+Airspawn Options
+----------------
+
+HDG: [degrees] - default 000
+ALT: [flight level] - default 280 (28,000ft)
+DIST:[nm] - default 0 (spawn on mark point)
+NUM: [1-4] - default 1
+SPD: [knots] - default 425
+
+Example;
+
+CMD ASPAWN: MIG29, NUM: 2, HDG: 180
+
+Will spawn 2x MiG29 with heading 180, at the default alt of FL280 and the defualt speed of 425 knots
+
+
+Delete Spawn Syntax
+-------------------
+
+CMD DELETE: NAME: [group name from F10 map]
+
+Example;
+
+CMD DELETE: NAME: BVR_MIG29A#001
+
+Will remove the group named BVR_MIG29A#001
