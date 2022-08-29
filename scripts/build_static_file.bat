@@ -49,6 +49,7 @@ CALL :buildfile movingtargets.lua
 CALL :buildfile ecs.lua
 CALL :buildfile bfmacm.lua
 CALL :buildfile bvrgci.lua
+CALL :buildfile markspawn.lua
 CALL :buildfile mission_end.lua
 
 ECHO.

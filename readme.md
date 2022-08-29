@@ -175,21 +175,56 @@ Airspawn Options
 - DIST:[nm] - default 0 (spawn on mark point)
 - NUM: [1-4] - default 1
 - SPD: [knots] - default 425
+- SKILL: [AVERAGE, GOOD, HIGH, EXCELLENT, RANDOM] - default AVERAGE
 
 Example;
 
-CMD ASPAWN: MIG29, NUM: 2, HDG: 180
+CMD ASPAWN: MIG29, NUM: 2, HDG: 180, SKILL: GOOD
 
-Will spawn 2x MiG29 with heading 180, at the default alt of FL280 and the defualt speed of 425 knots
+Will spawn 2x MiG29 at the default speed of 425 knots, with heading 180 and skill level GOOD.
+
+
+
+Groundspawn Syntax
+------------------
+
+CMD GSPAWN: [groundspawn type][, [option]: [value]][...]
+
+
+Groundspawn Types
+-----------------
+
+- SA6
+- SA10
+- SA11
+- SA15
+
+Groundspawn Options
+----------------
+
+- ALERT: [GREEN, AUTO, RED] - default RED 
+- SKILL: [AVERAGE, GOOD, HIGH, EXCELLENT, RANDOM] - default AVERAGE
+
+Example;
+
+CMD GSPAWN: SA6BTY, ALERT: GREEN, SKILL: HIGH
+
+Will spawn an SA6 Battery on the location of the map mark, in alert state GREEN and with skill level HIGH.
+
 
 
 Delete Spawn Syntax
 -------------------
 
-CMD DELETE: NAME: [group name from F10 map]
+CMD DELETE: [object type] [group name from F10 map]
+
+Delete Spawn Object Types
+-------------------------
+
+- GROUP
 
 Example;
 
-CMD DELETE: NAME: BVR_MIG29A#001
+CMD DELETE: GROUP MIG29A#001
 
-Will remove the group named BVR_MIG29A#001
+Will remove the spawned group named MIG29A#001
