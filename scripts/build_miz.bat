@@ -34,9 +34,11 @@ DIR  %projectroot%*.miz
 
 :: Prepare build content
 mkdir %projectroot%Temp\l10n\DEFAULT
-copy %staticscriptpath%*.lua %projectroot%Temp\l10n\DEFAULT
+copy %staticscriptpath%*.* %projectroot%Temp\l10n\DEFAULT
 mkdir %projectroot%TEMP\KNEEBOARD\IMAGES
-copy %kneeboardpath%*.png %projectroot%Temp\KNEEBOARD\IMAGES
+copy %kneeboardpath%*.* %projectroot%Temp\KNEEBOARD\IMAGES
+
+
 
 :: Add build content to MIZ
 For %%I IN (%projectroot%*.miz) do (
@@ -48,11 +50,11 @@ For %%I IN (%projectroot%*.miz) do (
   echo ++                     Build File                        ++
   echo +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
   cd %projectroot%Temp
-  7z.exe -bb0 u "%%I" *
+  7z.exe u "%%I" *
 )
   
 cd %projectroot%
-rmdir /S /Q Temp
+rem rmdir /S /Q Temp
 
 :: Close log
 ECHO. >> %log%

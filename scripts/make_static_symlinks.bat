@@ -25,11 +25,11 @@ ECHO.
 
 :: Create symlinks to library files
 :: MOOSE
-MKLINK %staticscriptpath%Moose_.lua "E:\GitHub\MOOSE_INCLUDE\Moose_Include_Static\Moose_.lua"
+MKLINK %staticscriptpath%Moose_.lua "d:\GitHub\MOOSE_INCLUDE\Moose_Include_Static\Moose_.lua"
 :: MIST
-MKLINK %staticscriptpath%mist.lua "E:\GitHub\MissionScriptingTools\mist.lua"
+MKLINK %staticscriptpath%mist.lua "d:\GitHub\MissionScriptingTools\mist.lua"
 :: SKYNET
-MKLINK %staticscriptpath%skynet-iads-compiled.lua "E:\GitHub\Skynet-IADS\demo-missions\skynet-iads-compiled.lua"
+MKLINK %staticscriptpath%skynet-iads-compiled.lua "d:\GitHub\Skynet-IADS\demo-missions\skynet-iads-compiled.lua"
 
 ECHO.
 
