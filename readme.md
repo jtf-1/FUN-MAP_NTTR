@@ -151,7 +151,9 @@ Notifications relating to target activation, reset and deactivation will be broa
 MAP MARK SPAWNING
 =================
 
-WIP - Use F10 map marks to spawn BVR opponents anywhere on the map. Add mark to map then type the CMD syntax below in the map mark text field. The command will execute on mouse-clicking out of the text box.
+WIP - Use F10 map marks to spawn BVR opponents or ground threats anywhere on the map. Add mark to map then type the CMD syntax below in the map mark text field. The command will execute on mouse-clicking out of the text box.
+
+NOTE: currently no syntax error feedback if you get it wrong.
 
 Airspawn syntax
 ---------------
@@ -177,7 +179,8 @@ Airspawn Options
 - SPD: [knots] - default 425
 - SKILL: [AVERAGE, GOOD, HIGH, EXCELLENT, RANDOM] - default AVERAGE
 
-Example;
+Example
+-------
 
 CMD ASPAWN: MIG29, NUM: 2, HDG: 180, SKILL: GOOD
 
@@ -224,7 +227,8 @@ Delete Spawn Object Types
 
 - GROUP
 
-Example;
+Example
+-------
 
 CMD DELETE: GROUP MIG29A#001
 
