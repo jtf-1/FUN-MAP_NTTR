@@ -1,10 +1,10 @@
-env.info( '[JTF-1] *** MISSION FILE BUILD DATE: 2022-09-06T23:54:31.87Z ***') 
+env.info( '[JTF-1] *** MISSION FILE BUILD DATE: 2022-11-23T16:14:34.87Z ***') 
 env.info( '[JTF-1] *** JTF-1 STATIC MISSION SCRIPT START ***' )
 
 -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 --- BEGIN INIT
 -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
---test1
+
 ---- remove default MOOSE player menu
 _SETTINGS:SetPlayerMenuOff()
 
@@ -1634,6 +1634,7 @@ MARKSPAWN = {
     { spawn = "BVR_SU27",   txt = "SU27" ,    category = "air",     type = "CAP" },
     { spawn = "BVR_F4",     txt = "F4" ,      category = "air",     type = "CAP" },
     { spawn = "SA6",    txt = "SA6BTY" ,  category = "ground",  type = "SAM" },
+    { spawn = "SA8",    txt = "SA8BTY" ,  category = "ground",  type = "SAM" },
     { spawn = "SA10",   txt = "SA10BTY" , category = "ground",  type = "SAM" },
     { spawn = "SA11",   txt = "SA11BTY" , category = "ground",  type = "SAM" },
     { spawn = "SA15",   txt = "SA15BTY" , category = "ground",  type = "SAM" },
@@ -1655,6 +1656,7 @@ local spawnerOptions = {
   { spawn = SPAWN:New(  "BVR_F4"  ), txt = "F4" , category = "air", type = "CAP" },
 
   { spawn = SPAWN:New(  "SA6"  ), txt = "SA6" , category = "ground", type = "SAM" },
+  { spawn = SPAWN:New(  "SA8"  ), txt = "SA8" , category = "ground", type = "SAM" },
   { spawn = SPAWN:New(  "SA10"  ), txt = "SA10" , category = "ground", type = "SAM" },
   { spawn = SPAWN:New(  "SA11"  ), txt = "SA11" , category = "ground", type = "SAM" },
   { spawn = SPAWN:New(  "SA15"  ), txt = "SA15" , category = "ground", type = "SAM" },
