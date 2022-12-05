@@ -209,7 +209,8 @@ Groundspawn Options
 - ALERT: [GREEN, AUTO, RED] - default RED 
 - SKILL: [AVERAGE, GOOD, HIGH, EXCELLENT, RANDOM] - default AVERAGE
 
-Example;
+Example
+-------
 
 CMD GSPAWN: SA6, ALERT: GREEN, SKILL: HIGH
 
