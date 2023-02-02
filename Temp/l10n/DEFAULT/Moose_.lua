@@ -1,4 +1,4 @@
-env.info('*** MOOSE GITHUB Commit Hash ID: 2022-12-03T13:38:57.0000000Z-9659bfa553379df3e6b82998d7e60210cfd780db ***')
+env.info('*** MOOSE GITHUB Commit Hash ID: 2022-12-15T10:50:05.0000000Z-a3fd583d9d80f796cc85af1da9e6cb17b1d4c51f ***')
 env.info('*** MOOSE STATIC INCLUDE START *** ')
 ENUMS={}
 ENUMS.ROE={
@@ -6052,11 +6052,14 @@ lid=nil,
 functionsGen={},
 functionsAny={},
 functionsAll={},
+functionCounter=0,
+defaultPersist=false,
 }
-CONDITION.version="0.2.0"
+CONDITION.version="0.3.0"
 function CONDITION:New(Name)
 local self=BASE:Inherit(self,BASE:New())
 self.name=Name or"Condition X"
+self:SetNoneResult(false)
 self.lid=string.format("%s | ",self.name)
 return self
 end
@@ -6068,28 +6071,80 @@ function CONDITION:SetNegateResult(Negate)
 self.negateResult=Negate
 return self
 end
-function CONDITION:AddFunction(Function,...)
-local condition=self:_CreateCondition(Function,...)
-table.insert(self.functionsGen,condition)
+function CONDITION:SetNoneResult(ReturnValue)
+if not ReturnValue then
+self.noneResult=false
+else
+self.noneResult=true
+end
 return self
+end
+function CONDITION:SetDefaultPersistence(IsPersistent)
+self.defaultPersist=IsPersistent
+return self
+end
+function CONDITION:AddFunction(Function,...)
+local condition=self:_CreateCondition(0,Function,...)
+table.insert(self.functionsGen,condition)
+return condition
 end
 function CONDITION:AddFunctionAny(Function,...)
-local condition=self:_CreateCondition(Function,...)
+local condition=self:_CreateCondition(1,Function,...)
 table.insert(self.functionsAny,condition)
-return self
+return condition
 end
 function CONDITION:AddFunctionAll(Function,...)
-local condition=self:_CreateCondition(Function,...)
+local condition=self:_CreateCondition(2,Function,...)
 table.insert(self.functionsAll,condition)
+return condition
+end
+function CONDITION:RemoveFunction(ConditionFunction)
+if ConditionFunction then
+local data=nil
+if ConditionFunction.type==0 then
+data=self.functionsGen
+elseif ConditionFunction.type==1 then
+data=self.functionsAny
+elseif ConditionFunction.type==2 then
+data=self.functionsAll
+end
+if data then
+for i=#data,1,-1 do
+local cf=data[i]
+if cf.uid==ConditionFunction.uid then
+self:T(self.lid..string.format("Removed ConditionFunction UID=%d",cf.uid))
+table.remove(data,i)
+return self
+end
+end
+end
+end
+return self
+end
+function CONDITION:RemoveNonPersistant()
+for i=#self.functionsGen,1,-1 do
+local cf=self.functionsGen[i]
+if not cf.persistence then
+table.remove(self.functionsGen,i)
+end
+end
+for i=#self.functionsAll,1,-1 do
+local cf=self.functionsAll[i]
+if not cf.persistence then
+table.remove(self.functionsAll,i)
+end
+end
+for i=#self.functionsAny,1,-1 do
+local cf=self.functionsAny[i]
+if not cf.persistence then
+table.remove(self.functionsAny,i)
+end
+end
 return self
 end
 function CONDITION:Evaluate(AnyTrue)
 if#self.functionsAll+#self.functionsAny+#self.functionsAll==0 then
-if self.negateResult then
-return true
-else
-return false
-end
+return self.noneResult
 end
 local evalAny=self.isAny
 if AnyTrue~=nil then
@@ -6138,8 +6193,12 @@ else
 return true
 end
 end
-function CONDITION:_CreateCondition(Function,...)
+function CONDITION:_CreateCondition(Ftype,Function,...)
+self.functionCounter=self.functionCounter+1
 local condition={}
+condition.uid=self.functionCounter
+condition.type=Ftype or 0
+condition.persistence=self.defaultPersist
 condition.func=Function
 condition.arg={}
 if arg then
@@ -11527,18 +11586,20 @@ self:T3({FirstObject})
 return FirstObject
 end
 function SET_BASE:GetLast()
-local ObjectName=self.Index[#self.Index]
+local tablemax=table.maxn(self.Index)
+local ObjectName=self.Index[tablemax]
 local LastObject=self.Set[ObjectName]
 self:T3({LastObject})
 return LastObject
 end
 function SET_BASE:GetRandom()
-local RandomItem=self.Set[self.Index[math.random(#self.Index)]]
+local tablemax=table.maxn(self.Index)
+local RandomItem=self.Set[self.Index[math.random(1,tablemax)]]
 self:T3({RandomItem})
 return RandomItem
 end
 function SET_BASE:Count()
-return self.Index and#self.Index or 0
+return self.Index and table.maxn(self.Index)or 0
 end
 function SET_BASE:SetDatabase(BaseSet)
 local OtherFilter=routines.utils.deepCopy(BaseSet.Filter)
@@ -13286,6 +13347,8 @@ Types=nil,
 Countries=nil,
 ClientPrefixes=nil,
 Zones=nil,
+Playernames=nil,
+Callsigns=nil,
 },
 FilterMeta={
 Coalitions={
@@ -13324,6 +13387,30 @@ end
 function SET_CLIENT:FindClient(ClientName)
 local ClientFound=self.Set[ClientName]
 return ClientFound
+end
+function SET_CLIENT:FilterCallsigns(Callsigns)
+if not self.Filter.Callsigns then
+self.Filter.Callsigns={}
+end
+if type(Callsigns)~="table"then
+Callsigns={Callsigns}
+end
+for callsignID,callsign in pairs(Callsigns)do
+self.Filter.Callsigns[callsign]=callsign
+end
+return self
+end
+function SET_CLIENT:FilterPlayernames(Playernames)
+if not self.Filter.Playernames then
+self.Filter.Playernames={}
+end
+if type(Playernames)~="table"then
+Playernames={Playernames}
+end
+for PlayernameID,playername in pairs(Playernames)do
+self.Filter.Playernames[playername]=playername
+end
+return self
 end
 function SET_CLIENT:FilterCoalitions(Coalitions)
 if not self.Filter.Coalitions then
@@ -13545,7 +13632,6 @@ end
 self:T({"Evaluated Prefix",MClientPrefix})
 MClientInclude=MClientInclude and MClientPrefix
 end
-end
 if self.Filter.Zones then
 local MClientZone=false
 for ZoneName,Zone in pairs(self.Filter.Zones)do
@@ -13556,6 +13642,29 @@ MClientZone=true
 end
 end
 MClientInclude=MClientInclude and MClientZone
+end
+if self.Filter.Playernames then
+local MClientPlayername=false
+local playername=MClient:GetPlayerName()or"Unknown"
+for _,_Playername in pairs(self.Filter.Playernames)do
+if playername and string.find(playername,_Playername)then
+MClientPlayername=true
+end
+end
+self:T({"Evaluated Playername",MClientPlayername})
+MClientInclude=MClientInclude and MClientPlayername
+end
+if self.Filter.Callsigns then
+local MClientCallsigns=false
+local callsign=MClient:GetCallsign()
+for _,_Callsign in pairs(self.Filter.Callsigns)do
+if callsign and string.find(callsign,_Callsign)then
+MClientCallsigns=true
+end
+end
+self:T({"Evaluated Callsign",MClientCallsigns})
+MClientInclude=MClientInclude and MClientCallsigns
+end
 end
 self:T2(MClientInclude)
 return MClientInclude
@@ -14791,6 +14900,7 @@ local self=BASE:Inherit(self,SET_BASE:New(zoneset))
 local zonenames={}
 if ZoneSet then
 for _,_zone in pairs(ZoneSet.Set)do
+self:T("Zone type handed: "..tostring(_zone.ClassName))
 table.insert(zonenames,_zone:GetName())
 end
 self:AddSceneryByName(zonenames)
@@ -61870,6 +61980,32 @@ mission.categories={AUFTRAG.Category.AIRCRAFT}
 mission.DCStask=mission:GetDCSMissionTask()
 return mission
 end
+function AUFTRAG:NewCAPGROUP(Grp,Altitude,Speed,RelHeading,Leg,OffsetDist,OffsetAngle,UpdateDistance,TargetTypes,EngageRange)
+if TargetTypes then
+if type(TargetTypes)~="table"then
+TargetTypes={TargetTypes}
+end
+end
+local OffsetVec2={r=OffsetDist or 6,phi=OffsetAngle or 180}
+Leg=Leg or 14
+local Heading=nil
+if RelHeading then
+Heading=-math.abs(RelHeading)
+end
+local mission=AUFTRAG:NewORBIT_GROUP(Grp,Altitude,Speed,Leg,Heading,OffsetVec2,UpdateDistance)
+mission.type=AUFTRAG.Type.CAP
+mission:_SetLogID()
+local engage=EngageRange or 32
+local zoneCAPGroup=ZONE_GROUP:New("CAPGroup",Grp,UTILS.NMToMeters(engage))
+mission.engageZone=zoneCAPGroup
+mission.engageTargetTypes=TargetTypes or{"Air"}
+mission.missionTask=ENUMS.MissionTask.CAP
+mission.optionROE=ENUMS.ROE.OpenFire
+mission.optionROT=ENUMS.ROT.EvadeFire
+mission.categories={AUFTRAG.Category.AIRCRAFT}
+mission.DCStask=mission:GetDCSMissionTask()
+return mission
+end
 function AUFTRAG:NewCAS(ZoneCAS,Altitude,Speed,Coordinate,Heading,Leg,TargetTypes)
 if TargetTypes then
 if type(TargetTypes)~="table"then
@@ -64215,7 +64351,7 @@ end
 do
 AWACS={
 ClassName="AWACS",
-version="0.2.49",
+version="0.2.50",
 lid="",
 coalition=coalition.side.BLUE,
 coalitiontxt="blue",
@@ -64296,7 +64432,7 @@ SuppressScreenOutput=false,
 NoMissileCalls=true,
 GoogleTTSPadding=1,
 WindowsTTSPadding=2.5,
-PlayerCapAssigment=true,
+PlayerCapAssignment=true,
 AllowMarkers=false,
 PlayerStationName=nil,
 GCI=false,
@@ -64598,7 +64734,7 @@ self.DeclareRadius=5
 self.MenuStrict=true
 self.maxassigndistance=100
 self.NoMissileCalls=true
-self.PlayerCapAssigment=true
+self.PlayerCapAssignment=true
 self.ManagedGrps={}
 self.ManagedGrpID=0
 self.callsignTranslations=nil
@@ -66128,7 +66264,7 @@ FlightGroup:SetDefaultRadio(self.Frequency,self.Modulation,false)
 FlightGroup:SwitchRadio(self.Frequency,self.Modulation)
 local CAPVoice=self.CAPVoice
 if self.PathToGoogleKey then
-CAPVoice=AWACS.CapVoices[math.floor(math.random(1,10))]
+CAPVoice=self.CapVoices[math.floor(math.random(1,10))]
 end
 FlightGroup:SetSRS(self.PathToSRS,self.CAPGender,self.CAPCulture,CAPVoice,self.Port,self.PathToGoogleKey,"FLIGHT")
 local checkai=self.gettext:GetEntry("CHECKINAI",self.locale)
@@ -66215,9 +66351,11 @@ local picture=MENU_GROUP_COMMAND:New(cgrp,"Picture",basemenu,self._Picture,self,
 local declare=MENU_GROUP_COMMAND:New(cgrp,"Declare",basemenu,self._Declare,self,cgrp)
 local tasking=MENU_GROUP:New(cgrp,"Tasking",basemenu)
 local showtask=MENU_GROUP_COMMAND:New(cgrp,"Showtask",tasking,self._Showtask,self,cgrp)
+if self.PlayerCapAssignment then
 local commit=MENU_GROUP_COMMAND:New(cgrp,"Commit",tasking,self._Commit,self,cgrp)
 local unable=MENU_GROUP_COMMAND:New(cgrp,"Unable",tasking,self._Unable,self,cgrp)
 local abort=MENU_GROUP_COMMAND:New(cgrp,"Abort",tasking,self._TaskAbort,self,cgrp)
+end
 if self.AwacsROE==AWACS.ROE.POLICE or self.AwacsROE==AWACS.ROE.VID then
 local vid=MENU_GROUP:New(cgrp,"VID as",tasking)
 local hostile=MENU_GROUP_COMMAND:New(cgrp,"Hostile",vid,self._VID,self,cgrp,AWACS.IFF.ENEMY)
@@ -67992,7 +68130,7 @@ self:_CheckMerges()
 local outcome,targets=self:_TargetSelectionProcess(true)
 self:_CheckTaskQueue()
 local AI,Humans=self:_GetIdlePilots()
-if outcome and#Humans>0 and self.PlayerCapAssigment then
+if outcome and#Humans>0 and self.PlayerCapAssignment then
 self:_AssignPilotToTarget(Humans,targets)
 end
 if outcome and#AI>0 then
@@ -73271,6 +73409,10 @@ wpZones={},
 dropOffZones={},
 pickupZones={},
 }
+CTLD.RadioModulation={
+AM=0,
+FM=1,
+}
 CTLD.CargoZoneType={
 LOAD="load",
 DROP="drop",
@@ -73294,7 +73436,7 @@ CTLD.UnitTypes={
 ["AH-64D_BLK_II"]={type="AH-64D_BLK_II",crates=false,troops=true,cratelimit=0,trooplimit=2,length=17,cargoweightlimit=200},
 ["Bronco-OV-10A"]={type="Bronco-OV-10A",crates=false,troops=true,cratelimit=0,trooplimit=5,length=13,cargoweightlimit=1450},
 }
-CTLD.version="1.0.20"
+CTLD.version="1.0.21"
 function CTLD:New(Coalition,Prefixes,Alias)
 local self=BASE:Inherit(self,FSM:New())
 BASE:T({Coalition,Prefixes,Alias})
@@ -73405,6 +73547,7 @@ self.saveinterval=600
 self.eventoninject=true
 self.usesubcats=false
 self.subcats={}
+self.nobuildinloadzones=true
 local AliaS=string.gsub(self.alias," ","_")
 self.filename=string.format("CTLD_%s_Persist.csv",AliaS)
 self.allowcratepickupagain=true
@@ -73884,10 +74027,10 @@ local subcat=cargotype.Subcategory
 self.CargoCounter=self.CargoCounter+1
 local realcargo=nil
 if drop then
-realcargo=CTLD_CARGO:New(self.CargoCounter,cratename,templ,sorte,true,false,cratesneeded,self.Spawned_Crates[self.CrateCounter],true,cargotype.PerCrateMass,subcat)
+realcargo=CTLD_CARGO:New(self.CargoCounter,cratename,templ,sorte,true,false,cratesneeded,self.Spawned_Crates[self.CrateCounter],true,cargotype.PerCrateMass,nil,subcat)
 table.insert(droppedcargo,realcargo)
 else
-realcargo=CTLD_CARGO:New(self.CargoCounter,cratename,templ,sorte,false,false,cratesneeded,self.Spawned_Crates[self.CrateCounter],true,cargotype.PerCrateMass,subcat)
+realcargo=CTLD_CARGO:New(self.CargoCounter,cratename,templ,sorte,false,false,cratesneeded,self.Spawned_Crates[self.CrateCounter],false,cargotype.PerCrateMass,nil,subcat)
 Cargo:RemoveStock()
 end
 table.insert(self.Spawned_Cargo,realcargo)
@@ -74477,6 +74620,13 @@ self:_SendMessage("You need to land / stop to build something, Pilot!",10,false,
 return self
 end
 end
+if not Engineering and self.nobuildinloadzones then
+local inloadzone=self:IsUnitInZone(Unit,CTLD.CargoZoneType.LOAD)
+if inloadzone then
+self:_SendMessage("You cannot build in a loading area, Pilot!",10,false,Group)
+return self
+end
+end
 local finddist=self.CrateDistance or 35
 local crates,number=self:_FindCratesNearby(Group,Unit,finddist,true)
 local buildables={}
@@ -74950,7 +75100,7 @@ local FM=table.remove(self.FreeFMFrequencies,math.random(#self.FreeFMFrequencies
 table.insert(self.UsedFMFrequencies,FM)
 beacon.name=Name
 beacon.frequency=FM/1000000
-beacon.modulation=radio.modulation.FM
+beacon.modulation=CTLD.RadioModulation.FM
 return beacon
 end
 function CTLD:_GetUHFBeacon(Name)
@@ -74964,7 +75114,7 @@ local UHF=table.remove(self.FreeUHFFrequencies,math.random(#self.FreeUHFFrequenc
 table.insert(self.UsedUHFFrequencies,UHF)
 beacon.name=Name
 beacon.frequency=UHF/1000000
-beacon.modulation=radio.modulation.AM
+beacon.modulation=CTLD.RadioModulation.AM
 return beacon
 end
 function CTLD:_GetVHFBeacon(Name)
@@ -74978,7 +75128,7 @@ local VHF=table.remove(self.FreeVHFFrequencies,math.random(#self.FreeVHFFrequenc
 table.insert(self.UsedVHFFrequencies,VHF)
 beacon.name=Name
 beacon.frequency=VHF/1000000
-beacon.modulation=radio.modulation.FM
+beacon.modulation=CTLD.RadioModulation.FM
 return beacon
 end
 function CTLD:AddCTLDZone(Name,Type,Color,Active,HasBeacon,Shiplength,Shipwidth)
@@ -75117,16 +75267,16 @@ end
 local Sound=Sound or"beacon.ogg"
 if IsDropped and Zone then
 local ZoneCoord=Zone
-local ZoneVec3=ZoneCoord:GetVec3()
+local ZoneVec3=ZoneCoord:GetVec3(1)
 local Frequency=string.format("%09d",Mhz*1000000)
 local Sound="l10n/DEFAULT/"..Sound
-trigger.action.radioTransmission(Sound,ZoneVec3,Modulation,false,Frequency,1000)
+trigger.action.radioTransmission(Sound,ZoneVec3,Modulation,false,tonumber(Frequency),1000)
 elseif Zone then
-local ZoneCoord=Zone:GetCoordinate(2)
+local ZoneCoord=Zone:GetCoordinate(1)
 local ZoneVec3=ZoneCoord:GetVec3()
 local Frequency=string.format("%09d",Mhz*1000000)
 local Sound="l10n/DEFAULT/"..Sound
-trigger.action.radioTransmission(Sound,ZoneVec3,Modulation,false,Frequency,1000)
+trigger.action.radioTransmission(Sound,ZoneVec3,Modulation,false,tonumber(Frequency),1000)
 end
 return self
 end
@@ -75149,9 +75299,9 @@ local Name=czone.name
 local FM=FMbeacon.frequency
 local VHF=VHFbeacon.frequency
 local UHF=UHFbeacon.frequency
-self:_AddRadioBeacon(Name,Sound,FM,radio.modulation.FM,IsShip,IsDropped)
-self:_AddRadioBeacon(Name,Sound,VHF,radio.modulation.FM,IsShip,IsDropped)
-self:_AddRadioBeacon(Name,Sound,UHF,radio.modulation.AM,IsShip,IsDropped)
+self:_AddRadioBeacon(Name,Sound,FM,CTLD.RadioModulation.FM,IsShip,IsDropped)
+self:_AddRadioBeacon(Name,Sound,VHF,CTLD.RadioModulation.FM,IsShip,IsDropped)
+self:_AddRadioBeacon(Name,Sound,UHF,CTLD.RadioModulation.AM,IsShip,IsDropped)
 end
 end
 end
@@ -75764,7 +75914,7 @@ self:T({From,Event,To})
 return self
 end
 function CTLD:onbeforeCratesBuild(From,Event,To,Group,Unit,Vehicle)
-self:I({From,Event,To})
+self:T({From,Event,To})
 if Unit and Unit:IsPlayer()and self.PlayerTaskQueue then
 local playername=Unit:GetPlayerName()
 local dropcoord=Vehicle:GetCoordinate()or COORDINATE:New(0,0,0)
@@ -78950,7 +79100,7 @@ end
 end
 local mission=self:GetMissionCurrent()
 if mission and mission.updateDCSTask then
-if(mission:GetType()==AUFTRAG.Type.ORBIT or mission:GetType()==AUFTRAG.Type.RECOVERYTANKER)and mission.orbitVec2 then
+if(mission:GetType()==AUFTRAG.Type.ORBIT or mission:GetType()==AUFTRAG.Type.RECOVERYTANKER or mission:GetType()==AUFTRAG.Type.CAP)and mission.orbitVec2 then
 local vec2=mission:GetTargetVec2()
 local hdg=mission:GetTargetHeading()
 local hdgchange=false
@@ -92743,7 +92893,7 @@ function PLAYERTASK:onafterClientAdded(From,Event,To,Client)
 self:T({From,Event,To})
 if Client and self.verbose then
 local text=string.format("Player %s joined task %03d!",Client:GetPlayerName()or"Generic",self.PlayerTaskNr)
-self:I(self.lid..text)
+self:T(self.lid..text)
 end
 self.timestamp=timer.getAbsTime()
 return self
@@ -92829,6 +92979,7 @@ CallsignTranslations=nil,
 PlayerFlashMenu={},
 PlayerJoinMenu={},
 PlayerInfoMenu={},
+PlayerMenuTag={},
 noflaresmokemenu=false,
 TransmitOnlyWithPlayers=true,
 buddylasing=false,
@@ -92838,6 +92989,7 @@ MenuParent=nil,
 ShowMagnetic=true,
 InfoHasLLDDM=false,
 InfoHasCoordinate=false,
+UseTypeNames=false,
 }
 PLAYERTASKCONTROLLER.Type={
 A2A="Air-To-Air",
@@ -92918,6 +93070,13 @@ FLASHMENU="Flash Directions Switch",
 BRIEFING="Briefing",
 TARGETLOCATION="Target location",
 COORDINATE="Coordinate",
+INFANTRY="Infantry",
+TECHNICAL="Technical",
+ARTILLERY="Artillery",
+TANKS="Tanks",
+AIRDEFENSE="Airdefense",
+SAM="SAM",
+GROUP="Group",
 },
 DE={
 TASKABORT="Auftrag abgebrochen!",
@@ -92983,9 +93142,16 @@ FLASHMENU="Richtungsangaben Schalter",
 BRIEFING="Briefing",
 TARGETLOCATION="Zielposition",
 COORDINATE="Koordinate",
+INFANTRY="Infantrie",
+TECHNICAL="Technische",
+ARTILLERY="Artillerie",
+TANKS="Panzer",
+AIRDEFENSE="Flak",
+SAM="Luftabwehr",
+GROUP="Einheit",
 },
 }
-PLAYERTASKCONTROLLER.version="0.1.50"
+PLAYERTASKCONTROLLER.version="0.1.54"
 function PLAYERTASKCONTROLLER:New(Name,Coalition,Type,ClientFilter)
 local self=BASE:Inherit(self,FSM:New())
 self.Name=Name or"CentCom"
@@ -93022,9 +93188,15 @@ self.Keepnumber=false
 self.CallsignTranslations=nil
 self.noflaresmokemenu=false
 self.ShowMagnetic=true
-if ClientFilter then
+self.UseTypeNames=false
+local IsClientSet=false
+if ClientFilter and type(ClientFilter)=="table"and ClientFilter.ClassName and ClientFilter.ClassName=="SET_CLIENT"then
+self.ClientSet=ClientFilter
+IsClientSet=true
+end
+if ClientFilter and not IsClientSet then
 self.ClientSet=SET_CLIENT:New():FilterCoalitions(string.lower(self.CoalitionName)):FilterActive(true):FilterPrefixes(ClientFilter):FilterStart()
-else
+elseif not IsClientSet then
 self.ClientSet=SET_CLIENT:New():FilterCoalitions(string.lower(self.CoalitionName)):FilterActive(true):FilterStart()
 end
 self.lid=string.format("PlayerTaskController %s %s | ",self.Name,tostring(self.Type))
@@ -93065,6 +93237,16 @@ self:T(string.format('Adding ID %s',tostring(ID)))
 self.gettext:AddEntry(Locale,tostring(ID),Text)
 end
 end
+return self
+end
+function PLAYERTASKCONTROLLER:SetEnableUseTypeNames()
+self:T(self.lid.."SetEnableUseTypeNames")
+self.UseTypeNames=true
+return self
+end
+function PLAYERTASKCONTROLLER:SetDisableUseTypeNames()
+self:T(self.lid.."SetDisableUseTypeNames")
+self.UseTypeNames=false
 return self
 end
 function PLAYERTASKCONTROLLER:SetAllowFlashDirection(OnOff)
@@ -93274,6 +93456,9 @@ self:T(self.lid..text)
 end
 elseif EventData.id==EVENTS.PlayerEnterAircraft and EventData.IniCoalition==self.Coalition then
 if EventData.IniPlayerName and EventData.IniGroup and self.UseSRS then
+if self.ClientSet:IsNotInSet(CLIENT:FindByName(EventData.IniUnitName))then
+return self
+end
 self:T(self.lid.."Event for player: "..EventData.IniPlayerName)
 local frequency=self.Frequency
 local freqtext=""
@@ -93364,7 +93549,6 @@ end
 function PLAYERTASKCONTROLLER:_GetTasksPerType()
 self:T(self.lid.."_GetTasksPerType")
 local tasktypes=self:_GetAvailableTaskTypes()
-self:T({tasktypes})
 local datatable=self.TaskQueue:GetDataTable()
 local threattable={}
 for _,_task in pairs(datatable)do
@@ -93395,6 +93579,24 @@ target.menuname=object.menuname
 if object.freetext then
 target.freetext=object.freetext
 end
+end
+if self.UseTypeNames and object:IsGround()then
+local threat=object:GetThreatLevel()
+local typekey="INFANTRY"
+if threat==0 or threat==2 then
+typekey="TECHNICAL"
+elseif threat==3 then
+typekey="ARTILLERY"
+elseif threat==4 or threat==5 then
+typekey="TANKS"
+elseif threat==6 or threat==7 then
+typekey="AIRDEFENSE"
+elseif threat>=8 then
+typekey="SAM"
+end
+local typename=self.gettext:GetEntry(typekey,self.locale)
+local gname=self.gettext:GetEntry("GROUP",self.locale)
+target.TypeName=string.format("%s %s",typename,gname)
 end
 self:_AddTask(target)
 end
@@ -93749,6 +93951,7 @@ task:AddFreetext(Target.freetext)
 end
 end
 task.coalition=self.Coalition
+task.TypeName=Target.TypeName
 if type==AUFTRAG.Type.BOMBRUNWAY then
 task:HandleEvent(EVENTS.Shot)
 function task:OnEventShot(EventData)
@@ -93777,9 +93980,17 @@ self.TaskQueue:Push(task)
 self:__TaskAdded(10,task)
 return self
 end
-function PLAYERTASKCONTROLLER:AddPlayerTaskToQueue(PlayerTask,Silent)
+function PLAYERTASKCONTROLLER:AddPlayerTaskToQueue(PlayerTask,Silent,TaskFilter)
 self:T(self.lid.."AddPlayerTaskToQueue")
 if PlayerTask and PlayerTask.ClassName and PlayerTask.ClassName=="PLAYERTASK"then
+if TaskFilter then
+if self.UseWhiteList and(not self:_CheckTaskTypeAllowed(PlayerTask.Type))then
+return self
+end
+if self.UseBlackList and self:_CheckTaskTypeDisallowed(PlayerTask.Type)then
+return self
+end
+end
 PlayerTask:_SetController(self)
 PlayerTask:SetCoalition(self.Coalition)
 self.TaskQueue:Push(PlayerTask)
@@ -93973,10 +94184,19 @@ text=text..string.format("\n%s: ",brieftxt)..task:GetFreetext()
 end
 if self.UseSRS then
 if string.find(CoordText," BR, ")then
-CoordText=string.gsub(CoordText," BR, "," Bee, Arr, ")
+CoordText=string.gsub(CoordText," BR, "," Bee, Arr; ")
 end
 if self.ShowMagnetic then
-text=string.gsub(text,"°M|","° magnetic, ")
+text=string.gsub(text,"°M|","° magnetic; ")
+end
+if string.find(CoordText,"MGRS")then
+local Text=string.gsub(CoordText,"%d","%1;")
+Text=string.gsub(Text," $","")
+CoordText=string.gsub(Text,"0","zero")
+CoordText=string.gsub(Text,"MGRS","MGRS;")
+if self.PathToGoogleKey then
+CoordText=string.format("<say-as interpret-as='characters'>%s</say-as>",CoordText)
+end
 end
 local ThreatLocaleTextTTS=self.gettext:GetEntry("THREATTEXTTTS",self.locale)
 local ttstext=string.format(ThreatLocaleTextTTS,self.MenuName or self.Name,ttsplayername,ttstaskname,ThreatLevelText,targets,CoordText)
@@ -94114,23 +94334,23 @@ end
 self:_BuildMenus(Client,true)
 return self
 end
-function PLAYERTASKCONTROLLER:_BuildTaskInfoMenu(group,client,playername,topmenu,tasktypes,taskpertype)
+function PLAYERTASKCONTROLLER:_BuildTaskInfoMenu(group,client,playername,topmenu,tasktypes,taskpertype,newtag)
 self:T(self.lid.."_BuildTaskInfoMenu")
 local taskinfomenu=nil
 if self.taskinfomenu then
 local menutaskinfo=self.gettext:GetEntry("MENUTASKINFO",self.locale)
-local taskinfomenu=MENU_GROUP_DELAYED:New(group,menutaskinfo,topmenu)
+local taskinfomenu=MENU_GROUP_DELAYED:New(group,menutaskinfo,topmenu):SetTag(newtag)
 local ittypes={}
 local itaskmenu={}
+local tnow=timer.getTime()
 for _tasktype,_data in pairs(tasktypes)do
-ittypes[_tasktype]=MENU_GROUP_DELAYED:New(group,_tasktype,taskinfomenu)
+ittypes[_tasktype]=MENU_GROUP_DELAYED:New(group,_tasktype,taskinfomenu):SetTag(newtag)
 local tasks=taskpertype[_tasktype]or{}
 local n=0
 for _,_task in pairs(tasks)do
 _task=_task
 local pilotcount=_task:CountClients()
 local newtext="]"
-local tnow=timer.getTime()
 if tnow-_task.timestamp<60 then
 newtext="*]"
 end
@@ -94142,7 +94362,12 @@ if name~="Unknown"then
 text=string.format("%s (%03d) [%d%s",name,_task.PlayerTaskNr,pilotcount,newtext)
 end
 end
-local taskentry=MENU_GROUP_COMMAND_DELAYED:New(group,text,ittypes[_tasktype],self._ActiveTaskInfo,self,group,client,_task)
+if self.UseTypeNames then
+if _task.TypeName then
+text=string.format("%s (%03d) [%d%s",_task.TypeName,_task.PlayerTaskNr,pilotcount,newtext)
+end
+end
+local taskentry=MENU_GROUP_COMMAND_DELAYED:New(group,text,ittypes[_tasktype],self._ActiveTaskInfo,self,group,client,_task):SetTag(newtag)
 itaskmenu[#itaskmenu+1]=taskentry
 n=n+1
 if n>=self.menuitemlimit then
@@ -94164,11 +94389,14 @@ enforced=true
 joinorabort=true
 end
 for _,_client in pairs(clients)do
-if _client then
+if _client and _client:IsAlive()then
 local client=_client
 local group=client:GetGroup()
 local unknown=self.gettext:GetEntry("UNKNOWN",self.locale)
 local playername=client:GetPlayerName()or unknown
+local oldtag=self.PlayerMenuTag[playername]
+local newtag=playername..timer.getAbsTime()
+self.PlayerMenuTag[playername]=newtag
 if group and client then
 local taskings=self.gettext:GetEntry("MENUTASKING",self.locale)
 local longname=self.Name..taskings..self.Type
@@ -94176,19 +94404,21 @@ local menuname=self.MenuName or longname
 local playerhastask=false
 if self:_CheckPlayerHasTask(playername)and not fromsuccess then playerhastask=true end
 local topmenu=nil
+local rebuilddone=false
 self:T("Playerhastask = "..tostring(playerhastask).." Enforced = "..tostring(enforced).." Join or Abort = "..tostring(joinorabort))
 if self.PlayerMenu[playername]then
 if joinorabort then
 self.PlayerMenu[playername]:RemoveSubMenus()
-self.PlayerMenu[playername]:SetTag(timer.getAbsTime())
+self.PlayerMenu[playername]:SetTag(newtag)
 topmenu=self.PlayerMenu[playername]
 elseif(not playerhastask)or enforced then
 local T0=timer.getAbsTime()
-local TDiff=T0-self.PlayerMenu[playername].MenuTag
+local TDiff=T0-self.PlayerMenu[playername].PTTimeStamp
 self:T("TDiff = "..string.format("%.2d",TDiff))
 if TDiff>=self.holdmenutime then
-self.PlayerMenu[playername]:RemoveSubMenus()
-self.PlayerMenu[playername]:SetTag(timer.getAbsTime())
+self.PlayerMenu[playername]=MENU_GROUP_DELAYED:New(group,menuname,self.MenuParent)
+self.PlayerMenu[playername]:SetTag(newtag)
+self.PlayerMenu[playername].PTTimeStamp=timer.getAbsTime()
 timedbuild=true
 end
 topmenu=self.PlayerMenu[playername]
@@ -94196,46 +94426,53 @@ end
 else
 topmenu=MENU_GROUP_DELAYED:New(group,menuname,self.MenuParent)
 self.PlayerMenu[playername]=topmenu
-self.PlayerMenu[playername]:SetTag(timer.getAbsTime())
+self.PlayerMenu[playername]:SetTag(newtag)
+self.PlayerMenu[playername].PTTimeStamp=timer.getAbsTime()
+enforced=true
 end
 if playerhastask and enforced then
+self:T("Building Active Task Menus for "..playername)
+rebuilddone=true
 local menuactive=self.gettext:GetEntry("MENUACTIVE",self.locale)
 local menuinfo=self.gettext:GetEntry("MENUINFO",self.locale)
 local menumark=self.gettext:GetEntry("MENUMARK",self.locale)
 local menusmoke=self.gettext:GetEntry("MENUSMOKE",self.locale)
 local menuflare=self.gettext:GetEntry("MENUFLARE",self.locale)
 local menuabort=self.gettext:GetEntry("MENUABORT",self.locale)
-local active=MENU_GROUP_DELAYED:New(group,menuactive,topmenu)
-local info=MENU_GROUP_COMMAND_DELAYED:New(group,menuinfo,active,self._ActiveTaskInfo,self,group,client)
-local mark=MENU_GROUP_COMMAND_DELAYED:New(group,menumark,active,self._MarkTask,self,group,client)
+local active=MENU_GROUP_DELAYED:New(group,menuactive,topmenu):SetTag(newtag)
+local info=MENU_GROUP_COMMAND_DELAYED:New(group,menuinfo,active,self._ActiveTaskInfo,self,group,client):SetTag(newtag)
+local mark=MENU_GROUP_COMMAND_DELAYED:New(group,menumark,active,self._MarkTask,self,group,client):SetTag(newtag)
 if self.Type~=PLAYERTASKCONTROLLER.Type.A2A then
 if self.noflaresmokemenu~=true then
-local smoke=MENU_GROUP_COMMAND_DELAYED:New(group,menusmoke,active,self._SmokeTask,self,group,client)
-local flare=MENU_GROUP_COMMAND_DELAYED:New(group,menuflare,active,self._FlareTask,self,group,client)
+local smoke=MENU_GROUP_COMMAND_DELAYED:New(group,menusmoke,active,self._SmokeTask,self,group,client):SetTag(newtag)
+local flare=MENU_GROUP_COMMAND_DELAYED:New(group,menuflare,active,self._FlareTask,self,group,client):SetTag(newtag)
 local IsNight=client:GetCoordinate():IsNight()
 if IsNight then
-local light=MENU_GROUP_COMMAND_DELAYED:New(group,menuflare,active,self._IlluminateTask,self,group,client)
+local light=MENU_GROUP_COMMAND_DELAYED:New(group,menuflare,active,self._IlluminateTask,self,group,client):SetTag(newtag)
 end
 end
 end
-local abort=MENU_GROUP_COMMAND_DELAYED:New(group,menuabort,active,self._AbortTask,self,group,client)
+local abort=MENU_GROUP_COMMAND_DELAYED:New(group,menuabort,active,self._AbortTask,self,group,client):SetTag(newtag)
 if self.activehasinfomenu and self.taskinfomenu then
+self:T("Building Active-Info Menus for "..playername)
 local tasktypes=self:_GetAvailableTaskTypes()
 local taskpertype=self:_GetTasksPerType()
 if self.PlayerInfoMenu[playername]then
-self.PlayerInfoMenu[playername]:RemoveSubMenus()
+self.PlayerInfoMenu[playername]:RemoveSubMenus(nil,oldtag)
 end
-self.PlayerInfoMenu[playername]=self:_BuildTaskInfoMenu(group,client,playername,topmenu,tasktypes,taskpertype)
+self.PlayerInfoMenu[playername]=self:_BuildTaskInfoMenu(group,client,playername,topmenu,tasktypes,taskpertype,newtag)
 end
 elseif(self.TaskQueue:Count()>0 and enforced)or(not playerhastask and(timedbuild or joinorabort))then
+self:T("Building Join Menus for "..playername)
+rebuilddone=true
 local tasktypes=self:_GetAvailableTaskTypes()
 local taskpertype=self:_GetTasksPerType()
 local menujoin=self.gettext:GetEntry("MENUJOIN",self.locale)
-local joinmenu=MENU_GROUP_DELAYED:New(group,menujoin,topmenu)
+local joinmenu=MENU_GROUP_DELAYED:New(group,menujoin,topmenu):SetTag(newtag)
 local ttypes={}
 local taskmenu={}
 for _tasktype,_data in pairs(tasktypes)do
-ttypes[_tasktype]=MENU_GROUP_DELAYED:New(group,_tasktype,joinmenu)
+ttypes[_tasktype]=MENU_GROUP_DELAYED:New(group,_tasktype,joinmenu):SetTag(newtag)
 local tasks=taskpertype[_tasktype]or{}
 local n=0
 for _,_task in pairs(tasks)do
@@ -94254,7 +94491,7 @@ if name~="Unknown"then
 text=string.format("%s (%03d) [%d%s",name,_task.PlayerTaskNr,pilotcount,newtext)
 end
 end
-local taskentry=MENU_GROUP_COMMAND_DELAYED:New(group,text,ttypes[_tasktype],self._JoinTask,self,group,client,_task)
+local taskentry=MENU_GROUP_COMMAND_DELAYED:New(group,text,ttypes[_tasktype],self._JoinTask,self,group,client,_task):SetTag(newtag)
 taskmenu[#taskmenu+1]=taskentry
 n=n+1
 if n>=self.menuitemlimit then
@@ -94263,20 +94500,27 @@ end
 end
 end
 if self.taskinfomenu then
+self:T("Building Join-Info Menus for "..playername)
 if self.PlayerInfoMenu[playername]then
-self.PlayerInfoMenu[playername]:RemoveSubMenus()
+self.PlayerInfoMenu[playername]:RemoveSubMenus(nil,oldtag)
 end
-self.PlayerInfoMenu[playername]=self:_BuildTaskInfoMenu(group,client,playername,topmenu,tasktypes,taskpertype)
+self.PlayerInfoMenu[playername]=self:_BuildTaskInfoMenu(group,client,playername,topmenu,tasktypes,taskpertype,newtag)
 end
-elseif self.TaskQueue:Count()==0 then
-local menunotasks=self.gettext:GetEntry("MENUNOTASKS",self.locale)
-local joinmenu=MENU_GROUP_DELAYED:New(group,menunotasks,topmenu)
 end
 if self.AllowFlash then
 local flashtext=self.gettext:GetEntry("FLASHMENU",self.locale)
-local flashmenu=MENU_GROUP_COMMAND_DELAYED:New(group,flashtext,self.PlayerMenu[playername],self._SwitchFlashing,self,group,client)
+local flashmenu=MENU_GROUP_COMMAND_DELAYED:New(group,flashtext,topmenu,self._SwitchFlashing,self,group,client):SetTag(newtag)
 end
-self.PlayerMenu[playername]:Set()
+if self.TaskQueue:Count()==0 then
+self:T("No open tasks info")
+local menunotasks=self.gettext:GetEntry("MENUNOTASKS",self.locale)
+local joinmenu=MENU_GROUP_DELAYED:New(group,menunotasks,self.PlayerMenu[playername]):SetTag(newtag)
+rebuilddone=true
+end
+if rebuilddone then
+self.PlayerMenu[playername]:RemoveSubMenus(nil,oldtag)
+self.PlayerMenu[playername]:Refresh()
+end
 end
 end
 end
@@ -94494,7 +94738,7 @@ enforcedmenu=true
 end
 self:_BuildMenus(nil,enforcedmenu)
 if self.verbose then
-local text=string.format("New Targets: %02d | Active Tasks: %02d | Active Players: %02d | Assigned Tasks: %02d",targetcount,taskcount,playercount,assignedtasks)
+local text=string.format("%s | New Targets: %02d | Active Tasks: %02d | Active Players: %02d | Assigned Tasks: %02d",self.MenuName,targetcount,taskcount,playercount,assignedtasks)
 self:I(text)
 end
 if self:GetState()~="Stopped"then
@@ -94600,7 +94844,7 @@ PLAYERRECCE={
 ClassName="PLAYERRECCE",
 verbose=true,
 lid=nil,
-version="0.0.15",
+version="0.0.16",
 ViewZone={},
 ViewZoneVisual={},
 ViewZoneLaser={},
@@ -94776,7 +95020,10 @@ self.RPName=Name
 if self.RPMarker then
 self.RPMarker:Remove()
 end
-local text=string.format("%s RP %s\n%s\n%s\n%s",self.Name,Name,Coordinate:ToStringLLDDM(),Coordinate:ToStringLLDMS(),Coordinate:ToStringMGRS())
+local llddm=Coordinate:ToStringLLDDM()
+local lldms=Coordinate:ToStringLLDMS()
+local mgrs=Coordinate:ToStringMGRS()
+local text=string.format("%s RP %s\n%s\n%s\n%s",self.Name,Name,llddm,lldms,mgrs)
 self.RPMarker=MARKER:New(Coordinate,text)
 self.RPMarker:ReadOnly()
 self.RPMarker:ToCoalition(self.Coalition)
@@ -95204,9 +95451,10 @@ end
 coordinate:Smoke(color)
 end
 if self.SmokeOwn[playername]then
-local cc=client:GetCoordinate()
+local cc=client:GetVec2()
+local lc=COORDINATE:NewFromVec2(cc,1)
 local color=self.SmokeColor.ownsmoke
-cc:Smoke(color)
+lc:Smoke(color)
 end
 return self
 end

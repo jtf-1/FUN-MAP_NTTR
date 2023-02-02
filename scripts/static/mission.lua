@@ -1,4 +1,4 @@
-env.info( '[JTF-1] *** MISSION FILE BUILD DATE: 2022-12-05T11:36:31.29Z ***') 
+env.info( '[JTF-1] *** MISSION FILE BUILD DATE: 2022-12-15T14:09:22.17Z ***') 
 env.info( '[JTF-1] *** JTF-1 STATIC MISSION SCRIPT START ***' )
 
 -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
@@ -614,6 +614,7 @@ function SpawnSupport (SupportSpawn) -- spawnobject, spawnzone, callsignName, ca
           )
         end
       )
+      :InitKeepUnitNames(true)
       :InitRepeatOnLanding()
       :Spawn()
     BASE:T("[JTF-1][SUPPORTSPAWN] Spawned " .. SupportSpawn.spawnobject)

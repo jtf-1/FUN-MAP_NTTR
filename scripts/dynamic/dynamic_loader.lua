@@ -4,7 +4,7 @@
 
 
 local JTFbase = _G
-local __JTFfilepath = 'E:/GitHub/FUN-MAP_NTTR/scripts/dynamic/'
+local __JTFfilepath = 'D:/GitHub/FUN-MAP_NTTR/scripts/dynamic/'
 
 __JTFLoader = {}
 

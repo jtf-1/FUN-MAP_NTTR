@@ -93,6 +93,7 @@ function SpawnSupport (SupportSpawn) -- spawnobject, spawnzone, callsignName, ca
           )
         end
       )
+      :InitKeepUnitNames(true)
       :InitRepeatOnLanding()
       :Spawn()
     BASE:T("[JTF-1][SUPPORTSPAWN] Spawned " .. SupportSpawn.spawnobject)
