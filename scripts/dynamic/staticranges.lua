@@ -107,7 +107,7 @@ STATICRANGES.Ranges = {
     rangeId               = "R64",
     rangeName             = "Range 64",
     rangeZone             = "R64",
-    rangeControlFrequency = 341.925,
+    rangeControlFrequency = 288.8,
     groups = {
       "64-10", "64-11", "64-13", "64-14", 
       "64-17", "64-19", "64-15", "64-05", 
