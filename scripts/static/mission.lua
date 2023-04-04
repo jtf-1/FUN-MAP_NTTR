@@ -1656,6 +1656,7 @@ local spawnerOptions = {
   { spawn = SPAWN:New(  "BVR_SU27"  ), txt = "SU27" , category = "air", type = "CAP" },
   { spawn = SPAWN:New(  "BVR_F4"  ), txt = "F4" , category = "air", type = "CAP" },
 
+  { spawn = SPAWN:New(  "SA2"  ), txt = "SA2" , category = "ground", type = "SAM" },
   { spawn = SPAWN:New(  "SA6"  ), txt = "SA6" , category = "ground", type = "SAM" },
   { spawn = SPAWN:New(  "SA8"  ), txt = "SA8" , category = "ground", type = "SAM" },
   { spawn = SPAWN:New(  "SA10"  ), txt = "SA10" , category = "ground", type = "SAM" },

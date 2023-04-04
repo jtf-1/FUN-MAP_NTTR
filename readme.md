@@ -41,6 +41,7 @@ Default waypoints for all aircraft are;
 
 See mission kneeboard for comms, navigation and range info.
 
+
 ATIS
 ====
 
@@ -53,10 +54,12 @@ ATIS
 - North Las Vegas 118.050
 - Tonopah Test Range 131.000 
 
+
 AWACS
 =====
 
 DARKSTAR 1-1, 344.025
+
 
 TANKERS
 =======
@@ -77,6 +80,7 @@ AR-230V
 - ARCO 1-1 [KC-135] 30Y, 343.600, FL150 [215kts IAS]
 - ARCO 3-1 [KC-130] 29Y, 323.200, FL100
 
+
 MISSILE TRAINER
 ===============
 
@@ -90,6 +94,7 @@ While enabled, the missile trainer will;
 
 NOTE: At very high closure rates it may not be possible to destroy the incoming missile without causing (potentially catastrophic) damage to your aircraft. The missile trainer will not protect against cannon rounds or other balistic weapons.
 
+
 STATIC RANGES
 =============
 
@@ -100,6 +105,7 @@ Static targets are script scored and have an F10 menu system you can use to mana
 Bomb targets are scored on the proximity of the last round to the target. Smoke will be used to mark the round's impact.
 
 Strafe Pits, where available (R63B, R64C), are configured with three targets per lane. Aircraft must be below 3000ft AGL and within 500ft either side of the inbound heading to the target to avoid a foul pass. Rounds fired after the foul line will not count.
+
 
 ACTIVE RANGES
 =============
@@ -119,6 +125,7 @@ Two activation options are available for each Active Target that also has a sepa
 
 Notifications relating to target activation, reset and deactivation will be broadcast on BLACKJACK.
 
+
 ELECTRONIC COMBAT SIMULATION RANGE
 ==================================
 
@@ -132,12 +139,14 @@ The following SAM threats can be activated IVO target 77-69;
 - SA-8
 - SA-15
 
+
 AI BFM/ACM
 ==========
 
 On-demand single or pair adversary spawns are available via the F10 menu while aircraft are within ranges Coyote Alpha, Bravo and Charlie. Adversaries will be spawned ahead of you at the selected distance (5NM, 10NM, 20NM). 
 
 Notifications relating to target activation, reset and deactivation will be broadcast on BLACKJACK.
+
 
 AI BVR/GCI
 ==========
@@ -148,6 +157,7 @@ The menu is structured to allow selection of Altitude [High: 30k, Medium: 20k, L
 
 Notifications relating to target activation, reset and deactivation will be broadcast on BLACKJACK.
 
+
 MAP MARK SPAWNING
 =================
 
@@ -155,10 +165,12 @@ WIP - Use F10 map marks to spawn BVR opponents or ground threats anywhere on the
 
 NOTE: currently no syntax error feedback if you get it wrong.
 
+
 Airspawn syntax
 ---------------
 
 CMD ASPAWN: [type][, [option]: [value]][...]
+
 
 Airspawn Types
 --------------
@@ -169,6 +181,7 @@ Airspawn Types
 - SU25
 - MIG23
 
+
 Airspawn Options
 ----------------
 
@@ -178,6 +191,8 @@ Airspawn Options
 - NUM: [1-4] - default 1
 - SPD: [knots] - default 425
 - SKILL: [AVERAGE, GOOD, HIGH, EXCELLENT, RANDOM] - default AVERAGE
+- TASK: [CAP] - default NOTHING
+
 
 Example
 -------
@@ -185,7 +200,6 @@ Example
 CMD ASPAWN: MIG29, NUM: 2, HDG: 180, SKILL: GOOD
 
 Will spawn 2x MiG29 at the default speed of 425 knots, with heading 180 and skill level GOOD.
-
 
 
 Groundspawn Syntax
@@ -197,17 +211,19 @@ CMD GSPAWN: [groundspawn type][, [option]: [value]][...]
 Groundspawn Types
 -----------------
 
-- SA6
+- SA2
 - SA6
 - SA10
 - SA11
 - SA15
+
 
 Groundspawn Options
 ----------------
 
 - ALERT: [GREEN, AUTO, RED] - default RED 
 - SKILL: [AVERAGE, GOOD, HIGH, EXCELLENT, RANDOM] - default AVERAGE
+
 
 Example
 -------
@@ -217,16 +233,17 @@ CMD GSPAWN: SA6, ALERT: GREEN, SKILL: HIGH
 Will spawn an SA6 Battery on the location of the map mark, in alert state GREEN and with skill level HIGH.
 
 
-
 Delete Spawn Syntax
 -------------------
 
 CMD DELETE: [object type] [group name from F10 map]
 
+
 Delete Spawn Object Types
 -------------------------
 
 - GROUP
+
 
 Example
 -------
@@ -234,3 +251,15 @@ Example
 CMD DELETE: GROUP MIG29A#001
 
 Will remove the spawned group named MIG29A#001
+
+
+Cut-n-Paste Command Examples
+----------------------------
+
+CMD GSPAWN: SA8, ALERT: RED, SKILL: HIGH
+
+CMD GSPAWN: SA15, ALERT: RED, SKILL: HIGH
+
+CMD ASPAWN: MIG29, NUM: 2, HDG: 90, SKILL: GOOD, ALT: 280, TASK: CAP
+
+CMD DELETE: GROUP BVR_MIG29A#001
