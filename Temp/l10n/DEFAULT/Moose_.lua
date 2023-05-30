@@ -1,4 +1,4 @@
-env.info('*** MOOSE GITHUB Commit Hash ID: 2022-12-15T10:50:05.0000000Z-a3fd583d9d80f796cc85af1da9e6cb17b1d4c51f ***')
+env.info('*** MOOSE GITHUB Commit Hash ID: 2023-03-05T10:04:22.0000000Z-4e7c689f7a3b4998372906a8f9b1926d64dc2212 ***')
 env.info('*** MOOSE STATIC INCLUDE START *** ')
 ENUMS={}
 ENUMS.ROE={
@@ -349,6 +349,7 @@ Maya="L-39",
 Warthog="A-10",
 Skyhawk="A-4E",
 Viggen="AJS37",
+Harrier_B="AV8BNA",
 Harrier="AV-8B",
 Spirit="B-2",
 Aviojet="C-101",
@@ -3718,6 +3719,16 @@ end
 UTILS.hPa2inHg=function(hPa)
 return hPa*0.0295299830714
 end
+UTILS.IasToTas=function(ias,altitude,oatcorr)
+oatcorr=oatcorr or 0.017
+local tas=ias+(ias*oatcorr*UTILS.MetersToFeet(altitude)/1000)
+return tas
+end
+UTILS.TasToIas=function(tas,altitude,oatcorr)
+oatcorr=oatcorr or 0.017
+local ias=tas/(1+oatcorr*UTILS.MetersToFeet(altitude)/1000)
+return ias
+end
 UTILS.KnotsToAltKIAS=function(knots,altitude)
 return(knots*0.018*(altitude/1000))+knots
 end
@@ -4129,6 +4140,15 @@ local v2={x=math.cos(beta),y=0,z=math.sin(beta)}
 local delta=UTILS.VecAngle(v1,v2)
 return math.abs(delta)
 end
+function UTILS.HdgTo(a,b)
+local dz=b.z-a.z
+local dx=b.x-a.x
+local heading=math.deg(math.atan2(dz,dx))
+if heading<0 then
+heading=360+heading
+end
+return heading
+end
 function UTILS.VecTranslate(a,distance,angle)
 local SX=a.x
 local SY=a.z
@@ -4268,6 +4288,22 @@ end
 else
 return"Unknown"
 end
+end
+function UTILS.GetCoalitionEnemy(Coalition,Neutral)
+local Coalitions={}
+if Coalition then
+if Coalition==coalition.side.RED then
+Coalitions={coalition.side.BLUE}
+elseif Coalition==coalition.side.BLUE then
+Coalitions={coalition.side.RED}
+elseif Coalition==coalition.side.NEUTRAL then
+Coalitions={coalition.side.RED,coalition.side.BLUE}
+end
+end
+if Neutral then
+table.insert(Coalitions,coalition.side.NEUTRAL)
+end
+return Coalitions
 end
 function UTILS.GetModulationName(Modulation)
 if Modulation then
@@ -4578,7 +4614,7 @@ local _skipFrequencies={
 705,720,722,730,735,740,745,750,770,795,
 822,830,862,866,
 905,907,920,935,942,950,995,
-1000,1025,1030,1050,1065,1116,1175,1182,1210
+1000,1025,1030,1050,1065,1116,1175,1182,1210,1215
 }
 local FreeVHFFrequencies={}
 local _start=200000
@@ -4629,7 +4665,9 @@ function UTILS.GenerateUHFrequencies()
 local FreeUHFFrequencies={}
 local _start=220000000
 while _start<399000000 do
+if _start~=243000000 then
 table.insert(FreeUHFFrequencies,_start)
+end
 _start=_start+500000
 end
 return FreeUHFFrequencies
@@ -4761,7 +4799,21 @@ else
 return true
 end
 end
-function UTILS.SaveStationaryListOfGroups(List,Path,Filename)
+function UTILS.GetCountPerTypeName(Group)
+local units=Group:GetUnits()
+local TypeNameTable={}
+for _,_unt in pairs(units)do
+local unit=_unt
+local typen=unit:GetTypeName()
+if not TypeNameTable[typen]then
+TypeNameTable[typen]=1
+else
+TypeNameTable[typen]=TypeNameTable[typen]+1
+end
+end
+return TypeNameTable
+end
+function UTILS.SaveStationaryListOfGroups(List,Path,Filename,Structured)
 local filename=Filename or"StateListofGroups"
 local data="--Save Stationary List of Groups: "..Filename.."\n"
 for _,_group in pairs(List)do
@@ -4769,7 +4821,16 @@ local group=GROUP:FindByName(_group)
 if group and group:IsAlive()then
 local units=group:CountAliveUnits()
 local position=group:GetVec3()
+if Structured then
+local structure=UTILS.GetCountPerTypeName(group)
+local strucdata=""
+for typen,anzahl in pairs(structure)do
+strucdata=strucdata..typen.."=="..anzahl..";"
+end
+data=string.format("%s%s,%d,%d,%d,%d,%s\n",data,_group,units,position.x,position.y,position.z,strucdata)
+else
 data=string.format("%s%s,%d,%d,%d,%d\n",data,_group,units,position.x,position.y,position.z)
+end
 else
 data=string.format("%s%s,0,0,0,0\n",data,_group)
 end
@@ -4777,7 +4838,7 @@ end
 local outcome=UTILS.SaveToFile(Path,Filename,data)
 return outcome
 end
-function UTILS.SaveSetOfGroups(Set,Path,Filename)
+function UTILS.SaveSetOfGroups(Set,Path,Filename,Structured)
 local filename=Filename or"SetOfGroups"
 local data="--Save SET of groups: "..Filename.."\n"
 local List=Set:GetSetObjects()
@@ -4791,7 +4852,16 @@ template=string.gsub(name,"#(%d+)$","")
 end
 local units=group:CountAliveUnits()
 local position=group:GetVec3()
+if Structured then
+local structure=UTILS.GetCountPerTypeName(group)
+local strucdata=""
+for typen,anzahl in pairs(structure)do
+strucdata=strucdata..typen.."=="..anzahl..";"
+end
+data=string.format("%s%s,%s,%d,%d,%d,%d,%s\n",data,name,template,units,position.x,position.y,position.z,strucdata)
+else
 data=string.format("%s%s,%s,%d,%d,%d,%d\n",data,name,template,units,position.x,position.y,position.z)
+end
 end
 end
 local outcome=UTILS.SaveToFile(Path,Filename,data)
@@ -4827,7 +4897,31 @@ end
 local outcome=UTILS.SaveToFile(Path,Filename,data)
 return outcome
 end
-function UTILS.LoadStationaryListOfGroups(Path,Filename,Reduce)
+function UTILS.LoadStationaryListOfGroups(Path,Filename,Reduce,Structured,Cinematic,Effect,Density)
+local fires={}
+local function Smokers(name,coord,effect,density)
+local eff=math.random(8)
+if type(effect)=="number"then eff=effect end
+coord:BigSmokeAndFire(eff,density,name)
+table.insert(fires,name)
+end
+local function Cruncher(group,typename,anzahl)
+local units=group:GetUnits()
+local reduced=0
+for _,_unit in pairs(units)do
+local typo=_unit:GetTypeName()
+if typename==typo then
+if Cinematic then
+local coordinate=_unit:GetCoordinate()
+local name=_unit:GetName()
+Smokers(name,coordinate,Effect,Density)
+end
+_unit:Destroy(false)
+reduced=reduced+1
+if reduced==anzahl then break end
+end
+end
+end
 local reduce=true
 if Reduce==false then reduce=false end
 local filename=Filename or"StateListofGroups"
@@ -4842,17 +4936,38 @@ local size=tonumber(dataset[2])
 local posx=tonumber(dataset[3])
 local posy=tonumber(dataset[4])
 local posz=tonumber(dataset[5])
+local structure=dataset[6]
 local coordinate=COORDINATE:NewFromVec3({x=posx,y=posy,z=posz})
 local data={groupname=groupname,size=size,coordinate=coordinate,group=GROUP:FindByName(groupname)}
 if reduce then
 local actualgroup=GROUP:FindByName(groupname)
 if actualgroup and actualgroup:IsAlive()and actualgroup:CountAliveUnits()>size then
+if Structured and structure then
+local loadedstructure={}
+local strcset=UTILS.Split(structure,";")
+for _,_data in pairs(strcset)do
+local datasplit=UTILS.Split(_data,"==")
+loadedstructure[datasplit[1]]=tonumber(datasplit[2])
+end
+local originalstructure=UTILS.GetCountPerTypeName(actualgroup)
+for _name,_number in pairs(originalstructure)do
+local loadednumber=0
+if loadedstructure[_name]then
+loadednumber=loadedstructure[_name]
+end
+local reduce=false
+if loadednumber<_number then reduce=true end
+if reduce then
+Cruncher(actualgroup,_name,_number-loadednumber)
+end
+end
+else
 local reduction=actualgroup:CountAliveUnits()-size
-BASE:I("Reducing groupsize by "..reduction.." units!")
 local units=actualgroup:GetUnits()
 local units2=UTILS.ShuffleTable(units)
 for i=1,reduction do
 units2[i]:Destroy(false)
+end
 end
 end
 end
@@ -4861,15 +4976,94 @@ end
 else
 return nil
 end
-return datatable
+return datatable,fires
 end
-function UTILS.LoadSetOfGroups(Path,Filename,Spawn)
+function UTILS.LoadSetOfGroups(Path,Filename,Spawn,Structured,Cinematic,Effect,Density)
+local fires={}
+local usedtemplates={}
 local spawn=true
 if Spawn==false then spawn=false end
-BASE:I("Spawn = "..tostring(spawn))
 local filename=Filename or"SetOfGroups"
 local setdata=SET_GROUP:New()
 local datatable={}
+local function Smokers(name,coord,effect,density)
+local eff=math.random(8)
+if type(effect)=="number"then eff=effect end
+coord:BigSmokeAndFire(eff,density,name)
+table.insert(fires,name)
+end
+local function Cruncher(group,typename,anzahl)
+local units=group:GetUnits()
+local reduced=0
+for _,_unit in pairs(units)do
+local typo=_unit:GetTypeName()
+if typename==typo then
+if Cinematic then
+local coordinate=_unit:GetCoordinate()
+local name=_unit:GetName()
+Smokers(name,coordinate,Effect,Density)
+end
+_unit:Destroy(false)
+reduced=reduced+1
+if reduced==anzahl then break end
+end
+end
+end
+local function PostSpawn(args)
+local spwndgrp=args[1]
+local size=args[2]
+local structure=args[3]
+setdata:AddObject(spwndgrp)
+local actualsize=spwndgrp:CountAliveUnits()
+if actualsize>size then
+if Structured and structure then
+local loadedstructure={}
+local strcset=UTILS.Split(structure,";")
+for _,_data in pairs(strcset)do
+local datasplit=UTILS.Split(_data,"==")
+loadedstructure[datasplit[1]]=tonumber(datasplit[2])
+end
+local originalstructure=UTILS.GetCountPerTypeName(spwndgrp)
+for _name,_number in pairs(originalstructure)do
+local loadednumber=0
+if loadedstructure[_name]then
+loadednumber=loadedstructure[_name]
+end
+local reduce=false
+if loadednumber<_number then reduce=true end
+if reduce then
+Cruncher(spwndgrp,_name,_number-loadednumber)
+end
+end
+else
+local reduction=actualsize-size
+local units=spwndgrp:GetUnits()
+local units2=UTILS.ShuffleTable(units)
+for i=1,reduction do
+units2[i]:Destroy(false)
+end
+end
+end
+end
+local function MultiUse(Data)
+local template=Data.template
+if template and usedtemplates[template]and usedtemplates[template].used and usedtemplates[template].used>1 then
+if not usedtemplates[template].done then
+local spwnd=0
+local spawngrp=SPAWN:New(template)
+spawngrp:InitLimit(0,usedtemplates[template].used)
+for _,_entry in pairs(usedtemplates[template].data)do
+spwnd=spwnd+1
+local sgrp=spawngrp:SpawnFromCoordinate(_entry.coordinate,spwnd)
+BASE:ScheduleOnce(0.5,PostSpawn,{sgrp,_entry.size,_entry.structure})
+end
+usedtemplates[template].done=true
+end
+return true
+else
+return false
+end
+end
 if UTILS.CheckFileExists(Path,filename)then
 local outcome,loadeddata=UTILS.LoadFromFile(Path,Filename)
 table.remove(loadeddata,1)
@@ -4881,35 +5075,37 @@ local size=tonumber(dataset[3])
 local posx=tonumber(dataset[4])
 local posy=tonumber(dataset[5])
 local posz=tonumber(dataset[6])
+local structure=dataset[7]
 local coordinate=COORDINATE:NewFromVec3({x=posx,y=posy,z=posz})
 local group=nil
-local data={groupname=groupname,size=size,coordinate=coordinate,template=template}
+if size>0 then
+local data={groupname=groupname,size=size,coordinate=coordinate,template=template,structure=structure}
 table.insert(datatable,data)
-if spawn then
-local group=SPAWN:New(template)
-:InitDelayOff()
-:OnSpawnGroup(
-function(spwndgrp)
-setdata:AddObject(spwndgrp)
-local actualsize=spwndgrp:CountAliveUnits()
-if actualsize>size then
-local reduction=actualsize-size
-local units=spwndgrp:GetUnits()
-local units2=UTILS.ShuffleTable(units)
-for i=1,reduction do
-units2[i]:Destroy(false)
+if usedtemplates[template]then
+usedtemplates[template].used=usedtemplates[template].used+1
+table.insert(usedtemplates[template].data,data)
+else
+usedtemplates[template]={
+data={},
+used=1,
+done=false,
+}
+table.insert(usedtemplates[template].data,data)
 end
 end
 end
-)
-:SpawnFromCoordinate(coordinate)
+for _id,_entry in pairs(datatable)do
+if spawn and not MultiUse(_entry)and _entry.size>0 then
+local group=SPAWN:New(_entry.template)
+local sgrp=group:SpawnFromCoordinate(_entry.coordinate)
+BASE:ScheduleOnce(0.5,PostSpawn,{sgrp,_entry.size,_entry.structure})
 end
 end
 else
 return nil
 end
 if spawn then
-return setdata
+return setdata,fires
 else
 return datatable
 end
@@ -4923,18 +5119,18 @@ table.remove(loadeddata,1)
 for _id,_entry in pairs(loadeddata)do
 local dataset=UTILS.Split(_entry,",")
 local staticname=dataset[1]
-local posx=tonumber(dataset[2])
-local posy=tonumber(dataset[3])
-local posz=tonumber(dataset[4])
-local coordinate=COORDINATE:NewFromVec3({x=posx,y=posy,z=posz})
-datatable:AddObject(STATIC:FindByName(staticname,false))
+local StaticObject=STATIC:FindByName(staticname,false)
+if StaticObject then
+datatable:AddObject(StaticObject)
+end
 end
 else
 return nil
 end
 return datatable
 end
-function UTILS.LoadStationaryListOfStatics(Path,Filename,Reduce)
+function UTILS.LoadStationaryListOfStatics(Path,Filename,Reduce,Dead,Cinematic,Effect,Density)
+local fires={}
 local reduce=true
 if Reduce==false then reduce=false end
 local filename=Filename or"StateListofStatics"
@@ -4955,14 +5151,31 @@ table.insert(datatable,data)
 if size==0 and reduce then
 local static=STATIC:FindByName(staticname,false)
 if static then
+if Dead then
+local deadobject=SPAWNSTATIC:NewFromStatic(staticname,static:GetCountry())
+deadobject:InitDead(true)
+local heading=static:GetHeading()
+local coord=static:GetCoordinate()
 static:Destroy(false)
+deadobject:SpawnFromCoordinate(coord,heading,staticname)
+if Cinematic then
+local effect=math.random(8)
+if type(Effect)=="number"then
+effect=Effect
+end
+coord:BigSmokeAndFire(effect,Density,staticname)
+table.insert(fires,staticname)
+end
+else
+static:Destroy(false)
+end
 end
 end
 end
 else
 return nil
 end
-return datatable
+return datatable,fires
 end
 function UTILS.BearingToCardinal(Heading)
 if Heading>=0 and Heading<=22 then return"North"
@@ -4978,7 +5191,7 @@ end
 end
 function UTILS.ToStringBRAANATO(FromGrp,ToGrp)
 local BRAANATO="Merged."
-local GroupNumber=FromGrp:GetSize()
+local GroupNumber=ToGrp:GetSize()
 local GroupWords="Singleton"
 if GroupNumber==2 then GroupWords="Two-Ship"
 elseif GroupNumber>=3 then GroupWords="Heavy"
@@ -5001,6 +5214,36 @@ BRAANATO=string.format("%s, BRAA, %03d, %d miles, Angels %d, %s, Track %s",Group
 end
 end
 return BRAANATO
+end
+function UTILS.IsInTable(Table,Object,Key)
+for key,object in pairs(Table)do
+if Key then
+if Object[Key]==object[Key]then
+return true
+end
+else
+if object==Object then
+return true
+end
+end
+end
+return false
+end
+function UTILS.IsAnyInTable(Table,Objects,Key)
+for _,Object in pairs(UTILS.EnsureTable(Objects))do
+for key,object in pairs(Table)do
+if Key then
+if Object[Key]==object[Key]then
+return true
+end
+else
+if object==Object then
+return true
+end
+end
+end
+end
+return false
 end
 local _TraceOnOff=true
 local _TraceLevel=1
@@ -6269,6 +6512,8 @@ ZONES_GOAL={},
 WAREHOUSES={},
 FLIGHTGROUPS={},
 FLIGHTCONTROLS={},
+OPSZONES={},
+PATHLINES={},
 }
 local _DATABASECoalition=
 {
@@ -6358,6 +6603,19 @@ end
 function DATABASE:DeleteZone(ZoneName)
 self.ZONES[ZoneName]=nil
 end
+function DATABASE:AddPathline(PathlineName,Pathline)
+if not self.PATHLINES[PathlineName]then
+self.PATHLINES[PathlineName]=Pathline
+end
+end
+function DATABASE:FindPathline(PathlineName)
+local pathline=self.PATHLINES[PathlineName]
+return pathline
+end
+function DATABASE:DeletePathline(PathlineName)
+self.PATHLINES[PathlineName]=nil
+return self
+end
 function DATABASE:_RegisterZones()
 for ZoneID,ZoneData in pairs(env.mission.triggers.zones)do
 local ZoneName=ZoneData.name
@@ -6398,6 +6656,53 @@ self.ZONENAMES[ZoneName]=ZoneName
 self:AddZone(ZoneName,Zone_Polygon)
 end
 end
+if env.mission.drawings and env.mission.drawings.layers then
+for layerID,layerData in pairs(env.mission.drawings.layers or{})do
+for objectID,objectData in pairs(layerData.objects or{})do
+if objectData.polygonMode and(objectData.polygonMode=="free")and objectData.points and#objectData.points>=4 then
+local ZoneName=objectData.name or"Unknown free Polygon Drawing"
+local vec2={x=objectData.mapX,y=objectData.mapY}
+local points=UTILS.DeepCopy(objectData.points)
+for i,_point in pairs(points)do
+local point=_point
+points[i]=UTILS.Vec2Add(point,vec2)
+end
+table.remove(points,#points)
+self:I(string.format("Register ZONE: %s (Polygon (free) drawing with %d vertices)",ZoneName,#points))
+local Zone=ZONE_POLYGON:NewFromPointsArray(ZoneName,points)
+Zone:SetColor({1,0,0},0.15)
+self.ZONENAMES[ZoneName]=ZoneName
+self:AddZone(ZoneName,Zone)
+elseif objectData.polygonMode and objectData.polygonMode=="rect"then
+local ZoneName=objectData.name or"Unknown rect Polygon Drawing"
+local vec2={x=objectData.mapX,y=objectData.mapY}
+local w=objectData.width
+local h=objectData.height
+local points={}
+points[1]={x=vec2.x-h/2,y=vec2.y+w/2}
+points[2]={x=vec2.x+h/2,y=vec2.y+w/2}
+points[3]={x=vec2.x+h/2,y=vec2.y-w/2}
+points[4]={x=vec2.x-h/2,y=vec2.y-w/2}
+self:I(string.format("Register ZONE: %s (Polygon (rect) drawing with %d vertices)",ZoneName,#points))
+local Zone=ZONE_POLYGON:NewFromPointsArray(ZoneName,points)
+Zone:SetColor({1,0,0},0.15)
+self.ZONENAMES[ZoneName]=ZoneName
+self:AddZone(ZoneName,Zone)
+elseif objectData.lineMode and(objectData.lineMode=="segments"or objectData.lineMode=="segment"or objectData.lineMode=="free")and objectData.points and#objectData.points>=2 then
+local Name=objectData.name or"Unknown Line Drawing"
+local vec2={x=objectData.mapX,y=objectData.mapY}
+local points=UTILS.DeepCopy(objectData.points)
+for i,_point in pairs(points)do
+local point=_point
+points[i]=UTILS.Vec2Add(point,vec2)
+end
+self:I(string.format("Register PATHLINE: %s (Line drawing with %d points)",Name,#points))
+local Pathline=PATHLINE:NewFromVec2Array(Name,points)
+self:AddPathline(Name,Pathline)
+end
+end
+end
+end
 end
 end
 do
@@ -6412,6 +6717,23 @@ end
 end
 function DATABASE:DeleteZoneGoal(ZoneName)
 self.ZONES_GOAL[ZoneName]=nil
+end
+end
+do
+function DATABASE:FindOpsZone(ZoneName)
+local ZoneFound=self.OPSZONES[ZoneName]
+return ZoneFound
+end
+function DATABASE:AddOpsZone(OpsZone)
+if OpsZone then
+local ZoneName=OpsZone:GetName()
+if not self.OPSZONES[ZoneName]then
+self.OPSZONES[ZoneName]=OpsZone
+end
+end
+end
+function DATABASE:DeleteOpsZone(ZoneName)
+self.OPSZONES[ZoneName]=nil
 end
 end
 do
@@ -7829,7 +8151,7 @@ Event.TgtTypeName=Event.TgtDCSUnit:getTypeName()
 end
 if Event.TgtObjectCategory==Object.Category.STATIC then
 Event.TgtDCSUnit=Event.target
-if Event.target:isExist()and Event.id~=33 then
+if Event.target:isExist()and Event.id~=33 and not Event.TgtObjectCategory==Object.Category.COORDINATE then
 Event.TgtDCSUnitName=Event.TgtDCSUnit:getName()
 Event.TgtUnitName=Event.TgtDCSUnitName
 Event.TgtUnit=STATIC:FindByName(Event.TgtDCSUnitName,false)
@@ -7876,8 +8198,10 @@ end
 if Event.place then
 if Event.id==EVENTS.LandingAfterEjection then
 else
+if Event.place:isExist()and Event.place:getCategory()~=Object.Category.SCENERY then
 Event.Place=AIRBASE:Find(Event.place)
 Event.PlaceName=Event.Place:GetName()
+end
 end
 end
 if Event.idx then
@@ -8549,7 +8873,7 @@ MARKEROPS_BASE={
 ClassName="MARKEROPS",
 Tag="mytag",
 Keywords={},
-version="0.1.0",
+version="0.1.1",
 debug=false,
 Casesensitive=true,
 }
@@ -8604,7 +8928,7 @@ local Eventtext=tostring(Event.text)
 if Eventtext~=nil then
 if self:_MatchTag(Eventtext)then
 local matchtable=self:_MatchKeywords(Eventtext)
-self:MarkChanged(Eventtext,matchtable,coord)
+self:MarkChanged(Eventtext,matchtable,coord,Event.idx)
 end
 end
 elseif Event.id==world.event.S_EVENT_MARK_REMOVED then
@@ -9600,6 +9924,24 @@ self.x=Vec2.x
 self.z=Vec2.y
 return self
 end
+function COORDINATE:GetMagneticDeclination(Month,Year)
+local decl=UTILS.GetMagneticDeclination()
+if require then
+local magvar=require('magvar')
+if magvar then
+local date,year,month,day=UTILS.GetDCSMissionDate()
+magvar.init(Month or month,Year or year)
+local lat,lon=self:GetLLDDM()
+decl=magvar.get_mag_decl(lat,lon)
+if decl then
+decl=math.deg(decl)
+end
+end
+else
+self:T("The require package is not available. Using constant value for magnetic declination")
+end
+return decl
+end
 function COORDINATE:NewFromLLDD(latitude,longitude,altitude)
 local vec3=coord.LLtoLO(latitude,longitude)
 local _coord=self:NewFromVec3(vec3)
@@ -9653,6 +9995,7 @@ local gotstatics=false
 local gotunits=false
 local gotscenery=false
 local function EvaluateZone(ZoneObject)
+BASE:T({ZoneObject})
 if ZoneObject then
 local ObjectCategory=ZoneObject:getCategory()
 if ObjectCategory==Object.Category.UNIT and ZoneObject:isExist()then
@@ -9915,20 +10258,26 @@ heading=360+heading
 end
 return heading
 end
-function COORDINATE:GetWind(height)
+function COORDINATE:GetWindVec3(height,turbulence)
 local landheight=self:GetLandHeight()+0.1
 local point={x=self.x,y=math.max(height or self.y,landheight),z=self.z}
-local wind=atmosphere.getWind(point)
-local direction=math.deg(math.atan2(wind.z,wind.x))
-if direction<0 then
-direction=360+direction
+local wind=nil
+if turbulence then
+wind=atmosphere.getWindWithTurbulence(point)
+else
+wind=atmosphere.getWind(point)
 end
+return wind
+end
+function COORDINATE:GetWind(height,turbulence)
+local wind=self:GetWindVec3(height,turbulence)
+local direction=UTILS.VecHdg(wind)
 if direction>180 then
 direction=direction-180
 else
 direction=direction+180
 end
-local strength=math.sqrt((wind.x)^2+(wind.z)^2)
+local strength=UTILS.VecNorm(wind)
 return direction,strength
 end
 function COORDINATE:GetWindWithTurbulenceVec3(height)
@@ -9952,9 +10301,10 @@ end
 return nil
 end
 function COORDINATE:Get3DDistance(TargetCoordinate)
-local TargetVec3=TargetCoordinate:GetVec3()
+local TargetVec3={x=TargetCoordinate.x,y=TargetCoordinate.y,z=TargetCoordinate.z}
 local SourceVec3=self:GetVec3()
-return((TargetVec3.x-SourceVec3.x)^2+(TargetVec3.y-SourceVec3.y)^2+(TargetVec3.z-SourceVec3.z)^2)^0.5
+local dist=UTILS.VecDist3D(TargetVec3,SourceVec3)
+return dist
 end
 function COORDINATE:GetBearingText(AngleRadians,Precision,Settings,MagVar)
 local Settings=Settings or _SETTINGS
@@ -10055,6 +10405,11 @@ alt=altitude
 else
 alt=self:GetLandHeight()+altitude
 end
+self.y=alt
+return self
+end
+function COORDINATE:SetAtLandheight()
+local alt=self:GetLandHeight()
 self.y=alt
 return self
 end
@@ -10363,7 +10718,6 @@ self.firename=name or"Fire-"..math.random(1,10000)
 trigger.action.effectSmokeBig(self:GetVec3(),preset,density,self.firename)
 end
 function COORDINATE:StopBigSmokeAndFire(name)
-self:F2({name=name})
 name=name or self.firename
 trigger.action.effectSmokeStop(name)
 end
@@ -11461,9 +11815,9 @@ self.CallScheduler=SCHEDULER:New(self)
 self:SetEventPriority(2)
 return self
 end
-function SET_BASE:Clear()
+function SET_BASE:Clear(TriggerEvent)
 for Name,Object in pairs(self.Set)do
-self:Remove(Name)
+self:Remove(Name,not TriggerEvent)
 end
 return self
 end
@@ -11494,7 +11848,11 @@ end
 function SET_BASE:Remove(ObjectName,NoTriggerEvent)
 self:F2({ObjectName=ObjectName})
 local TriggerEvent=true
-if NoTriggerEvent then TriggerEvent=false end
+if NoTriggerEvent then
+TriggerEvent=false
+else
+TriggerEvent=true
+end
 local Object=self.Set[ObjectName]
 if Object then
 for Index,Key in ipairs(self.Index)do
@@ -11623,7 +11981,15 @@ function SET_BASE:FilterOnce()
 for ObjectName,Object in pairs(self.Database)do
 if self:IsIncludeObject(Object)then
 self:Add(ObjectName,Object)
+else
+self:Remove(ObjectName,true)
 end
+end
+return self
+end
+function SET_BASE:FilterClear()
+for key,value in pairs(self.Filter)do
+self.Filter[key]={}
 end
 return self
 end
@@ -11913,8 +12279,8 @@ end
 end
 return NearestGroup
 end
-function SET_GROUP:FilterZones(Zones)
-if not self.Filter.Zones then
+function SET_GROUP:FilterZones(Zones,Clear)
+if Clear or not self.Filter.Zones then
 self.Filter.Zones={}
 end
 local zones={}
@@ -11932,39 +12298,18 @@ self.Filter.Zones[zonename]=Zone
 end
 return self
 end
-function SET_GROUP:FilterZones(Zones)
-if not self.Filter.Zones then
-self.Filter.Zones={}
-end
-local zones={}
-if Zones.ClassName and Zones.ClassName=="SET_ZONE"then
-zones=Zones.Set
-elseif type(Zones)~="table"or(type(Zones)=="table"and Zones.ClassName)then
-self:E("***** FilterZones needs either a table of ZONE Objects or a SET_ZONE as parameter!")
-return self
-else
-zones=Zones
-end
-for _,Zone in pairs(zones)do
-local zonename=Zone:GetName()
-self.Filter.Zones[zonename]=Zone
-end
-return self
-end
-function SET_GROUP:FilterCoalitions(Coalitions)
-if not self.Filter.Coalitions then
+function SET_GROUP:FilterCoalitions(Coalitions,Clear)
+if Clear or(not self.Filter.Coalitions)then
 self.Filter.Coalitions={}
 end
-if type(Coalitions)~="table"then
-Coalitions={Coalitions}
-end
+Coalitions=UTILS.EnsureTable(Coalitions,false)
 for CoalitionID,Coalition in pairs(Coalitions)do
 self.Filter.Coalitions[Coalition]=Coalition
 end
 return self
 end
-function SET_GROUP:FilterCategories(Categories)
-if not self.Filter.Categories then
+function SET_GROUP:FilterCategories(Categories,Clear)
+if Clear or not self.Filter.Categories then
 self.Filter.Categories={}
 end
 if type(Categories)~="table"then
@@ -12306,6 +12651,23 @@ for UnitName,UnitData in pairs(GroupData:GetUnits())do
 UnitData:SetCargoBayWeightLimit()
 end
 end
+end
+function SET_GROUP:GetClosestGroup(Coordinate,Coalitions)
+local Set=self:GetSet()
+local dmin=math.huge
+local gmin=nil
+for GroupID,GroupData in pairs(Set)do
+local group=GroupData
+if group and group:IsAlive()and(Coalitions==nil or UTILS.IsAnyInTable(Coalitions,group:GetCoalition()))then
+local coord=group:GetCoord()
+local d=UTILS.VecDist3D(Coordinate,coord)
+if d<dmin then
+dmin=d
+gmin=group
+end
+end
+end
+return gmin,dmin
 end
 end
 do
@@ -13569,7 +13931,7 @@ if MClient then
 local MClientName=MClient.UnitName
 if self.Filter.Active~=nil then
 local MClientActive=false
-if self.Filter.Active==false or(self.Filter.Active==true and MClient:IsActive()==true)then
+if self.Filter.Active==false or(self.Filter.Active==true and MClient:IsActive()==true and MClient:IsAlive()==true)then
 MClientActive=true
 end
 MClientInclude=MClientInclude and MClientActive
@@ -14471,6 +14833,19 @@ end
 end
 return nil
 end
+function SET_ZONE:GetClosestZone(Coordinate)
+local dmin=math.huge
+local zmin=nil
+for _,Zone in pairs(self:GetSet())do
+local Zone=Zone
+local d=Zone:Get2DDistance(Coordinate)
+if d<dmin then
+dmin=d
+zmin=Zone
+end
+end
+return zmin,dmin
+end
 end
 do
 SET_ZONE_GOAL={
@@ -14615,6 +14990,215 @@ return nil
 end
 end
 do
+SET_OPSZONE={
+ClassName="SET_OPSZONE",
+Zones={},
+Filter={
+Prefixes=nil,
+Coalitions=nil,
+},
+FilterMeta={
+Coalitions={
+red=coalition.side.RED,
+blue=coalition.side.BLUE,
+neutral=coalition.side.NEUTRAL,
+},
+},
+}
+function SET_OPSZONE:New()
+local self=BASE:Inherit(self,SET_BASE:New(_DATABASE.OPSZONES))
+return self
+end
+function SET_OPSZONE:AddZone(Zone)
+self:Add(Zone:GetName(),Zone)
+return self
+end
+function SET_OPSZONE:RemoveZonesByName(RemoveZoneNames)
+local RemoveZoneNamesArray=(type(RemoveZoneNames)=="table")and RemoveZoneNames or{RemoveZoneNames}
+for RemoveZoneID,RemoveZoneName in pairs(RemoveZoneNamesArray)do
+self:Remove(RemoveZoneName)
+end
+return self
+end
+function SET_OPSZONE:FindZone(ZoneName)
+local ZoneFound=self.Set[ZoneName]
+return ZoneFound
+end
+function SET_OPSZONE:GetRandomZone()
+if self:Count()~=0 then
+local Index=self.Index
+local ZoneFound=nil
+while not ZoneFound do
+local ZoneRandom=math.random(1,#Index)
+ZoneFound=self.Set[Index[ZoneRandom]]:GetZoneMaybe()
+end
+return ZoneFound
+end
+return nil
+end
+function SET_OPSZONE:SetZoneProbability(ZoneName,Probability)
+local Zone=self:FindZone(ZoneName)
+Zone:SetZoneProbability(Probability)
+return self
+end
+function SET_OPSZONE:FilterPrefixes(Prefixes)
+if not self.Filter.Prefixes then
+self.Filter.Prefixes={}
+end
+Prefixes=UTILS.EnsureTable(Prefixes,false)
+for PrefixID,Prefix in pairs(Prefixes)do
+self.Filter.Prefixes[Prefix]=Prefix
+end
+return self
+end
+function SET_OPSZONE:FilterCoalitions(Coalitions)
+if not self.Filter.Coalitions then
+self.Filter.Coalitions={}
+end
+Coalitions=UTILS.EnsureTable(Coalitions,false)
+for CoalitionID,Coalition in pairs(Coalitions)do
+self.Filter.Coalitions[Coalition]=Coalition
+end
+return self
+end
+function SET_OPSZONE:FilterOnce()
+for ObjectName,Object in pairs(self.Database)do
+self:Remove(ObjectName,true)
+if self:IsIncludeObject(Object)then
+self:Add(ObjectName,Object)
+end
+end
+return self
+end
+function SET_OPSZONE:FilterClear()
+local parent=self:GetParent(self,SET_OPSZONE)
+parent:FilterClear()
+return self
+end
+function SET_OPSZONE:FilterStart()
+if _DATABASE then
+for ObjectName,Object in pairs(self.Database)do
+if self:IsIncludeObject(Object)then
+self:Add(ObjectName,Object)
+else
+self:RemoveZonesByName(ObjectName)
+end
+end
+end
+self:HandleEvent(EVENTS.NewZoneGoal)
+self:HandleEvent(EVENTS.DeleteZoneGoal)
+return self
+end
+function SET_OPSZONE:FilterStop()
+self:UnHandleEvent(EVENTS.NewZoneGoal)
+self:UnHandleEvent(EVENTS.DeleteZoneGoal)
+return self
+end
+function SET_OPSZONE:AddInDatabase(Event)
+self:F3({Event})
+return Event.IniDCSUnitName,self.Database[Event.IniDCSUnitName]
+end
+function SET_OPSZONE:FindInDatabase(Event)
+self:F3({Event})
+return Event.IniDCSUnitName,self.Database[Event.IniDCSUnitName]
+end
+function SET_OPSZONE:ForEachZone(IteratorFunction,...)
+self:F2(arg)
+self:ForEach(IteratorFunction,arg,self:GetSet())
+return self
+end
+function SET_OPSZONE:IsIncludeObject(MZone)
+self:F2(MZone)
+local MZoneInclude=true
+if MZone then
+local MZoneName=MZone:GetName()
+if self.Filter.Prefixes then
+local MZonePrefix=false
+for ZonePrefixId,ZonePrefix in pairs(self.Filter.Prefixes)do
+self:T3({"Prefix:",string.find(MZoneName,ZonePrefix,1),ZonePrefix})
+if string.find(MZoneName,ZonePrefix,1)then
+MZonePrefix=true
+break
+end
+end
+self:T({"Evaluated Prefix",MZonePrefix})
+MZoneInclude=MZoneInclude and MZonePrefix
+end
+if self.Filter.Coalitions then
+local MGroupCoalition=false
+local coalition=MZone:GetOwner()
+for _,CoalitionName in pairs(self.Filter.Coalitions)do
+if self.FilterMeta.Coalitions[CoalitionName]and self.FilterMeta.Coalitions[CoalitionName]==coalition then
+MGroupCoalition=true
+break
+end
+end
+MZoneInclude=MZoneInclude and MGroupCoalition
+end
+end
+self:T2(MZoneInclude)
+return MZoneInclude
+end
+function SET_OPSZONE:OnEventNewZoneGoal(EventData)
+self:T({"New Zone Capture Coalition",EventData})
+self:T({"Zone Capture Coalition",EventData.ZoneGoal})
+if EventData.ZoneGoal then
+if EventData.ZoneGoal and self:IsIncludeObject(EventData.ZoneGoal)then
+self:T({"Adding Zone Capture Coalition",EventData.ZoneGoal.ZoneName,EventData.ZoneGoal})
+self:Add(EventData.ZoneGoal.ZoneName,EventData.ZoneGoal)
+end
+end
+end
+function SET_OPSZONE:OnEventDeleteZoneGoal(EventData)
+self:F3({EventData})
+if EventData.ZoneGoal then
+local Zone=_DATABASE:FindZone(EventData.ZoneGoal.ZoneName)
+if Zone and Zone.ZoneName then
+self:F({ZoneNoDestroy=Zone.NoDestroy})
+if Zone.NoDestroy then
+else
+self:Remove(Zone.ZoneName)
+end
+end
+end
+end
+function SET_OPSZONE:Start()
+for _,_Zone in pairs(self:GetSet())do
+local Zone=_Zone
+if Zone:IsStopped()then
+Zone:Start()
+end
+end
+return self
+end
+function SET_OPSZONE:IsCoordinateInZone(Coordinate)
+for _,_Zone in pairs(self:GetSet())do
+local Zone=_Zone
+if Zone:GetZone():IsCoordinateInZone(Coordinate)then
+return Zone
+end
+end
+return nil
+end
+function SET_OPSZONE:GetClosestZone(Coordinate,Coalitions)
+Coalitions=UTILS.EnsureTable(Coalitions,true)
+local dmin=math.huge
+local zmin=nil
+for _,_opszone in pairs(self:GetSet())do
+local opszone=_opszone
+local coal=opszone:GetOwner()
+if opszone:IsStarted()and(Coalitions==nil or(Coalitions and UTILS.IsInTable(Coalitions,coal)))then
+local d=opszone:GetZone():Get2DDistance(Coordinate)
+if d<dmin then
+dmin=d
+zmin=opszone
+end
+end
+end
+return zmin,dmin
+end
+end
+do
 SET_OPSGROUP={
 ClassName="SET_OPSGROUP",
 Filter={
@@ -14718,8 +15302,8 @@ function SET_OPSGROUP:FindNavyGroup(GroupName)
 local GroupFound=self:FindGroup(GroupName)
 return GroupFound
 end
-function SET_OPSGROUP:FilterCoalitions(Coalitions)
-if not self.Filter.Coalitions then
+function SET_OPSGROUP:FilterCoalitions(Coalitions,Clear)
+if Clear or not self.Filter.Coalitions then
 self.Filter.Coalitions={}
 end
 if type(Coalitions)~="table"then
@@ -14730,8 +15314,8 @@ self.Filter.Coalitions[Coalition]=Coalition
 end
 return self
 end
-function SET_OPSGROUP:FilterCategories(Categories)
-if not self.Filter.Categories then
+function SET_OPSGROUP:FilterCategories(Categories,Clear)
+if Clear or not self.Filter.Categories then
 self.Filter.Categories={}
 end
 if type(Categories)~="table"then
@@ -14762,8 +15346,8 @@ function SET_OPSGROUP:FilterCategoryShip()
 self:FilterCategories("ship")
 return self
 end
-function SET_OPSGROUP:FilterCountries(Countries)
-if not self.Filter.Countries then
+function SET_OPSGROUP:FilterCountries(Countries,Clear)
+if Clear or not self.Filter.Countries then
 self.Filter.Countries={}
 end
 if type(Countries)~="table"then
@@ -14774,8 +15358,8 @@ self.Filter.Countries[Country]=Country
 end
 return self
 end
-function SET_OPSGROUP:FilterPrefixes(Prefixes)
-if not self.Filter.GroupPrefixes then
+function SET_OPSGROUP:FilterPrefixes(Prefixes,Clear)
+if Clear or not self.Filter.GroupPrefixes then
 self.Filter.GroupPrefixes={}
 end
 if type(Prefixes)~="table"then
@@ -14979,6 +15563,19 @@ CountU=CountU+1
 end
 end
 return CountU
+end
+function SET_SCENERY:GetAliveSet()
+self:F2()
+local AliveSet=SET_SCENERY:New()
+for GroupName,GroupObject in pairs(self.Set)do
+local GroupObject=GroupObject
+if GroupObject then
+if GroupObject:IsAlive()then
+AliveSet:Add(GroupName,GroupObject)
+end
+end
+end
+return AliveSet.Set or{},AliveSet
 end
 function SET_SCENERY:ForEachScenery(IteratorFunction,...)
 self:F2(arg)
@@ -15666,7 +16263,7 @@ function SPAWN:NewFromTemplate(SpawnTemplate,SpawnTemplatePrefix,SpawnAliasPrefi
 local self=BASE:Inherit(self,BASE:New())
 self:F({SpawnTemplate,SpawnTemplatePrefix,SpawnAliasPrefix})
 if SpawnAliasPrefix==nil or SpawnAliasPrefix==""then
-BASE:I("ERROR: in function NewFromTemplate, required paramter SpawnAliasPrefix is not set")
+BASE:I("ERROR: in function NewFromTemplate, required parameter SpawnAliasPrefix is not set")
 return nil
 end
 if SpawnTemplate then
@@ -16147,11 +16744,13 @@ else
 end
 return nil
 end
-function SPAWN:SpawnScheduled(SpawnTime,SpawnTimeVariation)
+function SPAWN:SpawnScheduled(SpawnTime,SpawnTimeVariation,WithDelay)
 self:F({SpawnTime,SpawnTimeVariation})
+local SpawnTime=SpawnTime or 60
+local SpawnTimeVariation=SpawnTimeVariation or 0.5
 if SpawnTime~=nil and SpawnTimeVariation~=nil then
 local InitialDelay=0
-if self.DelayOnOff==true then
+if WithDelay or self.DelayOnOff==true then
 InitialDelay=math.random(SpawnTime-SpawnTime*SpawnTimeVariation,SpawnTime+SpawnTime*SpawnTimeVariation)
 end
 self.SpawnScheduler=SCHEDULER:New(self,self._Scheduler,{},InitialDelay,SpawnTime,SpawnTimeVariation)
@@ -17417,6 +18016,7 @@ self:AddTransition("On","Lasing","On")
 self:AddTransition({"On","Destroyed"},"LaseOff","Off")
 self:AddTransition("*","Destroyed","Destroyed")
 self.Recce=Recce
+self.RecceName=self.Recce:GetName()
 self.LaseScheduler=SCHEDULER:New(self)
 self:SetEventPriority(5)
 self.Lasing=false
@@ -17428,6 +18028,7 @@ local function StopLase(self)
 self:LaseOff()
 end
 self.Target=Target
+self.TargetName=Target:GetName()
 self.LaserCode=LaserCode
 self.Lasing=true
 local RecceDcsUnit=self.Recce:GetDCSObject()
@@ -17460,9 +18061,15 @@ end
 function SPOT:OnEventDead(EventData)
 self:F({Dead=EventData.IniDCSUnitName,Target=self.Target})
 if self.Target then
-if EventData.IniDCSUnitName==self.Target:GetName()then
-self:F({"Target dead ",self.Target:GetName()})
+if EventData.IniDCSUnitName==self.TargetName then
+self:F({"Target dead ",self.TargetName})
 self:Destroyed()
+self:LaseOff()
+end
+end
+if self.Recce then
+if EventData.IniDCSUnitName==self.RecceName then
+self:F({"Recce dead ",self.RecceName})
 self:LaseOff()
 end
 end
@@ -17631,6 +18238,12 @@ self.tid=timer.scheduleFunction(self._Function,self,self.Tstart)
 self.lid=string.format("TIMER UID=%d/%d | ",self.uid,self.tid)
 self.isrunning=true
 self:T(self.lid..string.format("Starting Timer in %.3f sec, dT=%s, Tstop=%s",self.Tstart-Tnow,tostring(self.dT),tostring(self.Tstop)))
+return self
+end
+function TIMER:StartIf(Condition,Tstart,dT,Duration)
+if Condition then
+self:Start(Tstart,dT,Duration)
+end
 return self
 end
 function TIMER:Stop(Delay)
@@ -18247,7 +18860,6 @@ self.ScanData.SceneryTable={}
 self.ScanData.Units={}
 local ZoneCoord=self:GetCoordinate()
 local ZoneRadius=self:GetRadius()
-self:F({ZoneCoord=ZoneCoord,ZoneRadius=ZoneRadius,ZoneCoordLL=ZoneCoord:ToStringLLDMS()})
 local SphereSearch={
 id=world.VolumeType.SPHERE,
 params={
@@ -18815,6 +19427,31 @@ end
 end
 return self
 end
+function ZONE_POLYGON_BASE:GetRadius()
+local center=self:GetVec2()
+local radius=0
+for _,_vec2 in pairs(self._.Polygon)do
+local vec2=_vec2
+local r=UTILS.VecDist2D(center,vec2)
+if r>radius then
+radius=r
+end
+end
+return radius
+end
+function ZONE_POLYGON_BASE:GetZoneRadius(ZoneName,DoNotRegisterZone)
+local center=self:GetVec2()
+local radius=self:GetRadius()
+local zone=ZONE_RADIUS:New(ZoneName or self.ZoneName,center,radius,DoNotRegisterZone)
+return zone
+end
+function ZONE_POLYGON_BASE:GetZoneQuad(ZoneName,DoNotRegisterZone)
+local vec1,vec3=self:GetBoundingVec2()
+local vec2={x=vec1.x,y=vec3.y}
+local vec4={x=vec3.x,y=vec1.y}
+local zone=ZONE_POLYGON_BASE:New(ZoneName or self.ZoneName,{vec1,vec2,vec3,vec4})
+return zone
+end
 function ZONE_POLYGON_BASE:SmokeZone(SmokeColor,Segments)
 self:F2(SmokeColor)
 Segments=Segments or 10
@@ -18926,6 +19563,22 @@ y1=(y1>self._.Polygon[i].y)and self._.Polygon[i].y or y1
 y2=(y2<self._.Polygon[i].y)and self._.Polygon[i].y or y2
 end
 return{x1=x1,y1=y1,x2=x2,y2=y2}
+end
+function ZONE_POLYGON_BASE:GetBoundingVec2()
+local x1=self._.Polygon[1].x
+local y1=self._.Polygon[1].y
+local x2=self._.Polygon[1].x
+local y2=self._.Polygon[1].y
+for i=2,#self._.Polygon do
+self:T2({self._.Polygon[i],x1,y1,x2,y2})
+x1=(x1>self._.Polygon[i].x)and self._.Polygon[i].x or x1
+x2=(x2<self._.Polygon[i].x)and self._.Polygon[i].x or x2
+y1=(y1>self._.Polygon[i].y)and self._.Polygon[i].y or y1
+y2=(y2<self._.Polygon[i].y)and self._.Polygon[i].y or y2
+end
+local vec1={x=x1,y=y1}
+local vec2={x=x2,y=y2}
+return vec1,vec2
 end
 function ZONE_POLYGON_BASE:Boundary(Coalition,Color,Radius,Alpha,Segments,Closed)
 Coalition=Coalition or-1
@@ -19307,6 +19960,140 @@ self:T3({PointVec2})
 return PointVec2
 end
 end
+PATHLINE={
+ClassName="PATHLINE",
+lid=nil,
+points={},
+}
+PATHLINE.version="0.1.0"
+function PATHLINE:New(Name)
+local self=BASE:Inherit(self,BASE:New())
+self.name=Name or"Unknown Path"
+self.lid=string.format("PATHLINE %s | ",Name)
+return self
+end
+function PATHLINE:NewFromVec2Array(Name,Vec2Array)
+local self=PATHLINE:New(Name)
+for i=1,#Vec2Array do
+self:AddPointFromVec2(Vec2Array[i])
+end
+return self
+end
+function PATHLINE:NewFromVec3Array(Name,Vec3Array)
+local self=PATHLINE:New(Name)
+for i=1,#Vec3Array do
+self:AddPointFromVec3(Vec3Array[i])
+end
+return self
+end
+function PATHLINE:FindByName(Name)
+local pathline=_DATABASE:FindPathline(Name)
+return pathline
+end
+function PATHLINE:AddPointFromVec2(Vec2)
+if Vec2 then
+local point=self:_CreatePoint(Vec2)
+table.insert(self.points,point)
+end
+return self
+end
+function PATHLINE:AddPointFromVec3(Vec3)
+if Vec3 then
+local point=self:_CreatePoint(Vec3)
+table.insert(self.points,point)
+end
+return self
+end
+function PATHLINE:GetName()
+return self.name
+end
+function PATHLINE:GetNumberOfPoints()
+local N=#self.points
+return N
+end
+function PATHLINE:GetPoints()
+return self.points
+end
+function PATHLINE:GetPoints3D()
+local vecs={}
+for _,_point in pairs(self.points)do
+local point=_point
+table.insert(vecs,point.vec3)
+end
+return vecs
+end
+function PATHLINE:GetPoints2D()
+local vecs={}
+for _,_point in pairs(self.points)do
+local point=_point
+table.insert(vecs,point.vec2)
+end
+return vecs
+end
+function PATHLINE:GetCoordinats()
+local vecs={}
+for _,_point in pairs(self.points)do
+local point=_point
+local coord=COORDINATE:NewFromVec3(point.vec3)
+end
+return vecs
+end
+function PATHLINE:GetPointFromIndex(n)
+local N=self:GetNumberOfPoints()
+n=n or 1
+local point=nil
+if n>=1 and n<=N then
+point=self.point[n]
+else
+self:E(self.lid..string.format("ERROR: No point in pathline for N=%s",tostring(n)))
+end
+return point
+end
+function PATHLINE:GetPoint3DFromIndex(n)
+local point=self:GetPointFromIndex(n)
+if point then
+return point.vec3
+end
+return nil
+end
+function PATHLINE:GetPoint2DFromIndex(n)
+local point=self:GetPointFromIndex(n)
+if point then
+return point.vec2
+end
+return nil
+end
+function PATHLINE:MarkPoints(Switch)
+for i,_point in pairs(self.points)do
+local point=_point
+if Switch==false then
+if point.markerID then
+UTILS.RemoveMark(point.markerID,Delay)
+end
+else
+if point.markerID then
+UTILS.RemoveMark(point.markerID)
+end
+point.markerID=UTILS.GetMarkID()
+local text=string.format("Pathline %s: Point #%d\nSurface Type=%d\nHeight=%.1f m\nDepth=%.1f m",self.name,i,point.surfaceType,point.landHeight,point.depth)
+trigger.action.markToAll(point.markerID,text,point.vec3,"")
+end
+end
+end
+function PATHLINE:_CreatePoint(Vec)
+local point={}
+if Vec.z then
+point.vec3=UTILS.DeepCopy(Vec)
+point.vec2={x=Vec.x,y=Vec.z}
+else
+point.vec2=UTILS.DeepCopy(Vec)
+point.vec3={x=Vec.x,y=land.getHeight(Vec),z=Vec.y}
+end
+point.surfaceType=land.getSurfaceType(point.vec2)
+point.landHeight,point.depth=land.getSurfaceHeightWithSeabed(point.vec2)
+point.markerID=nil
+return point
+end
 AIRBASE={
 ClassName="AIRBASE",
 CategoryName={
@@ -19535,6 +20322,11 @@ AIRBASE.SouthAtlantic={
 ["Porvenir_Airfield"]="Porvenir Airfield",
 ["Almirante_Schroeders"]="Almirante Schroeders",
 ["Rio_Turbio"]="Rio Turbio",
+["Rio_Chico"]="Rio Chico",
+["Franco_Bianco"]="Franco Bianco",
+["Goose_Green"]="Goose Green",
+["Hipico"]="Hipico",
+["CaletaTortel"]="CaletaTortel",
 }
 AIRBASE.TerminalType={
 Runway=16,
@@ -20429,6 +21221,17 @@ if not Error then
 error("CLIENT not found for: "..ClientName)
 end
 end
+function CLIENT:FindByPlayerName(Name)
+local foundclient=nil
+_DATABASE:ForEachClient(
+function(client)
+if client:GetPlayerName()==Name then
+foundclient=client
+end
+end
+)
+return foundclient
+end
 function CLIENT:FindByName(ClientName,ClientBriefing,Error)
 local ClientFound=_DATABASE:FindClient(ClientName)
 if ClientFound then
@@ -20934,50 +21737,64 @@ self:SetCommand(CommandActivateBeacon)
 end
 return self
 end
+function CONTROLLABLE:CommandActivateACLS(UnitID,Name,Delay)
+local CommandActivateACLS={
+id='ActivateACLS',
+params={
+unitId=UnitID or self:GetID(),
+name=Name or"ACL",
+}
+}
+self:T({CommandActivateACLS})
+if Delay and Delay>0 then
+SCHEDULER:New(nil,self.CommandActivateACLS,{self,UnitID,Name},Delay)
+else
+self:SetCommand(CommandActivateACLS)
+end
+return self
+end
+function CONTROLLABLE:CommandDeactivateACLS(Delay)
+local CommandDeactivateACLS={
+id='DeactivateACLS',
+params={}
+}
+if Delay and Delay>0 then
+SCHEDULER:New(nil,self.CommandDeactivateACLS,{self},Delay)
+else
+self:SetCommand(CommandDeactivateACLS)
+end
+return self
+end
 function CONTROLLABLE:CommandActivateICLS(Channel,UnitID,Callsign,Delay)
 local CommandActivateICLS={
 id="ActivateICLS",
 params={
 ["type"]=BEACON.Type.ICLS,
 ["channel"]=Channel,
-["unitId"]=UnitID,
+["unitId"]=UnitID or self:GetID(),
 ["callsign"]=Callsign,
 },
 }
 if Delay and Delay>0 then
-SCHEDULER:New(nil,self.CommandActivateICLS,{self},Delay)
+SCHEDULER:New(nil,self.CommandActivateICLS,{self,Channel,UnitID,Callsign},Delay)
 else
 self:SetCommand(CommandActivateICLS)
 end
 return self
 end
 function CONTROLLABLE:CommandActivateLink4(Frequency,UnitID,Callsign,Delay)
+local freq=Frequency or 336
 local CommandActivateLink4={
 id="ActivateLink4",
 params={
-["frequency "]=Frequency*1000,
-["unitId"]=UnitID,
-["name"]=Callsign,
+["frequency "]=freq*1000000,
+["unitId"]=UnitID or self:GetID(),
+["name"]=Callsign or"LNK",
 }
 }
+self:T({CommandActivateLink4})
 if Delay and Delay>0 then
-SCHEDULER:New(nil,self.CommandActivateLink4,{self},Delay)
-else
-self:SetCommand(CommandActivateLink4)
-end
-return self
-end
-function CONTROLLABLE:CommandActivateLink4(Frequency,UnitID,Callsign,Delay)
-local CommandActivateLink4={
-id="ActivateLink4",
-params={
-["frequency "]=Frequency*1000,
-["unitId"]=UnitID,
-["name"]=Callsign,
-}
-}
-if Delay and Delay>0 then
-SCHEDULER:New(nil,self.CommandActivateLink4,{self},Delay)
+SCHEDULER:New(nil,self.CommandActivateLink4,{self,Frequency,UnitID,Callsign},Delay)
 else
 self:SetCommand(CommandActivateLink4)
 end
@@ -21008,15 +21825,6 @@ if Delay and Delay>0 then
 SCHEDULER:New(nil,self.CommandDeactivateICLS,{self},Delay)
 else
 self:SetCommand(CommandDeactivateICLS)
-end
-return self
-end
-function CONTROLLABLE:CommandDeactivateLink4(Delay)
-local CommandDeactivateLink4={id='DeactivateLink4',params={}}
-if Delay and Delay>0 then
-SCHEDULER:New(nil,self.CommandDeactivateLink4,{self},Delay)
-else
-self:SetCommand(CommandDeactivateLink4)
 end
 return self
 end
@@ -21454,6 +22262,17 @@ id='EngageTargets',
 key="AntiShip",
 params={
 targetTypes=TargetTypes or{"Ships"},
+priority=Priority or 0
+}
+}
+return DCSTask
+end
+function CONTROLLABLE:EnRouteTaskSEAD(TargetTypes,Priority)
+local DCSTask={
+id='EngageTargets',
+key="SEAD",
+params={
+targetTypes=TargetTypes or{"Air Defence"},
 priority=Priority or 0
 }
 }
@@ -23001,10 +23820,17 @@ local DCSGroup=self:GetDCSObject()
 if DCSGroup then
 local UnitFound=nil
 local units=DCSGroup:getUnits()or{}
+if units[UnitNumber]then
+local UnitFound=UNIT:Find(units[UnitNumber])
+if UnitFound then
+return UnitFound
+end
+else
 for _,_unit in pairs(units)do
 local UnitFound=UNIT:Find(_unit)
 if UnitFound then
 return UnitFound
+end
 end
 end
 end
@@ -23016,7 +23842,6 @@ if DCSGroup then
 if DCSGroup.getUnit and DCSGroup:getUnit(UnitNumber)then
 return DCSGroup:getUnit(UnitNumber)
 else
-local UnitFound=nil
 local units=DCSGroup:getUnits()or{}
 for _,_unit in pairs(units)do
 if _unit and _unit:isExist()then
@@ -23066,6 +23891,15 @@ if unit and unit:IsAlive()then
 return unit
 end
 end
+end
+return nil
+end
+function GROUP:GetFirstUnit()
+self:F3({self.GroupName})
+local DCSGroup=self:GetDCSObject()
+if DCSGroup then
+local units=self:GetUnits()
+return units[1]
 end
 return nil
 end
@@ -24164,13 +24998,15 @@ local callsign="Ghost 1"
 if self:IsAlive()then
 local IsPlayer=self:IsPlayer()
 local shortcallsign=self:GetCallsign()or"unknown91"
-local callsignroot=string.match(shortcallsign,'(%a+)')
+local callsignroot=string.match(shortcallsign,'(%a+)')or"Ghost"
 local groupname=self:GetName()
 local callnumber=string.match(shortcallsign,"(%d+)$")or"91"
 local callnumbermajor=string.char(string.byte(callnumber,1))
 local callnumberminor=string.char(string.byte(callnumber,2))
 local personalized=false
-if IsPlayer and string.find(groupname,"#")then
+if CallsignTranslations and CallsignTranslations[callsignroot]then
+callsignroot=CallsignTranslations[callsignroot]
+elseif IsPlayer and string.find(groupname,"#")then
 if Keepnumber then
 shortcallsign=string.match(groupname,"#(.+)")or"Ghost 111"
 else
@@ -24180,9 +25016,6 @@ personalized=true
 elseif IsPlayer and string.find(self:GetPlayerName(),"|")then
 shortcallsign=string.match(self:GetPlayerName(),"|%s*([%a]+)")or string.match(self:GetPlayerName(),"|%s*([%d]+)")or"Ghost"
 personalized=true
-end
-if(not personalized)and CallsignTranslations and CallsignTranslations[callsignroot]then
-callsignroot=CallsignTranslations[callsignroot]
 end
 if personalized then
 shortcallsign=string.gsub(shortcallsign,"^%s*","")
@@ -24359,7 +25192,6 @@ coalition=nil,
 _MARKERID=0
 MARKER.version="0.1.1"
 function MARKER:New(Coordinate,Text)
-local self=BASE:Inherit(self,FSM:New())
 local self=BASE:Inherit(self,FSM:New())
 self.coordinate=UTILS.DeepCopy(Coordinate)
 self.text=Text
@@ -25042,6 +25874,33 @@ function POSITIONABLE:GetVelocityKNOTS()
 self:F2(self.PositionableName)
 return UTILS.MpsToKnots(self:GetVelocityMPS())
 end
+function POSITIONABLE:GetAirspeedTrue()
+local tas=0
+local coord=self:GetCoord()
+if coord then
+local alt=coord.y
+local wvec3=coord:GetWindVec3(alt,false)
+local vvec3=self:GetVelocityVec3()
+local tasvec3=UTILS.VecSubstract(vvec3,wvec3)
+tas=UTILS.VecNorm(tasvec3)
+end
+return tas
+end
+function POSITIONABLE:GetAirspeedIndicated(oatcorr)
+local tas=self:GetAirspeedTrue()
+local altitude=self:GetAltitude()
+local ias=UTILS.TasToIas(tas,altitude,oatcorr)
+return ias
+end
+function POSITIONABLE:GetGroundSpeed()
+local gs=0
+local vel=self:GetVelocityVec3()
+if vel then
+local vec2={x=vel.x,y=vel.z}
+gs=UTILS.Vec2Norm(vel)
+end
+return gs
+end
 function POSITIONABLE:GetAoA()
 local unitpos=self:GetPosition()
 if unitpos then
@@ -25483,6 +26342,7 @@ local Weights={
 ["tt_DSHK"]=6,
 ["HL_KORD"]=6,
 ["HL_DSHK"]=6,
+["CCKW_353"]=16,
 }
 local CargoBayWeightLimit=(Weights[TypeName]or 0)*95
 self.__.CargoBayWeightLimit=CargoBayWeightLimit
@@ -25694,6 +26554,9 @@ return nil
 end
 end
 end
+function SCENERY:Destroy()
+return self
+end
 STATIC={
 ClassName="STATIC",
 }
@@ -25869,7 +26732,7 @@ local Vec3=SpawnGroup:GetVec3()
 SpawnGroupTemplate.x=Coordinate.x
 SpawnGroupTemplate.y=Coordinate.z
 self:F(#SpawnGroupTemplate.units)
-for UnitID,UnitData in pairs(SpawnGroup:GetUnits())do
+for UnitID,UnitData in pairs(SpawnGroup:GetUnits()or{})do
 local GroupUnit=UnitData
 self:F(GroupUnit:GetName())
 if GroupUnit:IsAlive()then
@@ -25942,6 +26805,9 @@ local UnitIsAlive=DCSUnit:isExist()and DCSUnit:isActive()
 return UnitIsAlive
 end
 return nil
+end
+function UNIT:IsDead()
+return not self:IsAlive()
 end
 function UNIT:GetCallsign()
 self:F2(self.UnitName)
@@ -26085,10 +26951,18 @@ return false
 end
 function UNIT:GetGroup()
 self:F2(self.UnitName)
+local UnitGroup=GROUP:FindByName(self.GroupName)
+if UnitGroup then
+return UnitGroup
+else
 local DCSUnit=self:GetDCSObject()
 if DCSUnit then
-local UnitGroup=GROUP:FindByName(DCSUnit:getGroup():getName())
+local grp=DCSUnit:getGroup()
+if grp then
+local UnitGroup=GROUP:FindByName(grp:getName())
 return UnitGroup
+end
+end
 end
 return nil
 end
@@ -26262,6 +27136,14 @@ if self and self:IsAlive()then
 return 1-self:GetLifeRelative()
 end
 return 1
+end
+function UNIT:GetDrawArgumentValue(AnimationArgument)
+local DCSUnit=self:GetDCSObject()
+if DCSUnit then
+local value=DCSUnit:getDrawArgumentValue(AnimationArgument or 0)
+return value
+end
+return 0
 end
 function UNIT:GetUnitCategory()
 self:F3(self.UnitName)
@@ -26545,6 +27427,731 @@ self:F2(self.UnitName)
 local name=self.UnitName
 local skill=_DATABASE.Templates.Units[name].Template.skill or"Random"
 return skill
+end
+WEAPON={
+ClassName="WEAPON",
+verbose=0,
+}
+WEAPON.version="0.1.0"
+function WEAPON:New(WeaponObject)
+if WeaponObject==nil then
+env.error("ERROR: Weapon object does NOT exist")
+return nil
+end
+local self=BASE:Inherit(self,POSITIONABLE:New("Weapon"))
+self.weapon=WeaponObject
+self.desc=WeaponObject:getDesc()
+self.category=self.desc.category
+if self:IsMissile()and self.desc.missileCategory then
+self.categoryMissile=self.desc.missileCategory
+end
+self.typeName=WeaponObject:getTypeName()or"Unknown Type"
+self.name=WeaponObject:getName()
+self.coalition=WeaponObject:getCoalition()
+self.country=WeaponObject:getCountry()
+self.launcher=WeaponObject:getLauncher()
+self.launcherName="Unknown Launcher"
+if self.launcher then
+self.launcherName=self.launcher:getName()
+self.launcherUnit=UNIT:Find(self.launcher)
+end
+self.coordinate=COORDINATE:NewFromVec3(self.launcher:getPoint())
+self.lid=string.format("[%s] %s | ",self.typeName,self.name)
+self:SetTimeStepTrack()
+self:SetDistanceInterceptPoint()
+local text=string.format("Weapon v%s\nName=%s, TypeName=%s, Category=%s, Coalition=%d, Country=%d, Launcher=%s",
+self.version,self.name,self.typeName,self.category,self.coalition,self.country,self.launcherName)
+self:T(self.lid..text)
+self:T2(self.desc)
+return self
+end
+function WEAPON:SetVerbosity(VerbosityLevel)
+self.verbose=VerbosityLevel or 0
+return self
+end
+function WEAPON:SetTimeStepTrack(TimeStep)
+self.dtTrack=TimeStep or 0.01
+return self
+end
+function WEAPON:SetDistanceInterceptPoint(Distance)
+self.distIP=Distance or 50
+return self
+end
+function WEAPON:SetMarkImpact(Switch)
+if Switch==false then
+self.impactMark=false
+else
+self.impactMark=true
+end
+return self
+end
+function WEAPON:SetSmokeImpact(Switch,SmokeColor)
+if Switch==false then
+self.impactSmoke=false
+else
+self.impactSmoke=true
+end
+self.impactSmokeColor=SmokeColor or SMOKECOLOR.Red
+return self
+end
+function WEAPON:SetFuncTrack(FuncTrack,...)
+self.trackFunc=FuncTrack
+self.trackArg=arg or{}
+return self
+end
+function WEAPON:SetFuncImpact(FuncImpact,...)
+self.impactFunc=FuncImpact
+self.impactArg=arg or{}
+return self
+end
+function WEAPON:GetLauncher()
+return self.launcherUnit
+end
+function WEAPON:GetTarget()
+local target=nil
+if self.weapon then
+local object=self.weapon:getTarget()
+if object then
+local category=object:getCategory()
+local name=object:getName()
+self:T(self.lid..string.format("Got Target Object %s, category=%d",object:getName(),category))
+if category==Object.Category.UNIT then
+target=UNIT:FindByName(name)
+elseif category==Object.Category.STATIC then
+target=STATIC:FindByName(name,false)
+elseif category==Object.Category.SCENERY then
+self:E(self.lid..string.format("ERROR: Scenery target not implemented yet!"))
+else
+self:E(self.lid..string.format("ERROR: Object category=%d is not implemented yet!",category))
+end
+end
+end
+return target
+end
+function WEAPON:GetTargetDistance(ConversionFunction)
+local target=self:GetTarget()
+local distance=nil
+if target then
+local tv3=target:GetVec3()
+local wv3=self:GetVec3()
+if tv3 and wv3 then
+distance=UTILS.VecDist3D(tv3,wv3)
+if ConversionFunction then
+distance=ConversionFunction(distance)
+end
+end
+end
+return distance
+end
+function WEAPON:GetTargetName()
+local target=self:GetTarget()
+local name="None"
+if target then
+name=target:GetName()
+end
+return name
+end
+function WEAPON:GetVelocityVec3()
+local Vvec3=nil
+if self.weapon then
+Vvec3=self.weapon:getVelocity()
+end
+return Vvec3
+end
+function WEAPON:GetSpeed(ConversionFunction)
+local speed=nil
+if self.weapon then
+local v=self:GetVelocityVec3()
+speed=UTILS.VecNorm(v)
+if ConversionFunction then
+speed=ConversionFunction(speed)
+end
+end
+return speed
+end
+function WEAPON:GetVec3()
+local vec3=nil
+if self.weapon then
+vec3=self.weapon:getPoint()
+end
+return vec3
+end
+function WEAPON:GetVec2()
+local vec3=self:GetVec3()
+if vec3 then
+local vec2={x=vec3.x,y=vec3.z}
+return vec2
+end
+return nil
+end
+function WEAPON:GetTypeName()
+return self.typeName
+end
+function WEAPON:GetCoalition()
+return self.coalition
+end
+function WEAPON:GetCountry()
+return self.country
+end
+function WEAPON:GetDCSObject()
+return self.weapon
+end
+function WEAPON:GetImpactVec3()
+return self.impactVec3
+end
+function WEAPON:GetImpactCoordinate()
+return self.impactCoord
+end
+function WEAPON:InAir()
+local inAir=nil
+if self.weapon then
+inAir=self.weapon:inAir()
+end
+return inAir
+end
+function WEAPON:IsExist()
+local isExist=nil
+if self.weapon then
+isExist=self.weapon:isExist()
+end
+return isExist
+end
+function WEAPON:IsBomb()
+return self.category==Weapon.Category.BOMB
+end
+function WEAPON:IsMissile()
+return self.category==Weapon.Category.MISSILE
+end
+function WEAPON:IsRocket()
+return self.category==Weapon.Category.ROCKET
+end
+function WEAPON:IsShell()
+return self.category==Weapon.Category.SHELL
+end
+function WEAPON:IsTorpedo()
+return self.category==Weapon.Category.TORPEDO
+end
+function WEAPON:Destroy(Delay)
+if Delay and Delay>0 then
+self:ScheduleOnce(Delay,WEAPON.Destroy,self,0)
+else
+if self.weapon then
+self:T(self.lid.."Destroying Weapon NOW!")
+self:StopTrack()
+self.weapon:destroy()
+end
+end
+return self
+end
+function WEAPON:StartTrack(Delay)
+Delay=math.max(Delay or 0.001,0.001)
+self:T(self.lid..string.format("Start tracking weapon in %.4f sec",Delay))
+self.trackScheduleID=timer.scheduleFunction(WEAPON._TrackWeapon,self,timer.getTime()+Delay)
+return self
+end
+function WEAPON:StopTrack(Delay)
+if Delay and Delay>0 then
+self:ScheduleOnce(Delay,WEAPON.StopTrack,self,0)
+else
+if self.trackScheduleID then
+timer.removeFunction(self.trackScheduleID)
+end
+end
+return self
+end
+function WEAPON:_TrackWeapon(time)
+if self.verbose>=20 then
+self:I(self.lid..string.format("Tracking at T=%.5f",time))
+end
+local status,pos3=pcall(
+function()
+local point=self.weapon:getPosition()
+return point
+end
+)
+if status then
+self.pos3=pos3
+self.vec3=UTILS.DeepCopy(self.pos3.p)
+self.coordinate:UpdateFromVec3(self.vec3)
+self.tracking=true
+if self.trackFunc then
+self.trackFunc(self,unpack(self.trackArg))
+end
+if self.verbose>=5 then
+local vec2={x=self.vec3.x,y=self.vec3.z}
+local height=land.getHeight(vec2)
+local agl=self.vec3.y-height
+local ip=self:_GetIP(self.distIP)
+local d=0
+if ip then
+d=UTILS.VecDist3D(self.vec3,ip)
+end
+self:I(self.lid..string.format("T=%.3f: Height=%.3f m AGL=%.3f m, dIP=%.3f",time,height,agl,d))
+end
+else
+local ip=self:_GetIP(self.distIP)
+if self.verbose>=10 and ip then
+self:I(self.lid.."Got intercept point!")
+local coord=COORDINATE:NewFromVec3(ip)
+coord:MarkToAll("Intercept point")
+coord:SmokeBlue()
+local d=UTILS.VecDist3D(ip,self.vec3)
+self:I(self.lid..string.format("FF d(ip, vec3)=%.3f meters",d))
+end
+self.impactVec3=ip or self.vec3
+self.impactCoord=COORDINATE:NewFromVec3(self.vec3)
+if self.impactMark then
+self.impactCoord:MarkToAll(string.format("Impact point of weapon %s\ntype=%s\nlauncher=%s",self.name,self.typeName,self.launcherName))
+end
+if self.impactSmoke then
+self.impactCoord:Smoke(self.impactSmokeColor)
+end
+if self.impactFunc then
+self.impactFunc(self,unpack(self.impactArg or{}))
+end
+self.tracking=false
+end
+if self.tracking then
+if self.dtTrack and self.dtTrack>0.001 then
+return time+self.dtTrack
+else
+return nil
+end
+end
+return nil
+end
+function WEAPON:_GetIP(Distance)
+Distance=Distance or 50
+local ip=nil
+if Distance>0 and self.pos3 then
+ip=land.getIP(self.pos3.p,self.pos3.x,Distance or 20)
+end
+return ip
+end
+do
+NET={
+ClassName="NET",
+Version="0.1.0",
+BlockTime=600,
+BlockedPilots={},
+BlockedUCIDs={},
+BlockedSides={},
+BlockedSlots={},
+KnownPilots={},
+BlockMessage=nil,
+UnblockMessage=nil,
+lid=nil,
+}
+function NET:New()
+local self=BASE:Inherit(self,FSM:New())
+self.BlockTime=600
+self.BlockedPilots={}
+self.KnownPilots={}
+self:SetBlockMessage()
+self:SetUnblockMessage()
+self:SetStartState("Stopped")
+self:AddTransition("Stopped","Run","Running")
+self:AddTransition("*","PlayerJoined","*")
+self:AddTransition("*","PlayerLeft","*")
+self:AddTransition("*","PlayerDied","*")
+self:AddTransition("*","PlayerEjected","*")
+self:AddTransition("*","PlayerBlocked","*")
+self:AddTransition("*","PlayerUnblocked","*")
+self:AddTransition("*","Status","*")
+self:AddTransition("*","Stop","Stopped")
+self.lid=string.format("NET %s | ",self.Version)
+self:Run()
+return self
+end
+function NET:IsAnyBlocked(UCID,Name,PlayerID,PlayerSide,PlayerSlot)
+local blocked=false
+local TNow=timer.getTime()
+if UCID and self.BlockedUCIDs[UCID]and TNow<self.BlockedUCIDs[UCID]then
+return true
+end
+if PlayerID and not Name then
+Name=self:GetPlayerIDByName(Name)
+end
+if Name and self.BlockedPilots[Name]and TNow<self.BlockedPilots[Name]then
+return true
+end
+if PlayerSide and self.BlockedSides[PlayerSide]and TNow<self.BlockedSides[PlayerSide]then
+return true
+end
+if PlayerSlot and self.BlockedSlots[PlayerSlot]and TNow<self.BlockedSlots[PlayerSlot]then
+return true
+end
+return blocked
+end
+function NET:_EventHandler(EventData)
+self:T(self.lid.." _EventHandler")
+self:T2({Event=EventData.id})
+local data=EventData
+if data.id and data.IniUnit and(data.IniPlayerName or data.IniUnit:GetPlayerName())then
+local name=data.IniPlayerName and data.IniPlayerName or data.IniUnit:GetPlayerName()
+local ucid=self:GetPlayerUCID(nil,name)
+local PlayerID=self:GetPlayerIDByName(name)or"none"
+local PlayerSide,PlayerSlot=self:GetSlot(data.IniUnit)
+local TNow=timer.getTime()
+self:T(self.lid.."Event for: "..name.." | UCID: "..ucid)
+if data.id==EVENTS.PlayerEnterUnit or data.id==EVENTS.PlayerEnterAircraft then
+self:T(self.lid.."Pilot Joining: "..name.." | UCID: "..ucid)
+local blocked=self:IsAnyBlocked(ucid,name,PlayerID,PlayerSide,PlayerSlot)
+if blocked and PlayerID and tonumber(PlayerID)~=1 then
+local outcome=net.force_player_slot(tonumber(PlayerID),0,'')
+else
+self.KnownPilots[name]={
+name=name,
+ucid=ucid,
+id=PlayerID,
+side=PlayerSide,
+slot=PlayerSlot,
+}
+self:__PlayerJoined(1,data.IniUnit,name)
+return self
+end
+end
+if data.id==EVENTS.PlayerLeaveUnit and self.KnownPilots[name]then
+self:T(self.lid.."Pilot Leaving: "..name.." | UCID: "..ucid)
+self:__PlayerLeft(1,data.IniUnit,name)
+self.KnownPilots[name]=false
+return self
+end
+if data.id==EVENTS.Ejection and self.KnownPilots[name]then
+self:T(self.lid.."Pilot Ejecting: "..name.." | UCID: "..ucid)
+self:__PlayerEjected(1,data.IniUnit,name)
+self.KnownPilots[name]=false
+return self
+end
+if(data.id==EVENTS.PilotDead or data.id==EVENTS.SelfKillPilot or data.id==EVENTS.Crash)and self.KnownPilots[name]then
+self:T(self.lid.."Pilot Dead: "..name.." | UCID: "..ucid)
+self:__PlayerDied(1,data.IniUnit,name)
+self.KnownPilots[name]=false
+return self
+end
+end
+return self
+end
+function NET:BlockPlayer(Client,PlayerName,Seconds,Message)
+self:T({PlayerName,Seconds,Message})
+local name=PlayerName
+if Client and(not PlayerName)then
+name=Client:GetPlayerName()
+elseif PlayerName then
+name=PlayerName
+else
+self:F(self.lid.."Block: No Client or PlayerName given or nothing found!")
+return self
+end
+local ucid=self:GetPlayerUCID(Client,name)
+local addon=Seconds or self.BlockTime
+self.BlockedPilots[name]=timer.getTime()+addon
+self.BlockedUCIDs[ucid]=timer.getTime()+addon
+local message=Message or self.BlockMessage
+if name then
+self:SendChatToPlayer(message,name)
+else
+self:SendChat(name..": "..message)
+end
+self:__PlayerBlocked(1,Client,name,Seconds)
+local PlayerID=self:GetPlayerIDByName(name)
+if PlayerID and tonumber(PlayerID)~=1 then
+local outcome=net.force_player_slot(tonumber(PlayerID),0,'')
+end
+return self
+end
+function NET:BlockPlayerSet(PlayerSet,Seconds,Message)
+self:T({PlayerSet.Set,Seconds,Message})
+local addon=Seconds or self.BlockTime
+local message=Message or self.BlockMessage
+for _,_client in pairs(PlayerSet.Set)do
+local name=_client:GetPlayerName()
+self:BlockPlayer(_client,name,addon,message)
+end
+return self
+end
+function NET:UnblockPlayerSet(PlayerSet,Message)
+self:T({PlayerSet.Set,Seconds,Message})
+local message=Message or self.UnblockMessage
+for _,_client in pairs(PlayerSet.Set)do
+local name=_client:GetPlayerName()
+self:UnblockPlayer(_client,name,message)
+end
+return self
+end
+function NET:BlockUCID(ucid,Seconds)
+self:T({ucid,Seconds})
+local addon=Seconds or self.BlockTime
+self.BlockedUCIDs[ucid]=timer.getTime()+addon
+return self
+end
+function NET:UnblockUCID(ucid)
+self:T({ucid})
+self.BlockedUCIDs[ucid]=nil
+return self
+end
+function NET:BlockSide(Side,Seconds)
+self:T({Side,Seconds})
+local addon=Seconds or self.BlockTime
+if Side==1 or Side==2 then
+self.BlockedSides[Side]=timer.getTime()+addon
+end
+return self
+end
+function NET:UnblockSide(Side,Seconds)
+self:T({Side,Seconds})
+local addon=Seconds or self.BlockTime
+if Side==1 or Side==2 then
+self.BlockedSides[Side]=nil
+end
+return self
+end
+function NET:BlockSlot(Slot,Seconds)
+self:T({Slot,Seconds})
+local addon=Seconds or self.BlockTime
+self.BlockedSlots[Slot]=timer.getTime()+addon
+return self
+end
+function NET:UnblockSlot(Slot)
+self:T({Slot})
+self.BlockedSlots[Slot]=nil
+return self
+end
+function NET:UnblockPlayer(Client,PlayerName,Message)
+local name=PlayerName
+if Client then
+name=Client:GetPlayerName()
+elseif PlayerName then
+name=PlayerName
+else
+self:F(self.lid.."Unblock: No PlayerName given or not found!")
+return self
+end
+local ucid=self:GetPlayerUCID(Client,name)
+self.BlockedPilots[name]=nil
+self.BlockedUCIDs[ucid]=nil
+local message=Message or self.UnblockMessage
+if name then
+self:SendChatToPlayer(message,name)
+else
+self:SendChat(name..": "..message)
+end
+self:__PlayerUnblocked(1,Client,name)
+return self
+end
+function NET:SetBlockMessage(Text)
+self.BlockMessage=Text or"You are blocked from joining. Wait time is: "..self.BlockTime.." seconds!"
+return self
+end
+function NET:SetBlockTime(Seconds)
+self.BlockTime=Seconds or 600
+return self
+end
+function NET:SetUnblockMessage(Text)
+self.UnblockMessage=Text or"You are unblocked now and can join again."
+return self
+end
+function NET:SendChat(Message,ToAll)
+if Message then
+net.send_chat(Message,ToAll)
+end
+return self
+end
+function NET:GetPlayerIDByName(Name)
+if not Name then return nil end
+local playerList=self:GetPlayerList()
+self:T({playerList})
+for i=1,#playerList do
+local playerName=net.get_name(i)
+self:T({playerName})
+if playerName==Name then
+return playerList[i]
+end
+end
+return nil
+end
+function NET:GetPlayerIDFromClient(Client)
+if Client then
+local name=Client:GetPlayerName()
+local id=self:GetPlayerIDByName(name)
+return id
+else
+return nil
+end
+end
+function NET:SendChatToClient(Message,ToClient,FromClient)
+local PlayerId=self:GetPlayerIDFromClient(ToClient)
+local FromId=self:GetPlayerIDFromClient(FromClient)
+if Message and PlayerId and FromId then
+net.send_chat_to(Message,tonumber(PlayerId),tonumber(FromId))
+elseif Message and PlayerId then
+net.send_chat_to(Message,tonumber(PlayerId))
+end
+return self
+end
+function NET:SendChatToPlayer(Message,ToPlayer,FromPlayer)
+local PlayerId=self:GetPlayerIDByName(ToPlayer)
+local FromId=self:GetPlayerIDByName(FromPlayer)
+if Message and PlayerId and FromId then
+net.send_chat_to(Message,tonumber(PlayerId),tonumber(FromId))
+elseif Message and PlayerId then
+net.send_chat_to(Message,tonumber(PlayerId))
+end
+return self
+end
+function NET:LoadMission(Path)
+local outcome=false
+if Path then
+outcome=net.load_mission(Path)
+end
+return outcome
+end
+function NET:LoadNextMission()
+local outcome=false
+outcome=net.load_next_mission()
+return outcome
+end
+function NET:GetPlayerList()
+local plist=nil
+plist=net.get_player_list()
+return plist
+end
+function NET:GetMyPlayerID()
+return net.get_my_player_id()
+end
+function NET:GetServerID()
+return net.get_server_id()
+end
+function NET:GetPlayerInfo(Client,Attribute)
+local PlayerID=self:GetPlayerIDFromClient(Client)
+if PlayerID then
+return net.get_player_info(tonumber(PlayerID),Attribute)
+else
+return nil
+end
+end
+function NET:GetPlayerUCID(Client,Name)
+local PlayerID=nil
+if Client then
+PlayerID=self:GetPlayerIDFromClient(Client)
+elseif Name then
+PlayerID=self:GetPlayerIDByName(Name)
+else
+self:E(self.lid.."Neither client nor name provided!")
+end
+local ucid=net.get_player_info(tonumber(PlayerID),'ucid')
+return ucid
+end
+function NET:Kick(Client,Message)
+local PlayerID=self:GetPlayerIDFromClient(Client)
+if PlayerID and tonumber(PlayerID)~=1 then
+return net.kick(tonumber(PlayerID),Message)
+else
+return false
+end
+end
+function NET:GetPlayerStatistic(Client,StatisticID)
+local PlayerID=self:GetPlayerIDFromClient(Client)
+local stats=StatisticID or 0
+if stats>7 or stats<0 then stats=0 end
+if PlayerID then
+return net.get_stat(tonumber(PlayerID),stats)
+else
+return nil
+end
+end
+function NET:GetName(Client)
+local PlayerID=self:GetPlayerIDFromClient(Client)
+if PlayerID then
+return net.get_name(tonumber(PlayerID))
+else
+return nil
+end
+end
+function NET:GetSlot(Client)
+local PlayerID=self:GetPlayerIDFromClient(Client)
+if PlayerID then
+local side,slot=net.get_slot(tonumber(PlayerID))
+return side,slot
+else
+return nil,nil
+end
+end
+function NET:ForceSlot(Client,SideID,SlotID)
+local PlayerID=self:GetPlayerIDFromClient(Client)
+if PlayerID and tonumber(PlayerID)~=1 then
+return net.force_player_slot(tonumber(PlayerID),SideID,SlotID or'')
+else
+return false
+end
+end
+function NET:ReturnToSpectators(Client)
+local outcome=self:ForceSlot(Client,0)
+return outcome
+end
+function NET.Lua2Json(Lua)
+return net.lua2json(Lua)
+end
+function NET.Lua2Json(Json)
+return net.json2lua(Json)
+end
+function NET:DoStringIn(State,DoString)
+return net.dostring_in(State,DoString)
+end
+function NET:Log(Message)
+net.log(Message)
+return self
+end
+function NET:GetKnownPilotData(Client,Name)
+local name=Name
+if Client and not Name then
+name=Client:GetPlayerName()
+end
+if name then
+return self.KnownPilots[name]
+else
+return nil
+end
+end
+function NET:onafterStatus(From,Event,To)
+self:T({From,Event,To})
+local function HouseHold(tavolo)
+local TNow=timer.getTime()
+for _,entry in pairs(tavolo)do
+if entry>=TNow then entry=nil end
+end
+end
+HouseHold(self.BlockedPilots)
+HouseHold(self.BlockedSides)
+HouseHold(self.BlockedSlots)
+HouseHold(self.BlockedUCIDs)
+if self:Is("Running")then
+self:__Status(-60)
+end
+return self
+end
+function NET:onafterRun(From,Event,To)
+self:T({From,Event,To})
+self:HandleEvent(EVENTS.PlayerEnterUnit,self._EventHandler)
+self:HandleEvent(EVENTS.PlayerEnterAircraft,self._EventHandler)
+self:HandleEvent(EVENTS.PlayerLeaveUnit,self._EventHandler)
+self:HandleEvent(EVENTS.PilotDead,self._EventHandler)
+self:HandleEvent(EVENTS.Ejection,self._EventHandler)
+self:HandleEvent(EVENTS.Crash,self._EventHandler)
+self:HandleEvent(EVENTS.SelfKillPilot,self._EventHandler)
+self:__Status(-30)
+end
+function NET:onafterStop(From,Event,To)
+self:T({From,Event,To})
+self:UnHandleEvent(EVENTS.PlayerEnterUnit)
+self:UnHandleEvent(EVENTS.PlayerEnterAircraft)
+self:UnHandleEvent(EVENTS.PlayerLeaveUnit)
+self:UnHandleEvent(EVENTS.PilotDead)
+self:UnHandleEvent(EVENTS.Ejection)
+self:UnHandleEvent(EVENTS.Crash)
+self:UnHandleEvent(EVENTS.SelfKillPilot)
+return self
+end
 end
 CARGOS={}
 do
@@ -27872,7 +29479,7 @@ end
 end
 AICSAR={
 ClassName="AICSAR",
-version="0.0.8",
+version="0.1.14",
 lid="",
 coalition=coalition.side.BLUE,
 template="",
@@ -27884,7 +29491,7 @@ maxdistance=UTILS.NMToMeters(50),
 pilotqueue={},
 pilotindex=0,
 helos={},
-verbose=true,
+verbose=false,
 rescuezoneradius=200,
 rescued={},
 autoonoff=true,
@@ -27905,12 +29512,24 @@ limithelos=true,
 helonumber=3,
 gettext=nil,
 locale="en",
+SRSTTSRadio=false,
+SRSGoogle=false,
+SRSQ=nil,
+SRSPilot=nil,
+SRSPilotVoice=false,
+SRSOperator=nil,
+SRSOperatorVoice=false,
+PilotStore=nil,
+Speed=100,
+Altitude=1500,
+UseEventEject=false,
+Delay=100,
 }
 AICSAR.Messages={
 EN={
 INITIALOK="Roger, Pilot, we hear you. Stay where you are, a helo is on the way!",
 INITIALNOTOK="Sorry, Pilot. You're behind maximum operational distance! Good Luck!",
-PILOTDOWN="Pilot down at ",
+PILOTDOWN="Mayday, mayday, mayday! Pilot down at ",
 PILOTKIA="Pilot KIA!",
 HELODOWN="CSAR Helo Down!",
 PILOTRESCUED="Pilot rescued!",
@@ -27919,7 +29538,7 @@ PILOTINHELO="Pilot picked up!",
 DE={
 INITIALOK="Copy, Pilot, wir hören Sie. Bleiben Sie, wo Sie sind!\nEin Hubschrauber sammelt Sie auf!",
 INITIALNOTOK="Verstehe, Pilot. Sie sind zu weit weg von uns.\nViel Glück!",
-PILOTDOWN="Pilot abgestürzt: ",
+PILOTDOWN="Mayday, mayday, mayday! Pilot abgestürzt: ",
 PILOTKIA="Pilot gefallen!",
 HELODOWN="CSAR Hubschrauber verloren!",
 PILOTRESCUED="Pilot gerettet!",
@@ -27984,8 +29603,13 @@ self.helotemplate=Helotemplate
 self.farp=FARP
 self.farpzone=MASHZone
 self.playerset=SET_CLIENT:New():FilterActive(true):FilterCategories("helicopter"):FilterStart()
+self.UseEventEject=false
+self.Delay=300
 self.SRS=nil
 self.SRSRadio=false
+self.SRSTTSRadio=false
+self.SRSGoogle=false
+self.SRSQ=nil
 self.SRSFrequency=243
 self.SRSPath="\\"
 self.SRSModulation=radio.modulation.AM
@@ -28001,16 +29625,19 @@ self.limithelos=true
 self.helonumber=3
 self:InitLocalization()
 self.lid=string.format("%s (%s) | ",self.alias,self.coalition and UTILS.GetCoalitionName(self.coalition)or"unknown")
+self.PilotStore=FIFO:New()
 self:SetStartState("Stopped")
 self:AddTransition("Stopped","Start","Running")
 self:AddTransition("*","Status","*")
 self:AddTransition("*","PilotDown","*")
 self:AddTransition("*","PilotPickedUp","*")
+self:AddTransition("*","PilotUnloaded","*")
 self:AddTransition("*","PilotRescued","*")
 self:AddTransition("*","PilotKIA","*")
 self:AddTransition("*","HeloDown","*")
 self:AddTransition("*","Stop","Stopped")
-self:HandleEvent(EVENTS.LandingAfterEjection)
+self:HandleEvent(EVENTS.LandingAfterEjection,self._EventHandler)
+self:HandleEvent(EVENTS.Ejection,self._EjectEventHandler)
 self:__Start(math.random(2,5))
 local text=string.format("%sAICSAR Version %s Starting",self.lid,self.version)
 self:I(text)
@@ -28038,10 +29665,12 @@ return self
 end
 function AICSAR:SetSRSRadio(OnOff,Path,Frequency,Modulation,SoundPath,Port)
 self:T(self.lid.."SetSRSRadio")
-self:T(self.lid.."SetSRSRadio to "..tostring(OnOff))
 self.SRSRadio=OnOff and true
+self.SRSTTSRadio=false
 self.SRSFrequency=Frequency or 243
 self.SRSPath=Path or"c:\\"
+self.SRS:SetLabel("ACSR")
+self.SRS:SetCoalition(self.coalition)
 self.SRSModulation=Modulation or radio.modulation.AM
 local soundpath=os.getenv('TMP').."\\DCS\\Mission\\l10n\\DEFAULT"
 self.SRSSoundPath=SoundPath or soundpath
@@ -28049,6 +29678,58 @@ self.SRSPort=Port or 5002
 if OnOff then
 self.SRS=MSRS:New(Path,Frequency,Modulation)
 self.SRS:SetPort(self.SRSPort)
+end
+return self
+end
+function AICSAR:SetSRSTTSRadio(OnOff,Path,Frequency,Modulation,Port,Voice,Culture,Gender,GoogleCredentials)
+self:T(self.lid.."SetSRSTTSRadio")
+self.SRSTTSRadio=OnOff and true
+self.SRSRadio=false
+self.SRSFrequency=Frequency or 243
+self.SRSPath=Path or"C:\\Program Files\\DCS-SimpleRadio-Standalone"
+self.SRSModulation=Modulation or radio.modulation.AM
+self.SRSPort=Port or 5002
+if OnOff then
+self.SRS=MSRS:New(Path,Frequency,Modulation,1)
+self.SRS:SetPort(self.SRSPort)
+self.SRS:SetCoalition(self.coalition)
+self.SRS:SetLabel("ACSR")
+self.SRS:SetVoice(Voice)
+self.SRS:SetCulture(Culture)
+self.SRS:SetGender(Gender)
+if GoogleCredentials then
+self.SRS:SetGoogle(GoogleCredentials)
+self.SRSGoogle=true
+end
+self.SRSQ=MSRSQUEUE:New(self.alias)
+end
+return self
+end
+function AICSAR:SetPilotTTSVoice(Voice,Culture,Gender)
+self:T(self.lid.."SetPilotTTSVoice")
+self.SRSPilotVoice=true
+self.SRSPilot=MSRS:New(self.SRSPath,self.SRSFrequency,self.SRSModulation,1)
+self.SRSPilot:SetCoalition(self.coalition)
+self.SRSPilot:SetVoice(Voice)
+self.SRSPilot:SetCulture(Culture or"en-US")
+self.SRSPilot:SetGender(Gender or"male")
+self.SRSPilot:SetLabel("PILOT")
+if self.SRS.google then
+self.SRSPilot:SetGoogle(self.SRS.google)
+end
+return self
+end
+function AICSAR:SetOperatorTTSVoice(Voice,Culture,Gender)
+self:T(self.lid.."SetOperatorTTSVoice")
+self.SRSOperatorVoice=true
+self.SRSOperator=MSRS:New(self.SRSPath,self.SRSFrequency,self.SRSModulation,1)
+self.SRSOperator:SetCoalition(self.coalition)
+self.SRSOperator:SetVoice(Voice)
+self.SRSOperator:SetCulture(Culture or"en-GB")
+self.SRSOperator:SetGender(Gender or"female")
+self.SRSPilot:SetLabel("RESCUE")
+if self.SRS.google then
+self.SRSOperator:SetGoogle(self.SRS.google)
 end
 return self
 end
@@ -28077,27 +29758,44 @@ local radioqueue=self.DCSRadioQueue
 radioqueue:NewTransmission(Soundfile,Duration,nil,2,nil,Subtitle,10)
 return self
 end
-function AICSAR:OnEventLandingAfterEjection(EventData)
-self:T(self.lid.."OnEventLandingAfterEjection ID="..EventData.id)
-if self.autoonoff then
-if self.playerset:CountAlive()>0 then
-return self
-end
-end
+function AICSAR:_EjectEventHandler(EventData)
 local _event=EventData
+if _event.IniPlayerName then
+self.PilotStore:Push(_event.IniPlayerName)
+self:T(self.lid.."Pilot Ejected: ".._event.IniPlayerName)
+if self.UseEventEject then
 local _LandingPos=COORDINATE:NewFromVec3(_event.initiator:getPosition().p)
 local _country=_event.initiator:getCountry()
 local _coalition=coalition.getCountryCoalition(_country)
+local data=UTILS.DeepCopy(EventData)
+Unit.destroy(_event.initiator)
+self:ScheduleOnce(self.Delay,self._DelayedSpawnPilot,self,_LandingPos,_coalition)
+end
+end
+return self
+end
+function AICSAR:_DelayedSpawnPilot(_LandingPos,_coalition)
 local distancetofarp=_LandingPos:Get2DDistance(self.farp:GetCoordinate())
 local Text,Soundfile,Soundlength,Subtitle=self.gettext:GetEntry("PILOTDOWN",self.locale)
 local text=""
-if _coalition==self.coalition then
-if self.verbose then
 local setting={}
 setting.MGRS_Accuracy=self.MGRS_Accuracy
 local location=_LandingPos:ToStringMGRS(setting)
+local msgtxt=Text..location.."!"
+location=string.gsub(location,"MGRS ","")
+location=string.gsub(location,"%s+","")
+location=string.gsub(location,"([%a%d])","%1;")
+location=string.gsub(location,"0","zero")
+location=string.gsub(location,"9","niner")
+location="MGRS;"..location
+if self.SRSGoogle then
+location=string.format("<say-as interpret-as='characters'>%s</say-as>",location)
+end
 text=Text..location.."!"
-MESSAGE:New(text,15,"AICSAR"):ToCoalition(self.coalition)
+local ttstext=Text..location.."! Repeat! "..location
+if _coalition==self.coalition then
+if self.verbose then
+MESSAGE:New(msgtxt,15,"AICSAR"):ToCoalition(self.coalition)
 end
 if self.SRSRadio then
 local sound=SOUNDFILE:New(Soundfile,self.SRSSoundPath,Soundlength)
@@ -28105,6 +29803,78 @@ sound:SetPlayWithSRS(true)
 self.SRS:PlaySoundFile(sound,2)
 elseif self.DCSRadio then
 self:DCSRadioBroadcast(Soundfile,Soundlength,text)
+elseif self.SRSTTSRadio then
+if self.SRSPilotVoice then
+self.SRSQ:NewTransmission(ttstext,nil,self.SRSPilot,nil,1)
+else
+self.SRSQ:NewTransmission(ttstext,nil,self.SRS,nil,1)
+end
+end
+end
+if _coalition==self.coalition and distancetofarp<=self.maxdistance then
+self:T(self.lid.."Spawning new Pilot")
+self.pilotindex=self.pilotindex+1
+local newpilot=SPAWN:NewWithAlias(self.template,string.format("%s-AICSAR-%d",self.template,self.pilotindex))
+newpilot:InitDelayOff()
+newpilot:OnSpawnGroup(
+function(grp)
+self.pilotqueue[self.pilotindex]=grp
+end
+)
+newpilot:SpawnFromCoordinate(_LandingPos)
+self:__PilotDown(2,_LandingPos,true)
+elseif _coalition==self.coalition and distancetofarp>self.maxdistance then
+self:T(self.lid.."Pilot out of reach")
+self:__PilotDown(2,_LandingPos,false)
+end
+return self
+end
+function AICSAR:_EventHandler(EventData,FromEject)
+self:T(self.lid.."OnEventLandingAfterEjection ID="..EventData.id)
+if self.autoonoff then
+if self.playerset:CountAlive()>0 then
+return self
+end
+end
+if self.UseEventEject and(not FromEject)then return self end
+local _event=EventData
+local _LandingPos=COORDINATE:NewFromVec3(_event.initiator:getPosition().p)
+local _country=_event.initiator:getCountry()
+local _coalition=coalition.getCountryCoalition(_country)
+local distancetofarp=_LandingPos:Get2DDistance(self.farp:GetCoordinate())
+local Text,Soundfile,Soundlength,Subtitle=self.gettext:GetEntry("PILOTDOWN",self.locale)
+local text=""
+local setting={}
+setting.MGRS_Accuracy=self.MGRS_Accuracy
+local location=_LandingPos:ToStringMGRS(setting)
+local msgtxt=Text..location.."!"
+location=string.gsub(location,"MGRS ","")
+location=string.gsub(location,"%s+","")
+location=string.gsub(location,"([%a%d])","%1;")
+location=string.gsub(location,"0","zero")
+location=string.gsub(location,"9","niner")
+location="MGRS;"..location
+if self.SRSGoogle then
+location=string.format("<say-as interpret-as='characters'>%s</say-as>",location)
+end
+text=Text..location.."!"
+local ttstext=Text..location.."! Repeat! "..location
+if _coalition==self.coalition then
+if self.verbose then
+MESSAGE:New(msgtxt,15,"AICSAR"):ToCoalition(self.coalition)
+end
+if self.SRSRadio then
+local sound=SOUNDFILE:New(Soundfile,self.SRSSoundPath,Soundlength)
+sound:SetPlayWithSRS(true)
+self.SRS:PlaySoundFile(sound,2)
+elseif self.DCSRadio then
+self:DCSRadioBroadcast(Soundfile,Soundlength,text)
+elseif self.SRSTTSRadio then
+if self.SRSPilotVoice then
+self.SRSQ:NewTransmission(ttstext,nil,self.SRSPilot,nil,1)
+else
+self.SRSQ:NewTransmission(ttstext,nil,self.SRS,nil,1)
+end
 end
 end
 if _coalition==self.coalition and distancetofarp<=self.maxdistance then
@@ -28143,6 +29913,8 @@ local pickupzone=ZONE_GROUP:New(Pilot:GetName(),Pilot,self.rescuezoneradius)
 local opstransport=OPSTRANSPORT:New(Pilot,pickupzone,self.farpzone)
 local helo=self:_GetFlight()
 helo.AICSARReserved=true
+helo:SetDefaultAltitude(self.Altitude or 1500)
+helo:SetDefaultSpeed(self.Speed or 100)
 helo:AddOpsTransport(opstransport)
 local function AICPickedUp(Helo,Cargo,Index)
 self:__PilotPickedUp(2,Helo,Cargo,Index)
@@ -28150,22 +29922,38 @@ end
 local function AICHeloDead(Helo,Index)
 self:__HeloDown(2,Helo,Index)
 end
+local function AICHeloUnloaded(Helo,OpsGroup)
+self:__PilotUnloaded(2,Helo,OpsGroup)
+end
 function helo:OnAfterLoadingDone(From,Event,To)
 AICPickedUp(helo,helo:GetCargoGroups(),Index)
 end
 function helo:OnAfterDead(From,Event,To)
 AICHeloDead(helo,Index)
 end
+function helo:OnAfterUnloaded(From,Event,To,OpsGroupCargo)
+AICHeloUnloaded(helo,OpsGroupCargo)
+end
 self.helos[Index]=helo
 return self
 end
 function AICSAR:_CheckInMashZone(Pilot)
-self:T(self.lid.."_CheckQueue")
+self:T(self.lid.."_CheckInMashZone")
 if Pilot:IsInZone(self.farpzone)then
 return true
 else
 return false
 end
+end
+function AICSAR:SetDefaultSpeed(Knots)
+self:T(self.lid.."SetDefaultSpeed")
+self.Speed=Knots or 100
+return self
+end
+function AICSAR:SetDefaultAltitude(Feet)
+self:T(self.lid.."SetDefaultAltitude")
+self.Altitude=Feet or 1500
+return self
 end
 function AICSAR:_CheckHelos()
 self:T(self.lid.."_CheckHelos")
@@ -28193,20 +29981,28 @@ count=count+1
 end
 return count
 end
-function AICSAR:_CheckQueue()
+function AICSAR:_CheckQueue(OpsGroup)
 self:T(self.lid.."_CheckQueue")
 for _index,_pilot in pairs(self.pilotqueue)do
 local classname=_pilot.ClassName and _pilot.ClassName or"NONE"
 local name=_pilot.GroupName and _pilot.GroupName or"NONE"
+local playername="John Doe"
 local helocount=self:_CountHelos()
 if _pilot and _pilot.ClassName and _pilot.ClassName=="GROUP"then
 local flightgroup=self.helos[_index]
 if self:_CheckInMashZone(_pilot)then
 self:T("Pilot".._pilot.GroupName.." rescued!")
-_pilot:Destroy(false)
+if OpsGroup then
+OpsGroup:Despawn(10)
+else
+_pilot:Destroy(true,10)
+end
 self.pilotqueue[_index]=nil
 self.rescued[_index]=true
-self:__PilotRescued(2)
+if self.PilotStore:Count()>0 then
+playername=self.PilotStore:Pull()
+end
+self:__PilotRescued(2,playername)
 if flightgroup then
 flightgroup.AICSARReserved=false
 end
@@ -28237,7 +30033,6 @@ return self
 end
 function AICSAR:onafterStatus(From,Event,To)
 self:T({From,Event,To})
-self:_CheckQueue()
 self:_CheckHelos()
 self:__Status(30)
 return self
@@ -28266,6 +30061,12 @@ sound:SetPlayWithSRS(true)
 self.SRS:PlaySoundFile(sound,2)
 elseif self.DCSRadio then
 self:DCSRadioBroadcast(Soundfile,Soundlength,text)
+elseif self.SRSTTSRadio then
+if self.SRSOperatorVoice then
+self.SRSQ:NewTransmission(text,nil,self.SRSOperator,nil,1)
+else
+self.SRSQ:NewTransmission(text,nil,self.SRS,nil,1)
+end
 end
 else
 local text,Soundfile,Soundlength,Subtitle=self.gettext:GetEntry("INITIALNOTOK",self.locale)
@@ -28279,8 +30080,15 @@ sound:SetPlayWithSRS(true)
 self.SRS:PlaySoundFile(sound,2)
 elseif self.DCSRadio then
 self:DCSRadioBroadcast(Soundfile,Soundlength,text)
+elseif self.SRSTTSRadio then
+if self.SRSOperatorVoice then
+self.SRSQ:NewTransmission(text,nil,self.SRSOperator,nil,1)
+else
+self.SRSQ:NewTransmission(text,nil,self.SRS,nil,1)
 end
 end
+end
+self:_CheckQueue()
 return self
 end
 function AICSAR:onafterPilotKIA(From,Event,To)
@@ -28295,6 +30103,8 @@ sound:SetPlayWithSRS(true)
 self.SRS:PlaySoundFile(sound,2)
 elseif self.DCSRadio then
 self:DCSRadioBroadcast(Soundfile,Soundlength,text)
+elseif self.SRSTTSRadio then
+self.SRSQ:NewTransmission(text,nil,self.SRS,nil,1)
 end
 return self
 end
@@ -28310,6 +30120,12 @@ sound:SetPlayWithSRS(true)
 self.SRS:PlaySoundFile(sound,2)
 elseif self.DCSRadio then
 self:DCSRadioBroadcast(Soundfile,Soundlength,text)
+elseif self.SRSTTSRadio then
+if self.SRSOperatorVoice then
+self.SRSQ:NewTransmission(text,nil,self.SRSOperator,nil,1)
+else
+self.SRSQ:NewTransmission(text,nil,self.SRS,nil,1)
+end
 end
 local findex=0
 local fhname=Helo:GetName()
@@ -28339,7 +30155,7 @@ end
 end
 return self
 end
-function AICSAR:onafterPilotRescued(From,Event,To)
+function AICSAR:onafterPilotRescued(From,Event,To,PilotName)
 self:T({From,Event,To})
 local text,Soundfile,Soundlength,Subtitle=self.gettext:GetEntry("PILOTRESCUED",self.locale)
 if self.verbose then
@@ -28351,7 +30167,14 @@ sound:SetPlayWithSRS(true)
 self.SRS:PlaySoundFile(sound,2)
 elseif self.DCSRadio then
 self:DCSRadioBroadcast(Soundfile,Soundlength,text)
+elseif self.SRSTTSRadio then
+self.SRSQ:NewTransmission(text,nil,self.SRS,nil,1)
 end
+return self
+end
+function AICSAR:onafterPilotUnloaded(From,Event,To,Helo,OpsGroup)
+self:T({From,Event,To})
+self:_CheckQueue(OpsGroup)
 return self
 end
 function AICSAR:onafterPilotPickedUp(From,Event,To,Helo,CargoTable,Index)
@@ -28366,6 +30189,8 @@ sound:SetPlayWithSRS(true)
 self.SRS:PlaySoundFile(sound,2)
 elseif self.DCSRadio then
 self:DCSRadioBroadcast(Soundfile,Soundlength,text)
+elseif self.SRSTTSRadio then
+self.SRSQ:NewTransmission(text,nil,self.SRS,nil,1)
 end
 local findex=0
 local fhname=Helo:GetName()
@@ -28973,7 +30798,7 @@ maxrange=32000,
 reloadtime=540,
 },
 }
-ARTY.version="1.2.0"
+ARTY.version="1.3.0"
 function ARTY:New(group,alias)
 local self=BASE:Inherit(self,FSM_CONTROLLABLE:New())
 if type(group)=="string"then
@@ -29017,6 +30842,7 @@ self.ismobile=true
 else
 self.ismobile=false
 end
+self.dtTrack=0.2
 self.Speed=self.SpeedMax*0.7
 self.DisplayName=self.DCSdesc.displayName
 self.IsArtillery=DCSunit:hasAttribute("Artillery")
@@ -29233,6 +31059,10 @@ end
 function ARTY:SetStatusInterval(interval)
 self:F({interval=interval})
 self.StatusInterval=interval or 10
+return self
+end
+function ARTY:SetTrackInterval(interval)
+self.dtTrack=interval or 0.2
 return self
 end
 function ARTY:SetWaitForShotTime(waittime)
@@ -29633,6 +31463,40 @@ text=text..string.format("******************************************************
 env.info(self.lid..text)
 MESSAGE:New(text,20):Clear():ToCoalitionIf(self.coalition,display)
 end
+function ARTY._FuncTrack(weapon,self,target)
+local _coord=weapon.coordinate
+local _dist=_coord:Get2DDistance(target.coord)
+local _destroyweapon=false
+self:T3(self.lid..string.format("ARTY %s weapon to target dist = %d m",self.groupname,_dist))
+if target.weapontype==ARTY.WeaponType.IlluminationShells then
+if _dist<target.radius then
+local _cr=target.coord:GetRandomCoordinateInRadius(target.radius)
+local _alt=_cr:GetLandHeight()+math.random(self.illuMinalt,self.illuMaxalt)
+local _ci=COORDINATE:New(_cr.x,_alt,_cr.z)
+_ci:IlluminationBomb(self.illuPower)
+_destroyweapon=true
+end
+elseif target.weapontype==ARTY.WeaponType.SmokeShells then
+if _dist<target.radius then
+local _cr=_coord:GetRandomCoordinateInRadius(_data.target.radius)
+_cr:Smoke(self.smokeColor)
+_destroyweapon=true
+end
+end
+if _destroyweapon then
+self:T2(self.lid..string.format("ARTY %s destroying shell, stopping timer.",self.groupname))
+weapon:Destroy()
+weapon.tracking=false
+end
+end
+function ARTY._FuncImpact(weapon,self,target)
+self:I(self.lid..string.format("ARTY %s weapon NOT ALIVE any more.",self.groupname))
+local _impactcoord=weapon:GetImpactCoordinate()
+if target.weapontype==ARTY.WeaponType.TacticalNukes then
+self:T(self.lid..string.format("ARTY %s triggering nuclear explosion in one second.",self.groupname))
+self:ScheduleOnce(1.0,ARTY._NuclearBlast,self,_impactcoord)
+end
+end
 function ARTY:OnEventShot(EventData)
 self:F(EventData)
 local _weapon=EventData.Weapon:getTypeName()
@@ -29650,62 +31514,17 @@ self.Nshots=self.Nshots+1
 local text=string.format("%s, fired shot %d of %d with weapon %s on target %s.",self.alias,self.Nshots,self.currentTarget.nshells,_weaponName,self.currentTarget.name)
 self:T(self.lid..text)
 MESSAGE:New(text,5):Clear():ToAllIf(self.report or self.Debug)
-local _lastpos={x=0,y=0,z=0}
-local function _TrackWeapon(_data)
-local _weaponalive,_currpos=pcall(
-function()
-return _data.weapon:getPoint()
-end)
-self:T3(self.lid..string.format("ARTY %s: Weapon still in air: %s",self.groupname,tostring(_weaponalive)))
-local _destroyweapon=false
-if _weaponalive then
-_lastpos={x=_currpos.x,y=_currpos.y,z=_currpos.z}
-local _coord=COORDINATE:NewFromVec3(_lastpos)
-local _dist=_coord:Get2DDistance(_data.target.coord)
-self:T3(self.lid..string.format("ARTY %s weapon to target dist = %d m",self.groupname,_dist))
-if _data.target.weapontype==ARTY.WeaponType.IlluminationShells then
-if _dist<_data.target.radius then
-local _cr=_data.target.coord:GetRandomCoordinateInRadius(_data.target.radius)
-local _alt=_cr:GetLandHeight()+math.random(self.illuMinalt,self.illuMaxalt)
-local _ci=COORDINATE:New(_cr.x,_alt,_cr.z)
-_ci:IlluminationBomb(self.illuPower)
-_destroyweapon=true
-end
-elseif _data.target.weapontype==ARTY.WeaponType.SmokeShells then
-if _dist<_data.target.radius then
-local _cr=_coord:GetRandomCoordinateInRadius(_data.target.radius)
-_cr:Smoke(self.smokeColor)
-_destroyweapon=true
-end
-end
-if _destroyweapon then
-self:T2(self.lid..string.format("ARTY %s destroying shell, stopping timer.",self.groupname))
-_data.weapon:destroy()
-return nil
-else
-local dt=0.02
-self:T3(self.lid..string.format("ARTY %s tracking weapon again in %.3f seconds",self.groupname,dt))
-return timer.getTime()+dt
-end
-else
-local _impactcoord=COORDINATE:NewFromVec3(_lastpos)
-self:I(self.lid..string.format("ARTY %s weapon NOT ALIVE any more.",self.groupname))
-if _data.target.weapontype==ARTY.WeaponType.TacticalNukes then
-self:T(self.lid..string.format("ARTY %s triggering nuclear explosion in one second.",self.groupname))
-SCHEDULER:New(nil,ARTY._NuclearBlast,{self,_impactcoord},1.0)
-end
-return nil
-end
-end
 local _tracknuke=self.currentTarget.weapontype==ARTY.WeaponType.TacticalNukes and self.Nukes>0
 local _trackillu=self.currentTarget.weapontype==ARTY.WeaponType.IlluminationShells and self.Nillu>0
 local _tracksmoke=self.currentTarget.weapontype==ARTY.WeaponType.SmokeShells and self.Nsmoke>0
 if _tracknuke or _trackillu or _tracksmoke then
 self:T(self.lid..string.format("ARTY %s: Tracking of weapon starts in two seconds.",self.groupname))
-local _peter={}
-_peter.weapon=EventData.weapon
-_peter.target=UTILS.DeepCopy(self.currentTarget)
-timer.scheduleFunction(_TrackWeapon,_peter,timer.getTime()+2.0)
+local weapon=WEAPON:New(EventData.weapon)
+weapon:SetTimeStepTrack(self.dtTrack)
+local target=UTILS.DeepCopy(self.currentTarget)
+weapon:SetFuncTrack(ARTY._FuncTrack,self,target)
+weapon:SetFuncImpact(ARTY._FuncImpact,self,target)
+weapon:StartTrack(2)
 end
 local _nammo,_nshells,_nrockets,_nmissiles=self:GetAmmo()
 if self.currentTarget.weapontype==ARTY.WeaponType.TacticalNukes then
@@ -30365,7 +32184,6 @@ end
 end
 function ARTY:onafterRespawn(Controllable,From,Event,To)
 self:_EventFromTo("onafterRespawn",Event,From,To)
-env.info("FF Respawning arty group")
 local group=self.Controllable
 self.Controllable=group:Respawn()
 self.respawning=false
@@ -30523,8 +32341,9 @@ local units=self.Controllable:GetUnits()
 if units==nil then
 return nammo,nshells,nrockets,nmissiles
 end
-for _,unit in pairs(units)do
-if unit and unit:IsAlive()then
+for _,_unit in pairs(units)do
+local unit=_unit
+if unit then
 local text=string.format("ARTY group %s - unit %s:\n",self.groupname,unit:GetName())
 local ammotable=unit:GetAmmo()
 if ammotable~=nil then
@@ -34375,7 +36194,7 @@ DetectionZoneRange=nil,
 }
 function DETECTION_AREAS:New(DetectionSetGroup,DetectionZoneRange)
 local self=BASE:Inherit(self,DETECTION_BASE:New(DetectionSetGroup))
-self.DetectionZoneRange=DetectionZoneRange
+self.DetectionZoneRange=DetectionZoneRange or 5000
 self._SmokeDetectedUnits=false
 self._FlareDetectedUnits=false
 self._SmokeDetectedZones=false
@@ -35568,6 +37387,7 @@ return false
 end
 FOX={
 ClassName="FOX",
+verbose=0,
 Debug=false,
 lid=nil,
 menuadded={},
@@ -35593,7 +37413,7 @@ dt00=0.01,
 }
 FOX.MenuF10={}
 FOX.MenuF10Root=nil
-FOX.version="0.6.1"
+FOX.version="0.8.0"
 function FOX:New()
 self.lid="FOX | "
 local self=BASE:Inherit(self,FSM:New())
@@ -35676,6 +37496,10 @@ function FOX:SetEnableF10Menu()
 self.menudisabled=false
 return self
 end
+function FOX:SetVerbosity(VerbosityLevel)
+self.verbose=VerbosityLevel or 0
+return self
+end
 function FOX:SetDefaultMissileDestruction(switch)
 if switch==nil then
 self.destroy=false
@@ -35720,7 +37544,9 @@ function FOX:onafterStatus(From,Event,To)
 local fsmstate=self:GetState()
 local time=timer.getAbsTime()
 local clock=UTILS.SecondsToClock(time)
+if self.verbose>=1 then
 self:I(self.lid..string.format("Missile trainer status %s: %s",clock,fsmstate))
+end
 self:_CheckMissileStatus()
 self:_CheckPlayers()
 if fsmstate=="Running"then
@@ -35786,7 +37612,9 @@ end
 if#self.missiles==0 then
 text=text.." none"
 end
+if self.verbose>=2 then
 self:I(self.lid..text)
+end
 for i=#self.missiles,1,-1 do
 local missile=self.missiles[i]
 if missile and not missile.active then
@@ -35802,7 +37630,7 @@ if targetunit and targetunit:IsAlive()then
 local targetgroup=targetunit:GetGroup()
 if targetgroup then
 local targetname=targetgroup:GetName()
-for _,_group in pairs(self.protectedset:GetSetObjects())do
+for _,_group in pairs(self.protectedset:GetSet())do
 local group=_group
 if group then
 local groupname=group:GetName()
@@ -35815,42 +37643,11 @@ end
 end
 return false
 end
-function FOX:onafterMissileLaunch(From,Event,To,missile)
-local text=string.format("FOX: Tracking missile %s(%s) - target %s - shooter %s",missile.missileType,missile.missileName,tostring(missile.targetName),missile.shooterName)
-self:I(FOX.lid..text)
-MESSAGE:New(text,10):ToAllIf(self.Debug)
-for _,_player in pairs(self.players)do
-local player=_player
-local playerUnit=player.unit
-if playerUnit and playerUnit:IsAlive()and player.coalition~=missile.shooterCoalition then
-local distance=playerUnit:GetCoordinate():Get3DDistance(missile.shotCoord)
-local bearing=playerUnit:GetCoordinate():HeadingTo(missile.shotCoord)
-if player.launchalert then
-if(missile.targetPlayer and player.unitname==missile.targetPlayer.unitname)or(distance<missile.missileRange)then
-local text=string.format("Missile launch detected! Distance %.1f NM, bearing %03d°.",UTILS.MetersToNM(distance),bearing)
-self:ScheduleOnce(5,FOX._SayNotchingHeadings,self,player,missile.weapon)
-MESSAGE:New(text,5,"ALERT"):ToClient(player.client)
-end
-end
-if player.marklaunch then
-local text=string.format("Missile launch coordinates:\n%s\n%s",missile.shotCoord:ToStringLLDMS(),missile.shotCoord:ToStringBULLS(player.coalition))
-missile.shotCoord:MarkToGroup(text,player.group)
-end
-end
-end
-local _lastBombPos={x=0,y=0,z=0}
-local missileCoord=nil
-local target=nil
-local function trackMissile(_ordnance)
-local _status,_bombPos=pcall(
-function()
-return _ordnance:getPoint()
-end)
-if _status then
-_lastBombPos={x=_bombPos.x,y=_bombPos.y,z=_bombPos.z}
-missileCoord=COORDINATE:NewFromVec3(_lastBombPos)
-local missileVelocity=UTILS.VecNorm(_ordnance:getVelocity())
+function FOX._FuncTrack(weapon,self,missile)
+local missileCoord=missile.missileCoord:UpdateFromVec3(weapon.vec3)
+local missileVelocity=weapon:GetSpeed()
 self:GetMissileTarget(missile)
+local target=nil
 if missile.targetUnit then
 if missile.targetPlayer then
 if missile.targetPlayer.destroy==true then
@@ -35891,9 +37688,9 @@ for _,_unit in pairs(group:GetUnits())do
 local unit=_unit
 if unit and unit:IsAlive()then
 if unit:GetName()~=missile.shooterName then
-local playerCoord=unit:GetCoordinate()
-local dist=missileCoord:Get3DDistance(playerCoord)
-local Dshooter2player=playerCoord:Get3DDistance(missile.shotCoord)
+local playerVec3=unit:GetVec3()
+local dist=missileCoord:Get3DDistance(playerVec3)
+local Dshooter2player=missile.shotCoord:Get3DDistance(playerVec3)
 if(mindist==nil or dist<mindist)and(Dshooter2player<=missile.missileRange*1.5 or dist<=self.explosiondist)then
 mindist=dist
 target=unit
@@ -35908,14 +37705,14 @@ self:T(self.lid..string.format("Missile %s with NO explicit target got closest u
 end
 end
 if target then
-local targetCoord=target:GetCoordinate()
-local distance=missileCoord:Get3DDistance(targetCoord)
+local targetVec3=target:GetVec3()
+local distance=missileCoord:Get3DDistance(targetVec3)
 local distShooter=nil
 if missile.shooterUnit and missile.shooterUnit:IsAlive()then
-distShooter=missileCoord:Get3DDistance(missile.shooterUnit:GetCoordinate())
+distShooter=missileCoord:Get3DDistance(missile.shooterUnit:GetVec3())
 end
 if self.Debug then
-local bearing=targetCoord:HeadingTo(missileCoord)
+local bearing=missileCoord:HeadingTo(targetVec3)
 local eta=distance/missileVelocity
 self:I(self.lid..string.format("Missile %s Target %s: Distance = %.1f m, v=%.1f m/s, bearing=%03d°, ETA=%.1f sec",missile.missileType,target:GetName(),distance,missileVelocity,bearing,eta))
 end
@@ -35923,14 +37720,13 @@ local destroymissile=distance<=self.explosiondist
 if self.explosiondist2 and distance<=self.explosiondist2 and not destroymissile then
 destroymissile=missile.explosive>=self.bigmissilemass
 end
-if destroymissile and self:_CheckCoordSafe(targetCoord)then
+if destroymissile and self:_CheckCoordSafe(targetVec3)then
 self:I(self.lid..string.format("Destroying missile %s(%s) fired by %s aimed at %s [player=%s] at distance %.1f m",
 missile.missileType,missile.missileName,missile.shooterName,target:GetName(),tostring(missile.targetPlayer~=nil),distance))
-_ordnance:destroy()
+weapon:Destroy()
 missile.active=false
 if self.Debug then
 missileCoord:SmokeRed()
-targetCoord:SmokeGreen()
 end
 self:MissileDestroyed(missile)
 if self.explosionpower>0 and distance>50 and(distShooter==nil or(distShooter and distShooter>50))then
@@ -35941,7 +37737,6 @@ local text=string.format("Destroying missile. %s",self:_DeadText())
 MESSAGE:New(text,10):ToGroup(target:GetGroup())
 missile.targetPlayer.dead=missile.targetPlayer.dead+1
 end
-return nil
 else
 local dt=1.0
 if distance>50000 then
@@ -35955,15 +37750,16 @@ dt=self.dt01
 else
 dt=self.dt00
 end
-return timer.getTime()+dt
+weapon:SetTimeStepTrack(dt)
 end
 else
 self:T(self.lid..string.format("Missile %s(%s) fired by %s has no current target. Checking back in 0.1 sec.",missile.missileType,missile.missileName,missile.shooterName))
-return timer.getTime()+0.1
+weapon:SetTimeStepTrack(0.1)
 end
-else
-if target then
-local player=self:_GetPlayerFromUnit(target)
+end
+function FOX._FuncImpact(weapon,self,missile)
+if missile.targetPlayer then
+local player=missile.targetPlayer
 if player and player.unit:IsAlive()then
 local text=string.format("Missile defeated. Well done, %s!",player.name)
 MESSAGE:New(text,10):ToClient(player.client)
@@ -35972,11 +37768,35 @@ end
 end
 missile.active=false
 self:T(FOX.lid..string.format("Terminating missile track timer."))
-return nil
+weapon.tracking=false
+end
+function FOX:onafterMissileLaunch(From,Event,To,missile)
+local text=string.format("FOX: Tracking missile %s(%s) - target %s - shooter %s",missile.missileType,missile.missileName,tostring(missile.targetName),missile.shooterName)
+self:I(FOX.lid..text)
+MESSAGE:New(text,10):ToAllIf(self.Debug)
+for _,_player in pairs(self.players)do
+local player=_player
+local playerUnit=player.unit
+if playerUnit and playerUnit:IsAlive()and player.coalition~=missile.shooterCoalition then
+local distance=playerUnit:GetCoordinate():Get3DDistance(missile.shotCoord)
+local bearing=playerUnit:GetCoordinate():HeadingTo(missile.shotCoord)
+if player.launchalert then
+if(missile.targetPlayer and player.unitname==missile.targetPlayer.unitname)or(distance<missile.missileRange)then
+local text=string.format("Missile launch detected! Distance %.1f NM, bearing %03d°.",UTILS.MetersToNM(distance),bearing)
+self:ScheduleOnce(5,FOX._SayNotchingHeadings,self,player,missile.weapon)
+MESSAGE:New(text,5,"ALERT"):ToClient(player.client)
 end
 end
+if player.marklaunch then
+local text=string.format("Missile launch coordinates:\n%s\n%s",missile.shotCoord:ToStringLLDMS(),missile.shotCoord:ToStringBULLS(player.coalition))
+missile.shotCoord:MarkToGroup(text,player.group)
+end
+end
+end
+missile.Weapon:SetFuncTrack(FOX._FuncTrack,self,missile)
+missile.Weapon:SetFuncImpact(FOX._FuncImpact,self,missile)
 self:T(FOX.lid..string.format("Tracking of missile starts in 0.0001 seconds."))
-timer.scheduleFunction(trackMissile,missile.weapon,timer.getTime()+0.0001)
+missile.Weapon:StartTrack(0.0001)
 end
 function FOX:OnEventPlayerEnterAircraft(EventData)
 end
@@ -36047,19 +37867,16 @@ missile.targetName=targetName
 end
 function FOX:OnEventShot(EventData)
 self:T2({eventshot=EventData})
-if EventData.Weapon==nil then
+if EventData.Weapon==nil or EventData.IniDCSUnit==nil or EventData.weapon==nil then
 return
 end
-if EventData.IniDCSUnit==nil then
-return
-end
-local _weapon=EventData.WeaponName
+local weapon=WEAPON:New(EventData.weapon)
+local _weapon=weapon:GetTypeName()
 local _target=EventData.Weapon:getTarget()
 local _targetName="unknown"
 local _targetUnit=nil
-local desc=EventData.Weapon:getDesc()
+local desc=weapon.desc
 self:T2({desc=desc})
-local weaponcategory=desc.category
 local missilecategory=desc.missileCategory
 local missilerange=nil
 if missilecategory then
@@ -36068,19 +37885,20 @@ end
 self:T2(FOX.lid.."EVENT SHOT: FOX")
 self:T2(FOX.lid..string.format("EVENT SHOT: Ini unit     = %s",tostring(EventData.IniUnitName)))
 self:T2(FOX.lid..string.format("EVENT SHOT: Ini group    = %s",tostring(EventData.IniGroupName)))
-self:T2(FOX.lid..string.format("EVENT SHOT: Weapon type  = %s",tostring(_weapon)))
-self:T2(FOX.lid..string.format("EVENT SHOT: Weapon categ = %s",tostring(weaponcategory)))
+self:T2(FOX.lid..string.format("EVENT SHOT: Weapon type  = %s",tostring(weapon:GetTypeName())))
+self:T2(FOX.lid..string.format("EVENT SHOT: Weapon categ = %s",tostring(weapon:GetCategory())))
 self:T2(FOX.lid..string.format("EVENT SHOT: Missil categ = %s",tostring(missilecategory)))
 self:T2(FOX.lid..string.format("EVENT SHOT: Missil range = %s",tostring(missilerange)))
 if not self:_CheckCoordLaunch(EventData.IniUnit:GetCoordinate())then
 self:T(self.lid.."Missile was not fired in launch zone. No tracking!")
 return
 end
-local _track=weaponcategory==1 and missilecategory and(missilecategory==1 or missilecategory==2 or missilecategory==6)
+local _track=weapon:IsMissile()and missilecategory and(missilecategory==1 or missilecategory==2 or missilecategory==6)
 if _track then
 local missile={}
 missile.active=true
 missile.weapon=EventData.weapon
+missile.Weapon=weapon
 missile.missileType=_weapon
 missile.missileRange=missilerange
 missile.missileName=EventData.weapon:getName()
@@ -36093,6 +37911,7 @@ missile.shotCoord=EventData.IniUnit:GetCoordinate()
 missile.fuseDist=desc.fuseDist
 missile.explosive=desc.warhead.explosiveMass or desc.warhead.shapedExplosiveMass
 missile.targetOrig=missile.targetName
+missile.missileCoord=COORDINATE:New(0,0,0)
 self:GetMissileTarget(missile)
 self:I(FOX.lid..string.format("EVENT SHOT: Shooter=%s %s(%s) ==> Target=%s, fuse dist=%s, explosive=%s",
 tostring(missile.shooterName),tostring(missile.missileType),tostring(missile.missileName),tostring(missile.targetName),tostring(missile.fuseDist),tostring(missile.explosive)))
@@ -36254,7 +38073,8 @@ return true
 end
 for _,_zone in pairs(self.safezones)do
 local zone=_zone
-local inzone=zone:IsCoordinateInZone(coord)
+local Vec2={x=coord.x,y=coord.z}
+local inzone=zone:IsVec2InZone(Vec2)
 if inzone then
 return true
 end
@@ -36267,7 +38087,8 @@ return true
 end
 for _,_zone in pairs(self.launchzones)do
 local zone=_zone
-local inzone=zone:IsCoordinateInZone(coord)
+local Vec2={x=coord.x,y=coord.z}
+local inzone=zone:IsVec2InZone(Vec2)
 if inzone then
 return true
 end
@@ -37851,9 +39672,10 @@ mrefresh=120,
 talt=3,
 chatty=true,
 eventsmoose=true,
+reportplayername=false,
 }
 PSEUDOATC.id="PseudoATC | "
-PSEUDOATC.version="0.9.2"
+PSEUDOATC.version="0.9.5"
 function PSEUDOATC:New()
 local self=BASE:Inherit(self,BASE:New())
 self:E(PSEUDOATC.id..string.format("PseudoATC version %s",PSEUDOATC.version))
@@ -37888,6 +39710,10 @@ self.chatty=false
 end
 function PSEUDOATC:SetMessageDuration(duration)
 self.mdur=duration or 30
+end
+function PSEUDOATC:SetReportPlayername()
+self.reportplayername=true
+return self
 end
 function PSEUDOATC:SetMenuRefresh(interval)
 self.mrefresh=interval or 120
@@ -38028,12 +39854,14 @@ self:F2({unit=unit,place=place})
 local group=unit:GetGroup()
 local GID=group:GetID()
 local UID=unit:GetDCSObject():getID()
-local PlayerName=self.group[GID].player[UID].playername
-local UnitName=self.group[GID].player[UID].unitname
-local GroupName=self.group[GID].player[UID].groupname
-local text=string.format("Player %s in unit %s of group %s (id=%d) landed at %s.",PlayerName,UnitName,GroupName,GID,place)
+local PlayerName=unit:GetPlayerName()or"Ghost"
+local UnitName=unit:GetName()or"Ghostplane"
+local GroupName=group:GetName()or"Ghostgroup"
+if self.Debug then
+local text=string.format("Player %s in unit %s of group %s landed at %s.",PlayerName,UnitName,GroupName,place)
 self:T(PSEUDOATC.id..text)
 MESSAGE:New(text,30):ToAllIf(self.Debug)
+end
 self:AltitudeTimerStop(GID,UID)
 if place and self.chatty then
 local text=string.format("Touchdown! Welcome to %s pilot %s. Have a nice day!",place,PlayerName)
@@ -38043,17 +39871,20 @@ end
 function PSEUDOATC:PlayerTakeOff(unit,place)
 self:F2({unit=unit,place=place})
 local group=unit:GetGroup()
-local GID=group:GetID()
-local UID=unit:GetDCSObject():getID()
-local PlayerName=self.group[GID].player[UID].playername
-local CallSign=self.group[GID].player[UID].callsign
-local UnitName=self.group[GID].player[UID].unitname
-local GroupName=self.group[GID].player[UID].groupname
-local text=string.format("Player %s in unit %s of group %s (id=%d) took off at %s.",PlayerName,UnitName,GroupName,GID,place)
+local PlayerName=unit:GetPlayerName()or"Ghost"
+local UnitName=unit:GetName()or"Ghostplane"
+local GroupName=group:GetName()or"Ghostgroup"
+local CallSign=unit:GetCallsign()or"Ghost11"
+if self.Debug then
+local text=string.format("Player %s in unit %s of group %s took off at %s.",PlayerName,UnitName,GroupName,place)
 self:T(PSEUDOATC.id..text)
 MESSAGE:New(text,30):ToAllIf(self.Debug)
+end
 if place and self.chatty then
 local text=string.format("%s, %s, you are airborne. Have a safe trip!",place,CallSign)
+if self.reportplayername then
+text=string.format("%s, %s, you are airborne. Have a safe trip!",place,PlayerName)
+end
 MESSAGE:New(text,self.mdur):ToGroup(group)
 end
 end
@@ -38062,7 +39893,7 @@ self:F({unit=unit})
 local group=unit:GetGroup()
 local GID=group:GetID()
 local UID=unit:GetDCSObject():getID()
-if self.group[GID].player[UID]then
+if self.group[GID]and self.group[GID].player and self.group[GID].player[UID]then
 local PlayerName=self.group[GID].player[UID].playername
 local CallSign=self.group[GID].player[UID].callsign
 local UnitName=self.group[GID].player[UID].unitname
@@ -38156,6 +39987,9 @@ break
 end
 local pos=COORDINATE:New(wp.x,wp.alt,wp.y)
 local name=string.format("Waypoint %d",i-1)
+if wp.name and wp.name~=""then
+name=string.format("Waypoint %s",wp.name)
+end
 local submenu=missionCommands.addSubMenuForGroup(GID,name,self.group[GID].player[UID].menu_waypoints)
 missionCommands.addCommandForGroup(GID,"Weather Report",submenu,self.ReportWeather,self,GID,UID,pos,name)
 missionCommands.addCommandForGroup(GID,"Request BR",submenu,self.ReportBR,self,GID,UID,pos,name)
@@ -38229,12 +40063,16 @@ if unit and unit:IsAlive()then
 local position=unit:GetCoordinate()
 local height=get_AGL(position)
 local callsign=unit:GetCallsign()
+local PlayerName=self.group[GID].player[UID].playername
 local settings=_DATABASE:GetPlayerSettings(self.group[GID].player[UID].playername)or _SETTINGS
 local Hs=string.format("%d ft",UTILS.MetersToFeet(height))
 if settings:IsMetric()then
 Hs=string.format("%d m",height)
 end
 local _text=string.format("%s, your altitude is %s AGL.",callsign,Hs)
+if self.reportplayername then
+_text=string.format("%s, your altitude is %s AGL.",PlayerName,Hs)
+end
 if _clear==false then
 _text=_text..string.format(" FL%03d.",position.y/30.48)
 end
@@ -38358,7 +40196,6 @@ illuminationminalt=500,
 illuminationmaxalt=1000,
 scorebombdistance=1000,
 TdelaySmoke=3.0,
-eventmoose=true,
 trackbombs=true,
 trackrockets=true,
 trackmissiles=true,
@@ -38389,7 +40226,8 @@ foulline=610
 RANGE.TargetType={
 UNIT="Unit",
 STATIC="Static",
-COORD="Coordinate"
+COORD="Coordinate",
+SCENERY="Scenery"
 }
 RANGE.Sound={
 RC0={filename="RC-0.ogg",duration=0.60},
@@ -38440,13 +40278,13 @@ IRExitRange={filename="IR-ExitRange.ogg",duration=3.10},
 RANGE.Names={}
 RANGE.MenuF10={}
 RANGE.MenuF10Root=nil
-RANGE.version="2.5.0"
+RANGE.version="2.7.0"
 function RANGE:New(RangeName)
 local self=BASE:Inherit(self,FSM:New())
 self.rangename=RangeName or"Practice Range"
-self.id=string.format("RANGE %s | ",self.rangename)
+self.lid=string.format("RANGE %s | ",self.rangename)
 local text=string.format("Script version %s - creating new RANGE object %s.",RANGE.version,self.rangename)
-self:I(self.id..text)
+self:I(self.lid..text)
 self:SetDefaultPlayerSmokeBomb()
 self:SetStartState("Stopped")
 self:AddTransition("Stopped","Start","Running")
@@ -38485,28 +40323,21 @@ self.location=_location
 end
 if self.location==nil then
 local text=string.format("ERROR! No range location found. Number of strafe targets = %d. Number of bomb targets = %d.",self.nstrafetargets,self.nbombtargets)
-self:E(self.id..text)
+self:E(self.lid..text)
 return
 end
 if self.rangezone==nil then
 self.rangezone=ZONE_RADIUS:New(self.rangename,{x=self.location.x,y=self.location.z},self.rangeradius)
 end
 local text=string.format("Starting RANGE %s. Number of strafe targets = %d. Number of bomb targets = %d.",self.rangename,self.nstrafetargets,self.nbombtargets)
-self:I(self.id..text)
-if self.eventmoose then
-self:T(self.id.."Events are handled by MOOSE.")
+self:I(self.lid..text)
 self:HandleEvent(EVENTS.Birth)
 self:HandleEvent(EVENTS.Hit)
 self:HandleEvent(EVENTS.Shot)
-else
-self:T(self.id.."Events are handled directly by DCS.")
-world.addEventHandler(self)
-end
 for _,_target in pairs(self.bombingTargets)do
-local _static=_target.type==RANGE.TargetType.STATIC
-if _target.move and _static==false and _target.speed>1 then
-local unit=_target.target
-_target.target:PatrolZones({self.rangezone},_target.speed*0.75,"Off road")
+local target=_target
+if target.move and target.type==RANGE.TargetType.UNIT and target.speed>1 then
+target.target:PatrolZones({self.rangezone},target.speed*0.75,ENUMS.Formation.Vehicle.OffRoad)
 end
 end
 if self.rangecontrolfreq and not self.useSRS then
@@ -38695,6 +40526,10 @@ self.instructmsrs:SetPort(Port)
 self.instructmsrs:SetCoalition(Coalition or coalition.side.BLUE)
 self.instructmsrs:SetLabel("RANGEI")
 self.instructsrsQ=MSRSQUEUE:New("INSTRUCT")
+if PathToGoogleKey then
+self.controlmsrs:SetGoogle(PathToGoogleKey)
+self.instructmsrs:SetGoogle(PathToGoogleKey)
+end
 else
 self:E(self.lid..string.format("ERROR: No SRS path specified!"))
 end
@@ -38743,7 +40578,7 @@ return self
 end
 function RANGE:SetSoundfilesPath(path)
 self.soundpath=tostring(path or"Range Soundfiles/")
-self:I(self.id..string.format("Setting sound files path to %s",self.soundpath))
+self:I(self.lid..string.format("Setting sound files path to %s",self.soundpath))
 return self
 end
 function RANGE:AddStrafePit(targetnames,boxlength,boxwidth,heading,inverseheading,goodpass,foulline)
@@ -38758,14 +40593,14 @@ for _i,_name in ipairs(targetnames)do
 local _isstatic=self:_CheckStatic(_name)
 local unit=nil
 if _isstatic==true then
-self:T(self.id..string.format("Adding STATIC object %s as strafe target #%d.",_name,_i))
+self:T(self.lid..string.format("Adding STATIC object %s as strafe target #%d.",_name,_i))
 unit=STATIC:FindByName(_name,false)
 elseif _isstatic==false then
-self:T(self.id..string.format("Adding UNIT object %s as strafe target #%d.",_name,_i))
+self:T(self.lid..string.format("Adding UNIT object %s as strafe target #%d.",_name,_i))
 unit=UNIT:FindByName(_name)
 else
 local text=string.format("ERROR! Could not find ANY strafe target object with name %s.",_name)
-self:E(self.id..text)
+self:E(self.lid..text)
 end
 if unit then
 table.insert(_targets,unit)
@@ -38777,7 +40612,7 @@ end
 end
 if ntargets==0 then
 local text=string.format("ERROR! No strafe target could be found when calling RANGE:AddStrafePit() for range %s",self.rangename)
-self:E(self.id..text)
+self:E(self.lid..text)
 return
 end
 local l=boxlength or RANGE.Defaults.boxlength
@@ -38819,7 +40654,7 @@ st.smokepoints=p
 st.heading=heading
 table.insert(self.strafeTargets,st)
 local text=string.format("Adding new strafe target %s with %d targets: heading = %03d, box_L = %.1f, box_W = %.1f, goodpass = %d, foul line = %.1f",_name,ntargets,heading,l,w,goodpass,foulline)
-self:T(self.id..text)
+self:T(self.lid..text)
 return self
 end
 function RANGE:AddStrafePitGroup(group,boxlength,boxwidth,heading,inverseheading,goodpass,foulline)
@@ -38848,14 +40683,14 @@ for _,name in pairs(targetnames)do
 local _isstatic=self:_CheckStatic(name)
 if _isstatic==true then
 local _static=STATIC:FindByName(name)
-self:T2(self.id..string.format("Adding static bombing target %s with hit range %d.",name,goodhitrange,false))
+self:T2(self.lid..string.format("Adding static bombing target %s with hit range %d.",name,goodhitrange,false))
 self:AddBombingTargetUnit(_static,goodhitrange)
 elseif _isstatic==false then
 local _unit=UNIT:FindByName(name)
-self:T2(self.id..string.format("Adding unit bombing target %s with hit range %d.",name,goodhitrange,randommove))
+self:T2(self.lid..string.format("Adding unit bombing target %s with hit range %d.",name,goodhitrange,randommove))
 self:AddBombingTargetUnit(_unit,goodhitrange,randommove)
 else
-self:E(self.id..string.format("ERROR! Could not find bombing target %s.",name))
+self:E(self.lid..string.format("ERROR! Could not find bombing target %s.",name))
 end
 end
 return self
@@ -38869,11 +40704,11 @@ if randommove==nil or _isstatic==true then
 randommove=false
 end
 if _isstatic==true then
-self:I(self.id..string.format("Adding STATIC bombing target %s with good hit range %d. Random move = %s.",name,goodhitrange,tostring(randommove)))
+self:I(self.lid..string.format("Adding STATIC bombing target %s with good hit range %d. Random move = %s.",name,goodhitrange,tostring(randommove)))
 elseif _isstatic==false then
-self:I(self.id..string.format("Adding UNIT bombing target %s with good hit range %d. Random move = %s.",name,goodhitrange,tostring(randommove)))
+self:I(self.lid..string.format("Adding UNIT bombing target %s with good hit range %d. Random move = %s.",name,goodhitrange,tostring(randommove)))
 else
-self:E(self.id..string.format("ERROR! No bombing target with name %s could be found. Carefully check all UNIT and STATIC names defined in the mission editor!",name))
+self:E(self.lid..string.format("ERROR! No bombing target with name %s could be found. Carefully check all UNIT and STATIC names defined in the mission editor!",name))
 end
 local speed=0
 if _isstatic==false then
@@ -38906,6 +40741,25 @@ target.type=RANGE.TargetType.COORD
 table.insert(self.bombingTargets,target)
 return self
 end
+function RANGE:AddBombingTargetScenery(scenery,goodhitrange)
+local name=scenery:GetName()
+goodhitrange=goodhitrange or RANGE.Defaults.goodhitrange
+if name then
+self:I(self.lid..string.format("Adding SCENERY bombing target %s with good hit range %d",name,goodhitrange))
+else
+self:E(self.lid..string.format("ERROR! No bombing target with name %s could be found!",name))
+end
+local target={}
+target.name=name
+target.target=scenery
+target.goodhitrange=goodhitrange
+target.move=false
+target.speed=0
+target.coordinate=scenery:GetCoordinate()
+target.type=RANGE.TargetType.SCENERY
+table.insert(self.bombingTargets,target)
+return self
+end
 function RANGE:AddBombingTargetGroup(group,goodhitrange,randommove)
 self:F({group=group,goodhitrange=goodhitrange,randommove=randommove})
 if group then
@@ -38928,7 +40782,7 @@ pit=STATIC:FindByName(namepit,false)
 elseif _staticpit==false then
 pit=UNIT:FindByName(namepit)
 else
-self:E(self.id..string.format("ERROR! Pit object %s could not be found in GetFoullineDistance function. Check the name in the ME.",namepit))
+self:E(self.lid..string.format("ERROR! Pit object %s could not be found in GetFoullineDistance function. Check the name in the ME.",namepit))
 end
 local foul=nil
 if _staticfoul==true then
@@ -38936,78 +40790,31 @@ foul=STATIC:FindByName(namefoulline,false)
 elseif _staticfoul==false then
 foul=UNIT:FindByName(namefoulline)
 else
-self:E(self.id..string.format("ERROR! Foul line object %s could not be found in GetFoullineDistance function. Check the name in the ME.",namefoulline))
+self:E(self.lid..string.format("ERROR! Foul line object %s could not be found in GetFoullineDistance function. Check the name in the ME.",namefoulline))
 end
 local fouldist=0
 if pit~=nil and foul~=nil then
 fouldist=pit:GetCoordinate():Get2DDistance(foul:GetCoordinate())
 else
-self:E(self.id..string.format("ERROR! Foul line distance could not be determined. Check pit object name %s and foul line object name %s in the ME.",namepit,namefoulline))
+self:E(self.lid..string.format("ERROR! Foul line distance could not be determined. Check pit object name %s and foul line object name %s in the ME.",namepit,namefoulline))
 end
-self:T(self.id..string.format("Foul line distance = %.1f m.",fouldist))
+self:T(self.lid..string.format("Foul line distance = %.1f m.",fouldist))
 return fouldist
-end
-function RANGE:onEvent(Event)
-self:F3(Event)
-if Event==nil or Event.initiator==nil then
-self:T3("Skipping onEvent. Event or Event.initiator unknown.")
-return true
-end
-if Unit.getByName(Event.initiator:getName())==nil then
-self:T3("Skipping onEvent. Initiator unit name unknown.")
-return true
-end
-local DCSiniunit=Event.initiator
-local DCStgtunit=Event.target
-local DCSweapon=Event.weapon
-local EventData={}
-local _playerunit=nil
-local _playername=nil
-if Event.initiator then
-EventData.IniUnitName=Event.initiator:getName()
-EventData.IniDCSGroup=Event.initiator:getGroup()
-EventData.IniGroupName=Event.initiator:getGroup():getName()
-_playerunit,_playername=self:_GetPlayerUnitAndName(EventData.IniUnitName)
-end
-if Event.target then
-EventData.TgtUnitName=Event.target:getName()
-EventData.TgtUnit=UNIT:FindByName(EventData.TgtUnitName)
-end
-if Event.weapon then
-EventData.Weapon=Event.weapon
-EventData.weapon=Event.weapon
-EventData.WeaponTypeName=Event.weapon:getTypeName()
-end
-self:T3(self.id..string.format("EVENT: Event in onEvent with ID = %s",tostring(Event.id)))
-self:T3(self.id..string.format("EVENT: Ini unit   = %s",tostring(EventData.IniUnitName)))
-self:T3(self.id..string.format("EVENT: Ini group  = %s",tostring(EventData.IniGroupName)))
-self:T3(self.id..string.format("EVENT: Ini player = %s",tostring(_playername)))
-self:T3(self.id..string.format("EVENT: Tgt unit   = %s",tostring(EventData.TgtUnitName)))
-self:T3(self.id..string.format("EVENT: Wpn type   = %s",tostring(EventData.WeaponTypeName)))
-if Event.id==world.event.S_EVENT_BIRTH and _playername then
-self:OnEventBirth(EventData)
-end
-if Event.id==world.event.S_EVENT_SHOT and _playername and Event.weapon then
-self:OnEventShot(EventData)
-end
-if Event.id==world.event.S_EVENT_HIT and _playername and DCStgtunit then
-self:OnEventHit(EventData)
-end
 end
 function RANGE:OnEventBirth(EventData)
 self:F({eventbirth=EventData})
 local _unitName=EventData.IniUnitName
 local _unit,_playername=self:_GetPlayerUnitAndName(_unitName)
-self:T3(self.id.."BIRTH: unit   = "..tostring(EventData.IniUnitName))
-self:T3(self.id.."BIRTH: group  = "..tostring(EventData.IniGroupName))
-self:T3(self.id.."BIRTH: player = "..tostring(_playername))
+self:T3(self.lid.."BIRTH: unit   = "..tostring(EventData.IniUnitName))
+self:T3(self.lid.."BIRTH: group  = "..tostring(EventData.IniGroupName))
+self:T3(self.lid.."BIRTH: player = "..tostring(_playername))
 if _unit and _playername then
 local _uid=_unit:GetID()
 local _group=_unit:GetGroup()
 local _gid=_group:GetID()
 local _callsign=_unit:GetCallsign()
 local text=string.format("Player %s, callsign %s entered unit %s (UID %d) of group %s (GID %d)",_playername,_callsign,_unitName,_uid,_group:GetName(),_gid)
-self:T(self.id..text)
+self:T(self.lid..text)
 self.strafeStatus[_uid]=nil
 self:ScheduleOnce(0.1,self._AddF10Commands,self,_unitName)
 self.PlayerSettings[_playername]={}
@@ -39019,6 +40826,7 @@ self.PlayerSettings[_playername].delaysmoke=true
 self.PlayerSettings[_playername].messages=true
 self.PlayerSettings[_playername].client=CLIENT:FindByName(_unitName,nil,true)
 self.PlayerSettings[_playername].unitname=_unitName
+self.PlayerSettings[_playername].unit=_unit
 self.PlayerSettings[_playername].playername=_playername
 self.PlayerSettings[_playername].airframe=EventData.IniUnit:GetTypeName()
 self.PlayerSettings[_playername].inzone=false
@@ -39030,9 +40838,9 @@ end
 end
 function RANGE:OnEventHit(EventData)
 self:F({eventhit=EventData})
-self:T3(self.id.."HIT: Ini unit   = "..tostring(EventData.IniUnitName))
-self:T3(self.id.."HIT: Ini group  = "..tostring(EventData.IniGroupName))
-self:T3(self.id.."HIT: Tgt target = "..tostring(EventData.TgtUnitName))
+self:T3(self.lid.."HIT: Ini unit   = "..tostring(EventData.IniUnitName))
+self:T3(self.lid.."HIT: Ini group  = "..tostring(EventData.IniGroupName))
+self:T3(self.lid.."HIT: Tgt target = "..tostring(EventData.TgtUnitName))
 local _unitName=EventData.IniUnitName
 local _unit,_playername=self:_GetPlayerUnitAndName(_unitName)
 if _unit==nil or _playername==nil then
@@ -39062,7 +40870,7 @@ local ttstext=string.format("%s, Invalid hit! You already passed foul line dista
 self.controlsrsQ:NewTransmission(ttstext,nil,self.controlmsrs,nil,2)
 end
 self:_DisplayMessageToGroup(_unit,text)
-self:T2(self.id..text)
+self:T2(self.lid..text)
 _currentTarget.pastfoulline=true
 end
 end
@@ -39081,67 +40889,16 @@ end
 end
 end
 end
-function RANGE:_TrackWeapon(weapon)
-end
-function RANGE:OnEventShot(EventData)
-self:F({eventshot=EventData})
-if EventData.Weapon==nil then
-return
-end
-if EventData.IniDCSUnit==nil then
-return
-end
-if EventData.IniPlayerName==nil then
-return
-end
-local _weapon=EventData.Weapon:getTypeName()
-local _weaponStrArray=UTILS.Split(_weapon,"%.")
-local _weaponName=_weaponStrArray[#_weaponStrArray]
-local desc=EventData.Weapon:getDesc()
-local weaponcategory=desc.category
-self:T(self.id.."EVENT SHOT: Range "..self.rangename)
-self:T(self.id.."EVENT SHOT: Ini unit    = "..EventData.IniUnitName)
-self:T(self.id.."EVENT SHOT: Ini group   = "..EventData.IniGroupName)
-self:T(self.id.."EVENT SHOT: Weapon type = ".._weapon)
-self:T(self.id.."EVENT SHOT: Weapon name = ".._weaponName)
-self:T(self.id.."EVENT SHOT: Weapon cate = "..weaponcategory)
-local _bombs=weaponcategory==Weapon.Category.BOMB
-local _rockets=weaponcategory==Weapon.Category.ROCKET
-local _missiles=weaponcategory==Weapon.Category.MISSILE
-local _track=(_bombs and self.trackbombs)or(_rockets and self.trackrockets)or(_missiles and self.trackmissiles)
-local _unitName=EventData.IniUnitName
-local _unit,_playername=self:_GetPlayerUnitAndName(_unitName)
-local attackHdg=_unit:GetHeading()
-local attackAlt=_unit:GetHeight()
-local attackVel=_unit:GetVelocityKNOTS()
-local dPR=self.BombtrackThreshold*2
-if _unit and _playername then
-dPR=_unit:GetCoordinate():Get2DDistance(self.location)
-self:T(self.id..string.format("Range %s, player %s, player-range distance = %d km.",self.rangename,_playername,dPR/1000))
-end
-if _track and dPR<=self.BombtrackThreshold and _unit and _playername then
-local playerData=self.PlayerSettings[_playername]
-self:T(self.id..string.format("RANGE %s: Tracking %s - %s.",self.rangename,_weapon,EventData.weapon:getName()))
-local _lastBombPos={x=0,y=0,z=0}
-local function trackBomb(_ordnance)
-local _status,_bombPos=pcall(function()
-return _ordnance:getPoint()
-end)
-self:T2(self.id..string.format("Range %s: Bomb still in air: %s",self.rangename,tostring(_status)))
-if _status then
-_lastBombPos={x=_bombPos.x,y=_bombPos.y,z=_bombPos.z}
-return timer.getTime()+self.dtBombtrack
-else
+function RANGE._OnImpact(weapon,self,playerData,attackHdg,attackAlt,attackVel)
 local _closetTarget=nil
 local _distance=nil
 local _closeCoord=nil
 local _hitquality="POOR"
-local _callsign=self:_myname(_unitName)
-local impactcoord=COORDINATE:NewFromVec3(_lastBombPos)
+local _callsign=self:_myname(playerData.unitname)
+local _playername=playerData.playername
+local _unit=playerData.unit
+local impactcoord=weapon:GetImpactCoordinate()
 local insidezone=self.rangezone:IsCoordinateInZone(impactcoord)
-if self.Debug then
-impactcoord:MarkToAll("Bomb impact point")
-end
 if playerData.smokebombimpact and insidezone then
 if playerData.delaysmoke then
 timer.scheduleFunction(self._DelayedSmoke,{coord=impactcoord,color=playerData.smokecolor},timer.getTime()+self.TdelaySmoke)
@@ -39182,7 +40939,7 @@ result.command=SOCKET.DataType.BOMBRESULT
 result.name=_closetTarget.name or"unknown"
 result.distance=_distance
 result.radial=_closeCoord:HeadingTo(impactcoord)
-result.weapon=_weaponName or"unknown"
+result.weapon=weapon:GetTypeName()or"unknown"
 result.quality=_hitquality
 result.player=playerData.playername
 result.time=timer.getAbsTime()
@@ -39197,6 +40954,7 @@ result.rangename=self.rangename
 result.attackHdg=attackHdg
 result.attackVel=attackVel
 result.attackAlt=attackAlt
+result.date=os and os.date()or"n/a"
 table.insert(_results,result)
 self:Impact(result,playerData)
 elseif insidezone then
@@ -39214,14 +40972,32 @@ self.rangecontrol:NewTransmission(RANGE.Sound.RCWeaponImpactedTooFar.filename,RA
 end
 end
 else
-self:T(self.id.."Weapon impacted outside range zone.")
-end
-self:T(self.id..string.format("Range %s, player %s: Terminating bomb track timer.",self.rangename,_playername))
-return nil
+self:T(self.lid.."Weapon impacted outside range zone.")
 end
 end
-self:T(self.id..string.format("Range %s, player %s: Tracking of weapon starts in 0.1 seconds.",self.rangename,_playername))
-timer.scheduleFunction(trackBomb,EventData.weapon,timer.getTime()+0.1)
+function RANGE:OnEventShot(EventData)
+self:F({eventshot=EventData})
+if EventData.Weapon==nil or EventData.IniDCSUnit==nil or EventData.IniPlayerName==nil then
+return
+end
+local weapon=WEAPON:New(EventData.weapon)
+local _track=(weapon:IsBomb()and self.trackbombs)or(weapon:IsRocket()and self.trackrockets)or(weapon:IsMissile()and self.trackmissiles)
+local _unitName=EventData.IniUnitName
+local _unit,_playername=self:_GetPlayerUnitAndName(_unitName)
+local dPR=self.BombtrackThreshold*2
+if _unit and _playername then
+dPR=_unit:GetCoordinate():Get2DDistance(self.location)
+self:T(self.lid..string.format("Range %s, player %s, player-range distance = %d km.",self.rangename,_playername,dPR/1000))
+end
+if _track and dPR<=self.BombtrackThreshold and _unit and _playername then
+local playerData=self.PlayerSettings[_playername]
+local attackHdg=_unit:GetHeading()
+local attackAlt=_unit:GetHeight()
+local attackVel=_unit:GetVelocityKNOTS()
+self:T(self.lid..string.format("RANGE %s: Tracking %s - %s.",self.rangename,weapon:GetTypeName(),weapon:GetName()))
+weapon:SetFuncImpact(RANGE._OnImpact,self,playerData,attackHdg,attackAlt,attackVel)
+self:T(self.lid..string.format("Range %s, player %s: Tracking of weapon starts in 0.1 seconds.",self.rangename,_playername))
+weapon:StartTrack(0.1)
 end
 end
 function RANGE:onafterStatus(From,Event,To)
@@ -39248,7 +41024,7 @@ end
 end
 text=text..string.format(", Control %.3f MHz (Relay=%s alive=%s)",self.rangecontrolfreq,tostring(self.rangecontrolrelayname),alive)
 end
-self:I(self.id..text)
+self:I(self.lid..text)
 end
 self:_CheckPlayers()
 self:__Status(-10)
@@ -39275,9 +41051,20 @@ end
 function RANGE:onafterExitRange(From,Event,To,player)
 if self.instructor then
 if self.useSRS then
-local text="You left the bombing range zone. Have a nice day!"
-local group=player.client:GetGroup()
-self.instructsrsQ:NewTransmission(text,nil,self.instructmsrs,nil,1,{group},text,10)
+local text="You left the bombing range zone. "
+local r=math.random(2)
+if r==1 then
+text=text.."Have a nice day!"
+elseif r==2 then
+text=text.."Take care and bye bye!"
+elseif r==3 then
+text=text.."Talk to you soon!"
+elseif r==4 then
+text=text.."See you in two weeks!"
+elseif r==5 then
+text=text.."!"
+end
+self.instructsrsQ:NewTransmission(text,nil,self.instructmsrs,nil,1,{player.client:GetGroup()},text,10)
 else
 self.instructor:NewTransmission(RANGE.Sound.IRExitRange.filename,RANGE.Sound.IRExitRange.duration,self.soundpath)
 end
@@ -39320,7 +41107,7 @@ end
 if player.unitname and not self.useSRS then
 local unit=UNIT:FindByName(player.unitname)
 self:_DisplayMessageToGroup(unit,text,nil,true)
-self:T(self.id..text)
+self:T(self.lid..text)
 end
 if self.autosave then
 self:Save()
@@ -39338,7 +41125,7 @@ function RANGE:onbeforeSave(From,Event,To)
 if io and lfs then
 return true
 else
-self:E(self.id..string.format("WARNING: io and/or lfs not desanitized. Cannot save player results."))
+self:E(self.lid..string.format("WARNING: io and/or lfs not desanitized. Cannot save player results."))
 return false
 end
 end
@@ -39348,9 +41135,9 @@ local f=io.open(filename,"wb")
 if f then
 f:write(data)
 f:close()
-self:I(self.id..string.format("Saving player results to file %s",tostring(filename)))
+self:I(self.lid..string.format("Saving player results to file %s",tostring(filename)))
 else
-self:E(self.id..string.format("ERROR: Could not save results to file %s",tostring(filename)))
+self:E(self.lid..string.format("ERROR: Could not save results to file %s",tostring(filename)))
 end
 end
 local path=lfs.writedir()..[[Logs\]]
@@ -39366,10 +41153,7 @@ local radial=result.radial
 local quality=result.quality
 local time=UTILS.SecondsToClock(result.time,true)
 local airframe=result.airframe
-local date="n/a"
-if os then
-date=os.date()
-end
+local date=result.date or"n/a"
 scores=scores..string.format("\n%s,%d,%s,%.2f,%03d,%s,%s,%s,%s,%s",playername,i,target,distance,radial,quality,weapon,airframe,time,date)
 end
 end
@@ -39379,7 +41163,7 @@ function RANGE:onbeforeLoad(From,Event,To)
 if io and lfs then
 return true
 else
-self:E(self.id..string.format("WARNING: io and/or lfs not desanitized. Cannot load player results."))
+self:E(self.lid..string.format("WARNING: io and/or lfs not desanitized. Cannot load player results."))
 return false
 end
 end
@@ -39391,14 +41175,14 @@ local data=f:read("*all")
 f:close()
 return data
 else
-self:E(self.id..string.format("WARNING: Could not load player results from file %s. File might not exist just yet.",tostring(filename)))
+self:E(self.lid..string.format("WARNING: Could not load player results from file %s. File might not exist just yet.",tostring(filename)))
 return nil
 end
 end
 local path=lfs.writedir()..[[Logs\]]
 local filename=path..string.format("RANGE-%s_BombingResults.csv",self.rangename)
 local text=string.format("Loading player bomb results from file %s",filename)
-self:I(self.id..text)
+self:I(self.lid..text)
 local data=_loadfile(filename)
 if data then
 local results=UTILS.Split(data,"\n")
@@ -39471,7 +41255,7 @@ _args.coord:Smoke(_args.color)
 end
 function RANGE:_DisplayMyStrafePitResults(_unitName)
 self:F(_unitName)
-local _unit,_playername=self:_GetPlayerUnitAndName(_unitName)
+local _unit,_playername,_multiplayer=self:_GetPlayerUnitAndName(_unitName)
 if _unit and _playername then
 local _message=string.format("My Top %d Strafe Pit Results:\n",self.ndisplayresult)
 local _results=self.strafePlayerResults[_playername]
@@ -39497,12 +41281,12 @@ _count=_count+1
 end
 _message=_message.."\n\nBEST: ".._bestMsg
 end
-self:_DisplayMessageToGroup(_unit,_message,nil,true,true)
+self:_DisplayMessageToGroup(_unit,_message,nil,true,true,_multiplayer)
 end
 end
 function RANGE:_DisplayStrafePitResults(_unitName)
 self:F(_unitName)
-local _unit,_playername=self:_GetPlayerUnitAndName(_unitName)
+local _unit,_playername,_multiplayer=self:_GetPlayerUnitAndName(_unitName)
 if _unit and _playername then
 local _playerResults={}
 local _message=string.format("Strafe Pit Results - Top %d Players:\n",self.ndisplayresult)
@@ -39528,12 +41312,12 @@ end
 if#_playerResults<1 then
 _message=_message.."No player scored yet."
 end
-self:_DisplayMessageToGroup(_unit,_message,nil,true,true)
+self:_DisplayMessageToGroup(_unit,_message,nil,true,true,_multiplayer)
 end
 end
 function RANGE:_DisplayMyBombingResults(_unitName)
 self:F(_unitName)
-local _unit,_playername=self:_GetPlayerUnitAndName(_unitName)
+local _unit,_playername,_multiplayer=self:_GetPlayerUnitAndName(_unitName)
 if _unit and _playername then
 local _message=string.format("My Top %d Bombing Results:\n",self.ndisplayresult)
 local _results=self.bombPlayerResults[_playername]
@@ -39557,13 +41341,13 @@ end
 end
 _message=_message.."\n\nBEST: ".._bestMsg
 end
-self:_DisplayMessageToGroup(_unit,_message,nil,true,true)
+self:_DisplayMessageToGroup(_unit,_message,nil,true,true,_multiplayer)
 end
 end
 function RANGE:_DisplayBombingResults(_unitName)
 self:F(_unitName)
 local _playerResults={}
-local _unit,_player=self:_GetPlayerUnitAndName(_unitName)
+local _unit,_player,_multiplayer=self:_GetPlayerUnitAndName(_unitName)
 if _unit and _player then
 local _message=string.format("Bombing Results - Top %d Players:\n",self.ndisplayresult)
 for _playerName,_results in pairs(self.bombPlayerResults)do
@@ -39588,12 +41372,12 @@ end
 if#_playerResults<1 then
 _message=_message.."No player scored yet."
 end
-self:_DisplayMessageToGroup(_unit,_message,nil,true,true)
+self:_DisplayMessageToGroup(_unit,_message,nil,true,true,_multiplayer)
 end
 end
 function RANGE:_DisplayRangeInfo(_unitname)
 self:F(_unitname)
-local unit,playername=self:_GetPlayerUnitAndName(_unitname)
+local unit,playername,_multiplayer=self:_GetPlayerUnitAndName(_unitname)
 if unit and playername then
 self:I(playername)
 local text=""
@@ -39669,14 +41453,14 @@ end
 text=text..texthit
 text=text..textbomb
 text=text..textdelay
-self:_DisplayMessageToGroup(unit,text,nil,true,true)
-self:T2(self.id..text)
+self:_DisplayMessageToGroup(unit,text,nil,true,true,_multiplayer)
+self:T2(self.lid..text)
 end
 end
 end
 function RANGE:_DisplayBombTargets(_unitname)
 self:F(_unitname)
-local _unit,_playername=self:_GetPlayerUnitAndName(_unitname)
+local _unit,_playername,_multiplayer=self:_GetPlayerUnitAndName(_unitname)
 if _unit and _playername then
 local _settings=_DATABASE:GetPlayerSettings(_playername)or _SETTINGS
 local _text="Bomb Target Locations:"
@@ -39694,12 +41478,12 @@ local ca2g=coord:ToStringA2G(_unit,_settings)
 _text=_text..string.format("\n- %s:\n%s @ %s",bombtarget.name or"unknown",ca2g,eltxt)
 end
 end
-self:_DisplayMessageToGroup(_unit,_text,120,true,true)
+self:_DisplayMessageToGroup(_unit,_text,120,true,true,_multiplayer)
 end
 end
 function RANGE:_DisplayStrafePits(_unitname)
 self:F(_unitname)
-local _unit,_playername=self:_GetPlayerUnitAndName(_unitname)
+local _unit,_playername,_multiplayer=self:_GetPlayerUnitAndName(_unitname)
 if _unit and _playername then
 local _settings=_DATABASE:GetPlayerSettings(_playername)or _SETTINGS
 local _text="Strafe Target Locations:"
@@ -39715,12 +41499,12 @@ end
 local mycoord=coord:ToStringA2G(_unit,_settings)
 _text=_text..string.format("\n- %s: heading %03d°\n%s",_strafepit.name,heading,mycoord)
 end
-self:_DisplayMessageToGroup(_unit,_text,nil,true,true)
+self:_DisplayMessageToGroup(_unit,_text,nil,true,true,_multiplayer)
 end
 end
 function RANGE:_DisplayRangeWeather(_unitname)
 self:F(_unitname)
-local unit,playername=self:_GetPlayerUnitAndName(_unitname)
+local unit,playername,_multiplayer=self:_GetPlayerUnitAndName(_unitname)
 if unit and playername then
 local text=""
 local coord=unit:GetCoordinate()
@@ -39750,10 +41534,10 @@ text=text..string.format("QFE %.1f hPa = %s",P,tP)
 else
 text=string.format("No range location defined for range %s.",self.rangename)
 end
-self:_DisplayMessageToGroup(unit,text,nil,true,true)
-self:T2(self.id..text)
+self:_DisplayMessageToGroup(unit,text,nil,true,true,_multiplayer)
+self:T2(self.lid..text)
 else
-self:T(self.id..string.format("ERROR! Could not find player unit in RangeInfo! Name = %s",_unitname))
+self:T(self.lid..string.format("ERROR! Could not find player unit in RangeInfo! Name = %s",_unitname))
 end
 end
 function RANGE:_CheckPlayers()
@@ -39984,28 +41768,29 @@ local _BoTgtgs=MENU_GROUP_COMMAND:New(group,"Bombing Targets",_infoPath,self._Di
 local _StrPits=MENU_GROUP_COMMAND:New(group,"Strafe Pits",_infoPath,self._DisplayStrafePits,self,_unitName):Refresh()
 end
 else
-self:E(self.id.."Could not find group or group ID in AddF10Menu() function. Unit name: ".._unitName or"N/A")
+self:E(self.lid.."Could not find group or group ID in AddF10Menu() function. Unit name: ".._unitName or"N/A")
 end
 else
-self:E(self.id.."Player unit does not exist in AddF10Menu() function. Unit name: ".._unitName or"N/A")
+self:E(self.lid.."Player unit does not exist in AddF10Menu() function. Unit name: ".._unitName or"N/A")
 end
 end
 function RANGE:_GetBombTargetCoordinate(target)
 local coord=nil
 if target.type==RANGE.TargetType.UNIT then
-if not target.move then
-coord=target.coordinate
-else
 if target.target and target.target:IsAlive()then
 coord=target.target:GetCoordinate()
-end
+target.coordinate=coord
+else
+coord=target.coordinate
 end
 elseif target.type==RANGE.TargetType.STATIC then
 coord=target.coordinate
 elseif target.type==RANGE.TargetType.COORD then
 coord=target.coordinate
+elseif target.type==RANGE.TargetType.SCENERY then
+coord=target.coordinate
 else
-self:E(self.id.."ERROR: Unknown target type.")
+self:E(self.lid.."ERROR: Unknown target type.")
 end
 return coord
 end
@@ -40019,17 +41804,17 @@ local ammotable=unit:GetAmmo()
 self:T2({ammotable=ammotable})
 if ammotable~=nil then
 local weapons=#ammotable
-self:T2(self.id..string.format("Number of weapons %d.",weapons))
+self:T2(self.lid..string.format("Number of weapons %d.",weapons))
 for w=1,weapons do
 local Nammo=ammotable[w]["count"]
 local Tammo=ammotable[w]["desc"]["typeName"]
 if string.match(Tammo,"shell")then
 ammo=ammo+Nammo
 local text=string.format("Player %s has %d rounds ammo of type %s",playername,Nammo,Tammo)
-self:T(self.id..text)
+self:T(self.lid..text)
 else
 local text=string.format("Player %s has %d ammo of type %s",playername,Nammo,Tammo)
-self:T(self.id..text)
+self:T(self.lid..text)
 end
 end
 end
@@ -40116,7 +41901,7 @@ local text=string.format("%s, %s, your range stats were cleared.",self.rangename
 self:DisplayMessageToGroup(_unit,text,5,false,true)
 end
 end
-function RANGE:_DisplayMessageToGroup(_unit,_text,_time,_clear,display)
+function RANGE:_DisplayMessageToGroup(_unit,_text,_time,_clear,display,_togroup)
 self:F({unit=_unit,text=_text,time=_time,clear=_clear})
 _time=_time or self.Tmsg
 if _clear==nil or _clear==false then
@@ -40133,7 +41918,11 @@ local _grp=_unit:GetGroup()
 local _,playername=self:_GetPlayerUnitAndName(_unit:GetName())
 local playermessage=self.PlayerSettings[playername].messages
 if _gid and(playermessage==true or display)and(not self.examinerexclusive)then
+if _togroup and _grp then
+local m=MESSAGE:New(_text,_time,nil,_clear):ToGroup(_grp)
+else
 local m=MESSAGE:New(_text,_time,nil,_clear):ToUnit(_unit)
+end
 end
 if self.examinergroupname~=nil then
 local _examinerid=GROUP:FindByName(self.examinergroupname)
@@ -40145,7 +41934,7 @@ end
 end
 function RANGE:_SmokeBombImpactOnOff(unitname)
 self:F(unitname)
-local unit,playername=self:_GetPlayerUnitAndName(unitname)
+local unit,playername,_multiplayer=self:_GetPlayerUnitAndName(unitname)
 if unit and playername then
 local text
 if self.PlayerSettings[playername].smokebombimpact==true then
@@ -40160,7 +41949,7 @@ end
 end
 function RANGE:_SmokeBombDelayOnOff(unitname)
 self:F(unitname)
-local unit,playername=self:_GetPlayerUnitAndName(unitname)
+local unit,playername,_multiplayer=self:_GetPlayerUnitAndName(unitname)
 if unit and playername then
 local text
 if self.PlayerSettings[playername].delaysmoke==true then
@@ -40175,7 +41964,7 @@ end
 end
 function RANGE:_MessagesToPlayerOnOff(unitname)
 self:F(unitname)
-local unit,playername=self:_GetPlayerUnitAndName(unitname)
+local unit,playername,_multiplayer=self:_GetPlayerUnitAndName(unitname)
 if unit and playername then
 local text
 if self.PlayerSettings[playername].messages==true then
@@ -40189,7 +41978,7 @@ end
 end
 function RANGE:_TargetsheetOnOff(_unitname)
 self:F2(_unitname)
-local unit,playername=self:_GetPlayerUnitAndName(_unitname)
+local unit,playername,_multiplayer=self:_GetPlayerUnitAndName(_unitname)
 if unit and playername then
 local playerData=self.PlayerSettings[playername]
 if playerData then
@@ -40210,7 +41999,7 @@ end
 end
 function RANGE:_FlareDirectHitsOnOff(unitname)
 self:F(unitname)
-local unit,playername=self:_GetPlayerUnitAndName(unitname)
+local unit,playername,_multiplayer=self:_GetPlayerUnitAndName(unitname)
 if unit and playername then
 local text
 if self.PlayerSettings[playername].flaredirecthits==true then
@@ -40322,17 +42111,17 @@ local _DCSstatic=StaticObject.getByName(name)
 if _DCSstatic and _DCSstatic:isExist()then
 local _MOOSEstatic=STATIC:FindByName(name,false)
 if not _MOOSEstatic then
-self:T(self.id..string.format("Adding DCS static to MOOSE database. Name = %s.",name))
+self:T(self.lid..string.format("Adding DCS static to MOOSE database. Name = %s.",name))
 _DATABASE:AddStatic(name)
 end
 return true
 else
-self:T3(self.id..string.format("No static object with name %s exists.",name))
+self:T3(self.lid..string.format("No static object with name %s exists.",name))
 end
 if UNIT:FindByName(name)then
 return false
 else
-self:T3(self.id..string.format("No unit object with name %s exists.",name))
+self:T3(self.lid..string.format("No unit object with name %s exists.",name))
 end
 return nil
 end
@@ -40349,6 +42138,7 @@ end
 function RANGE:_GetPlayerUnitAndName(_unitName)
 self:F2(_unitName)
 if _unitName~=nil then
+local multiplayer=false
 local DCSunit=Unit.getByName(_unitName)
 if DCSunit then
 local playername=DCSunit:getPlayerName()
@@ -40356,11 +42146,15 @@ local unit=UNIT:Find(DCSunit)
 self:T2({DCSunit=DCSunit,unit=unit,playername=playername})
 if DCSunit and unit and playername then
 self:F2(playername)
-return unit,playername
+local grp=unit:GetGroup()
+if grp and grp:CountAliveUnits()>1 then
+multiplayer=true
+end
+return unit,playername,multiplayer
 end
 end
 end
-return nil,nil
+return nil,nil,nil
 end
 function RANGE:_myname(unitname)
 self:F2(unitname)
@@ -44076,8 +45870,10 @@ end
 end
 function SCORING:OnEventBirth(Event)
 if Event.IniUnit then
+Event.IniUnit.ThreatLevel,Event.IniUnit.ThreatType=Event.IniUnit:GetThreatLevel()
 if Event.IniObjectCategory==1 then
 local PlayerName=Event.IniUnit:GetPlayerName()
+Event.IniUnit.BirthTime=timer.getTime()
 if PlayerName then
 self:_AddPlayerFromUnit(Event.IniUnit)
 self:SetScoringMenu(Event.IniGroup)
@@ -44166,7 +45962,16 @@ PlayerHit.ScoreHit=PlayerHit.ScoreHit or 0
 PlayerHit.PenaltyHit=PlayerHit.PenaltyHit or 0
 PlayerHit.TimeStamp=PlayerHit.TimeStamp or 0
 PlayerHit.UNIT=PlayerHit.UNIT or TargetUNIT
+if PlayerHit.UNIT.ThreatType==nil then
 PlayerHit.ThreatLevel,PlayerHit.ThreatType=PlayerHit.UNIT:GetThreatLevel()
+if PlayerHit.ThreatType==nil then
+PlayerHit.ThreatLevel=1
+PlayerHit.ThreatType="Unknown"
+end
+else
+PlayerHit.ThreatLevel=PlayerHit.UNIT.ThreatLevel
+PlayerHit.ThreatType=PlayerHit.UNIT.ThreatType
+end
 if timer.getTime()-PlayerHit.TimeStamp>1 then
 PlayerHit.TimeStamp=timer.getTime()
 if TargetPlayerName~=nil then
@@ -44175,26 +45980,25 @@ end
 local Score=0
 if InitCoalition then
 if InitCoalition==TargetCoalition then
-Player.Penalty=Player.Penalty+10
-PlayerHit.Penalty=PlayerHit.Penalty+10
+local Penalty=10
+Player.Penalty=Player.Penalty+Penalty
+PlayerHit.Penalty=PlayerHit.Penalty+Penalty
 PlayerHit.PenaltyHit=PlayerHit.PenaltyHit+1
 if TargetPlayerName~=nil then
 MESSAGE:NewType(self.DisplayMessagePrefix.."Player '"..InitPlayerName.."' hit friendly player '"..TargetPlayerName.."' "..TargetUnitCategory.." ( "..TargetType.." ) "..PlayerHit.PenaltyHit.." times. "..
-"Penalty: -"..PlayerHit.Penalty..".  Score Total:"..Player.Score-Player.Penalty,
+"Penalty: -"..Penalty..".  Score Total:"..Player.Score-Player.Penalty,
 MESSAGE.Type.Update)
 :ToAllIf(self:IfMessagesHit()and self:IfMessagesToAll())
 :ToCoalitionIf(InitCoalition,self:IfMessagesHit()and self:IfMessagesToCoalition())
 else
 MESSAGE:NewType(self.DisplayMessagePrefix.."Player '"..InitPlayerName.."' hit friendly target "..TargetUnitCategory.." ( "..TargetType.." ) "..PlayerHit.PenaltyHit.." times. "..
-"Penalty: -"..PlayerHit.Penalty..".  Score Total:"..Player.Score-Player.Penalty,
+"Penalty: -"..Penalty..".  Score Total:"..Player.Score-Player.Penalty,
 MESSAGE.Type.Update)
 :ToAllIf(self:IfMessagesHit()and self:IfMessagesToAll())
 :ToCoalitionIf(InitCoalition,self:IfMessagesHit()and self:IfMessagesToCoalition())
 end
 self:ScoreCSV(InitPlayerName,TargetPlayerName,"HIT_PENALTY",1,-10,InitUnitName,InitUnitCoalition,InitUnitCategory,InitUnitType,TargetUnitName,TargetUnitCoalition,TargetUnitCategory,TargetUnitType)
 else
-Player.Score=Player.Score+1
-PlayerHit.Score=PlayerHit.Score+1
 PlayerHit.ScoreHit=PlayerHit.ScoreHit+1
 if TargetPlayerName~=nil then
 MESSAGE:NewType(self.DisplayMessagePrefix.."Player '"..InitPlayerName.."' hit enemy player '"..TargetPlayerName.."' "..TargetUnitCategory.." ( "..TargetType.." ) "..PlayerHit.ScoreHit.." times. "..
@@ -44241,30 +46045,38 @@ PlayerHit.ScoreHit=PlayerHit.ScoreHit or 0
 PlayerHit.PenaltyHit=PlayerHit.PenaltyHit or 0
 PlayerHit.TimeStamp=PlayerHit.TimeStamp or 0
 PlayerHit.UNIT=PlayerHit.UNIT or TargetUNIT
+if PlayerHit.UNIT.ThreatType==nil then
 PlayerHit.ThreatLevel,PlayerHit.ThreatType=PlayerHit.UNIT:GetThreatLevel()
+if PlayerHit.ThreatType==nil then
+PlayerHit.ThreatLevel=1
+PlayerHit.ThreatType="Unknown"
+end
+else
+PlayerHit.ThreatLevel=PlayerHit.UNIT.ThreatLevel
+PlayerHit.ThreatType=PlayerHit.UNIT.ThreatType
+end
 if timer.getTime()-PlayerHit.TimeStamp>1 then
 PlayerHit.TimeStamp=timer.getTime()
 local Score=0
 if InitCoalition then
 if InitCoalition==TargetCoalition then
-Player.Penalty=Player.Penalty+10
-PlayerHit.Penalty=PlayerHit.Penalty+10
+local Penalty=10
+Player.Penalty=Player.Penalty+Penalty
+PlayerHit.Penalty=PlayerHit.Penalty+Penalty
 PlayerHit.PenaltyHit=PlayerHit.PenaltyHit+1*self.ScaleDestroyPenalty
 MESSAGE
 :NewType(self.DisplayMessagePrefix.."Player '"..Event.WeaponPlayerName.."' hit friendly target "..
 TargetUnitCategory.." ( "..TargetType.." ) "..
-"Penalty: -"..PlayerHit.Penalty.." = "..Player.Score-Player.Penalty,
+"Penalty: -"..Penalty.." = "..Player.Score-Player.Penalty,
 MESSAGE.Type.Update
 )
 :ToAllIf(self:IfMessagesHit()and self:IfMessagesToAll())
 :ToCoalitionIf(Event.WeaponCoalition,self:IfMessagesHit()and self:IfMessagesToCoalition())
 self:ScoreCSV(Event.WeaponPlayerName,TargetPlayerName,"HIT_PENALTY",1,-10,Event.WeaponName,Event.WeaponCoalition,Event.WeaponCategory,Event.WeaponTypeName,TargetUnitName,TargetUnitCoalition,TargetUnitCategory,TargetUnitType)
 else
-Player.Score=Player.Score+1
-PlayerHit.Score=PlayerHit.Score+1
 PlayerHit.ScoreHit=PlayerHit.ScoreHit+1
 MESSAGE:NewType(self.DisplayMessagePrefix.."Player '"..Event.WeaponPlayerName.."' hit enemy target "..TargetUnitCategory.." ( "..TargetType.." ) "..
-"Score: +"..PlayerHit.Score.." = "..Player.Score-Player.Penalty,
+"Score: "..PlayerHit.Score..".  Score Total:"..Player.Score-Player.Penalty,
 MESSAGE.Type.Update)
 :ToAllIf(self:IfMessagesHit()and self:IfMessagesToAll())
 :ToCoalitionIf(Event.WeaponCoalition,self:IfMessagesHit()and self:IfMessagesToCoalition())
@@ -44320,7 +46132,7 @@ local InitUnitCoalition=_SCORINGCoalition[InitCoalition]
 local InitUnitCategory=_SCORINGCategory[InitCategory]
 self:T({InitUnitName,InitUnitType,InitUnitCoalition,InitCoalition,InitUnitCategory,InitCategory})
 local Destroyed=false
-if Player and Player.Hit and Player.Hit[TargetCategory]and Player.Hit[TargetCategory][TargetUnitName]and Player.Hit[TargetCategory][TargetUnitName].TimeStamp~=0 then
+if Player and Player.Hit and Player.Hit[TargetCategory]and Player.Hit[TargetCategory][TargetUnitName]and Player.Hit[TargetCategory][TargetUnitName].TimeStamp~=0 and(TargetUnit.BirthTime==nil or Player.Hit[TargetCategory][TargetUnitName].TimeStamp>TargetUnit.BirthTime)then
 local TargetThreatLevel=Player.Hit[TargetCategory][TargetUnitName].ThreatLevel
 local TargetThreatType=Player.Hit[TargetCategory][TargetUnitName].ThreatType
 Player.Destroy[TargetCategory]=Player.Destroy[TargetCategory]or{}
@@ -44342,13 +46154,13 @@ TargetDestroy.Penalty=TargetDestroy.Penalty+ThreatPenalty
 TargetDestroy.PenaltyDestroy=TargetDestroy.PenaltyDestroy+1
 if Player.HitPlayers[TargetPlayerName]then
 MESSAGE:NewType(self.DisplayMessagePrefix.."Player '"..PlayerName.."' destroyed friendly player '"..TargetPlayerName.."' "..TargetUnitCategory.." ( "..ThreatTypeTarget.." ) "..
-"Penalty: -"..TargetDestroy.Penalty.." = "..Player.Score-Player.Penalty,
+"Penalty: -"..ThreatPenalty.." = "..Player.Score-Player.Penalty,
 MESSAGE.Type.Information)
 :ToAllIf(self:IfMessagesDestroy()and self:IfMessagesToAll())
 :ToCoalitionIf(InitCoalition,self:IfMessagesDestroy()and self:IfMessagesToCoalition())
 else
 MESSAGE:NewType(self.DisplayMessagePrefix.."Player '"..PlayerName.."' destroyed friendly target "..TargetUnitCategory.." ( "..ThreatTypeTarget.." ) "..
-"Penalty: -"..TargetDestroy.Penalty.." = "..Player.Score-Player.Penalty,
+"Penalty: -"..ThreatPenalty.." = "..Player.Score-Player.Penalty,
 MESSAGE.Type.Information)
 :ToAllIf(self:IfMessagesDestroy()and self:IfMessagesToAll())
 :ToCoalitionIf(InitCoalition,self:IfMessagesDestroy()and self:IfMessagesToCoalition())
@@ -44366,13 +46178,13 @@ TargetDestroy.Score=TargetDestroy.Score+ThreatScore
 TargetDestroy.ScoreDestroy=TargetDestroy.ScoreDestroy+1
 if Player.HitPlayers[TargetPlayerName]then
 MESSAGE:NewType(self.DisplayMessagePrefix.."Player '"..PlayerName.."' destroyed enemy player '"..TargetPlayerName.."' "..TargetUnitCategory.." ( "..ThreatTypeTarget.." ) "..
-"Score: +"..TargetDestroy.Score.." = "..Player.Score-Player.Penalty,
+"Score: +"..ThreatScore.." = "..Player.Score-Player.Penalty,
 MESSAGE.Type.Information)
 :ToAllIf(self:IfMessagesDestroy()and self:IfMessagesToAll())
 :ToCoalitionIf(InitCoalition,self:IfMessagesDestroy()and self:IfMessagesToCoalition())
 else
 MESSAGE:NewType(self.DisplayMessagePrefix.."Player '"..PlayerName.."' destroyed enemy "..TargetUnitCategory.." ( "..ThreatTypeTarget.." ) "..
-"Score: +"..TargetDestroy.Score.." = "..Player.Score-Player.Penalty,
+"Score: +"..ThreatScore.." = "..Player.Score-Player.Penalty,
 MESSAGE.Type.Information)
 :ToAllIf(self:IfMessagesDestroy()and self:IfMessagesToAll())
 :ToCoalitionIf(InitCoalition,self:IfMessagesDestroy()and self:IfMessagesToCoalition())
@@ -48167,7 +49979,7 @@ end
 local UnControlled=true
 for i=1,#cargoassets do
 local asset=cargoassets[i]
-asset.spawned=false
+if not asset.spawned then
 asset.iscargo=true
 asset.rid=Request.uid
 local _alias=asset.spawngroupname
@@ -48192,6 +50004,7 @@ self:E(self.lid.."ERROR: Unknown asset category!")
 end
 if _group then
 self:__AssetSpawned(0.01,_group,asset,Request)
+end
 end
 end
 end
@@ -49272,6 +51085,7 @@ end
 local parking={}
 for _,asset in pairs(assets)do
 local _asset=asset
+if not _asset.spawned then
 local terminaltype=asset.terminalType or self:_GetTerminal(asset.attribute,self:GetAirbaseCategory())
 parking[_asset.uid]={}
 for i=1,_asset.nunits do
@@ -49328,6 +51142,7 @@ end
 if not gotit then
 self:I(self.lid..string.format("WARNING: No free parking spot for asset %s [id=%d]",assetname,_asset.uid))
 return nil
+end
 end
 end
 end
@@ -50076,7 +51891,7 @@ end
 function ZONE_CAPTURE_COALITION:OnEventHit(EventData)
 if self.HitsOn then
 local UnitHit=EventData.TgtUnit
-if UnitHit.ClassName~="SCENERY"then
+if UnitHit and UnitHit.ClassName~="SCENERY"then
 if UnitHit and UnitHit:IsInZone(self)and UnitHit:GetCoalition()==self.Coalition then
 self.HitTimeLast=timer.getTime()
 if self:GetState()~="Attacked"then
@@ -50604,6 +52419,9 @@ S3B="S-3B",
 S3BTANKER="S-3B Tanker",
 E2D="E-2C",
 C2A="C2A_Greyhound",
+RHINOE="FA-18E",
+RHINOF="FA-18F",
+GROWLER="EA-18G",
 }
 AIRBOSS.CarrierType={
 ROOSEVELT="CVN_71",
@@ -52392,6 +54210,9 @@ radiocall.suffix=suffix or".ogg"
 end
 function AIRBOSS:_GetAircraftAoA(playerData)
 local hornet=playerData.actype==AIRBOSS.AircraftCarrier.HORNET
+or playerData.actype==AIRBOSS.AircraftCarrier.RHINOE
+or playerData.actype==AIRBOSS.AircraftCarrier.RHINOF
+or playerData.actype==AIRBOSS.AircraftCarrier.GROWLER
 local goshawk=playerData.actype==AIRBOSS.AircraftCarrier.T45C
 local skyhawk=playerData.actype==AIRBOSS.AircraftCarrier.A4EC
 local harrier=playerData.actype==AIRBOSS.AircraftCarrier.AV8B
@@ -52463,6 +54284,9 @@ end
 function AIRBOSS:_GetAircraftParameters(playerData,step)
 step=step or playerData.step
 local hornet=playerData.actype==AIRBOSS.AircraftCarrier.HORNET
+or playerData.actype==AIRBOSS.AircraftCarrier.RHINOE
+or playerData.actype==AIRBOSS.AircraftCarrier.RHINOF
+or playerData.actype==AIRBOSS.AircraftCarrier.GROWLER
 local skyhawk=playerData.actype==AIRBOSS.AircraftCarrier.A4EC
 local tomcat=playerData.actype==AIRBOSS.AircraftCarrier.F14A or playerData.actype==AIRBOSS.AircraftCarrier.F14B
 local harrier=playerData.actype==AIRBOSS.AircraftCarrier.AV8B
@@ -52906,6 +54730,9 @@ actype==AIRBOSS.AircraftCarrier.F14A or
 actype==AIRBOSS.AircraftCarrier.F14B or
 actype==AIRBOSS.AircraftCarrier.F14A_AI or
 actype==AIRBOSS.AircraftCarrier.HORNET or
+actype==AIRBOSS.AircraftCarrier.RHINOE or
+actype==AIRBOSS.AircraftCarrier.RHINOF or
+actype==AIRBOSS.AircraftCarrier.GROWLER or
 actype==AIRBOSS.AircraftCarrier.FA18C or
 actype==AIRBOSS.AircraftCarrier.S3B or
 actype==AIRBOSS.AircraftCarrier.S3BTANKER then
@@ -52943,7 +54770,11 @@ end
 function AIRBOSS:_LandAI(flight)
 self:T(self.lid..string.format("Landing AI flight %s.",flight.groupname))
 local Speed=UTILS.KnotsToKmph(200)
-if flight.actype==AIRBOSS.AircraftCarrier.HORNET or flight.actype==AIRBOSS.AircraftCarrier.FA18C then
+if flight.actype==AIRBOSS.AircraftCarrier.HORNET
+or flight.actype==AIRBOSS.AircraftCarrier.FA18C
+or flight.actype==AIRBOSS.AircraftCarrier.RHINOE
+or flight.actype==AIRBOSS.AircraftCarrier.RHINOF
+or flight.actype==AIRBOSS.AircraftCarrier.GROWLER then
 Speed=UTILS.KnotsToKmph(200)
 elseif flight.actype==AIRBOSS.AircraftCarrier.E2D then
 Speed=UTILS.KnotsToKmph(150)
@@ -54349,7 +56180,13 @@ self:_CheckCorridor(playerData)
 local inzone=playerData.unit:IsInZone(self:_GetZoneDirtyUp(playerData.case))
 if inzone then
 self:_PlayerHint(playerData)
-if playerData.actype==AIRBOSS.AircraftCarrier.HORNET or playerData.actype==AIRBOSS.AircraftCarrier.F14A or playerData.actype==AIRBOSS.AircraftCarrier.F14B then
+if playerData.actype==AIRBOSS.AircraftCarrier.HORNET
+or playerData.actype==AIRBOSS.AircraftCarrier.F14A
+or playerData.actype==AIRBOSS.AircraftCarrier.F14B
+or playerData.actype==AIRBOSS.AircraftCarrier.RHINOE
+or playerData.actype==AIRBOSS.AircraftCarrier.RHINOF
+or playerData.actype==AIRBOSS.AircraftCarrier.GROWLER
+then
 local callsay=self:_NewRadioCall(self.MarshalCall.SAYNEEDLES,nil,nil,5,playerData.onboard)
 local callfly=self:_NewRadioCall(self.MarshalCall.FLYNEEDLES,nil,nil,5,playerData.onboard)
 self:RadioTransmission(self.MarshalRadio,callsay,false,55,nil,true)
@@ -54834,6 +56671,20 @@ end
 self.sterncoord:SetAltitude(self.carrierparam.deckheight)
 return self.sterncoord
 end
+function AIRBOSS:_GetWireFromDrawArg()
+local wireArgs={}
+wireArgs[1]=141
+wireArgs[2]=142
+wireArgs[3]=143
+wireArgs[4]=144
+for wire,drawArg in pairs(wireArgs)do
+local value=self.carrier:GetDrawArgumentValue(drawArg)
+if math.abs(value)>0.001 then
+return wire
+end
+end
+return 99
+end
 function AIRBOSS:_GetWire(Lcoord,dc)
 local FB=self:GetFinalBearing()
 local Scoord=self:_GetSternCoord()
@@ -54885,7 +56736,10 @@ local v=unit:GetVelocityKMH()-self.carrier:GetVelocityKMH()
 local stern=self:_GetSternCoord()
 local s=stern:Get2DDistance(coord)
 local dcorr=100
-if playerData.actype==AIRBOSS.AircraftCarrier.HORNET then
+if playerData.actype==AIRBOSS.AircraftCarrier.HORNET
+or playerData.actype==AIRBOSS.AircraftCarrier.RHINOE
+or playerData.actype==AIRBOSS.AircraftCarrier.RHINOF
+or playerData.actype==AIRBOSS.AircraftCarrier.GROWLER then
 dcorr=100
 elseif playerData.actype==AIRBOSS.AircraftCarrier.F14A or playerData.actype==AIRBOSS.AircraftCarrier.F14B then
 dcorr=100
@@ -56014,7 +57868,10 @@ end
 end
 if playerData.step==AIRBOSS.PatternStep.BULLSEYE then
 if playerData.difficulty==AIRBOSS.Difficulty.EASY then
-if playerData.actype==AIRBOSS.AircraftCarrier.HORNET then
+if playerData.actype==AIRBOSS.AircraftCarrier.HORNET
+or playerData.actype==AIRBOSS.AircraftCarrier.RHINOE
+or playerData.actype==AIRBOSS.AircraftCarrier.RHINOF
+or playerData.actype==AIRBOSS.AircraftCarrier.GROWLER then
 hint=hint..string.format("\nIntercept glideslope and follow the needles.")
 else
 hint=hint..string.format("\nIntercept glideslope.")
@@ -56678,6 +58535,10 @@ elseif actype==AIRBOSS.AircraftCarrier.F14A_AI or actype==AIRBOSS.AircraftCarrie
 nickname="Tomcat"
 elseif actype==AIRBOSS.AircraftCarrier.FA18C or actype==AIRBOSS.AircraftCarrier.HORNET then
 nickname="Hornet"
+elseif actype==AIRBOSS.AircraftCarrier.RHINOE or actype==AIRBOSS.AircraftCarrier.RHINOF then
+nickname="Rhino"
+elseif actype==AIRBOSS.AircraftCarrier.GROWLER then
+nickname="Growler"
 elseif actype==AIRBOSS.AircraftCarrier.S3B or actype==AIRBOSS.AircraftCarrier.S3BTANKER then
 nickname="Viking"
 end
@@ -58923,7 +60784,7 @@ local pB=b
 if a and b then
 local performanceA=self:GetPayloadPeformance(a,MissionType)
 local performanceB=self:GetPayloadPeformance(b,MissionType)
-return(performanceA>performanceB)or(performanceA==performanceB and a.unlimited==true)or(performanceA==performanceB and a.unlimited==true and b.unlimited==true and a.navail>b.navail)
+return(performanceA>performanceB)or(performanceA==performanceB and a.unlimited==true and b.unlimited~=true)or(performanceA==performanceB and a.unlimited==true and b.unlimited==true and a.navail>b.navail)
 elseif not a then
 self:I(self.lid..string.format("FF ERROR in sortpayloads: a is nil"))
 return false
@@ -59404,7 +61265,7 @@ ClassName="ARMYGROUP",
 formationPerma=nil,
 engage={},
 }
-ARMYGROUP.version="0.8.0"
+ARMYGROUP.version="1.0.0"
 function ARMYGROUP:New(group)
 local og=_DATABASE:GetOpsGroup(group)
 if og then
@@ -59576,6 +61437,15 @@ end
 end
 end
 end
+local mission=self:GetMissionCurrent()
+if mission and mission.updateDCSTask then
+if mission.type==AUFTRAG.Type.CAPTUREZONE then
+local Task=mission:GetGroupWaypointTask(self)
+if mission:GetGroupStatus(self)==AUFTRAG.GroupStatus.EXECUTING or mission:GetGroupStatus(self)==AUFTRAG.GroupStatus.STARTED then
+self:_UpdateTask(Task,mission)
+end
+end
+end
 else
 self:_CheckDamage()
 end
@@ -59726,6 +61596,8 @@ elseif task.dcstask.id=="ReconMission"then
 self:T2(self.lid.."Allowing update route for Task: ReconMission")
 elseif task.dcstask.id==AUFTRAG.SpecialTask.RELOCATECOHORT then
 self:T2(self.lid.."Allowing update route for Task: Relocate Cohort")
+elseif task.dcstask.id==AUFTRAG.SpecialTask.REARMING then
+self:T2(self.lid.."Allowing update route for Task: Rearming")
 else
 local taskname=task and task.description or"No description"
 self:T(self.lid..string.format("WARNING: Update route denied because taskcurrent=%d>0! Task description = %s",self.taskcurrent,tostring(taskname)))
@@ -59862,7 +61734,7 @@ self:RemoveWaypointByID(wp.uid)
 end
 end
 Speed=Speed or self:GetSpeedCruise()
-local uid=self:GetWaypointCurrent().uid
+local uid=self:GetWaypointCurrentUID()
 local wp=self:AddWaypoint(Coordinate,Speed,uid,Formation,true)
 if ResumeRoute then
 wp.detour=1
@@ -59889,10 +61761,12 @@ return
 end
 end
 if self.retreatOnOutOfAmmo then
+self:T(self.lid.."Retreat on out of ammo")
 self:__Retreat(-1)
 return
 end
-if self.rtzOnOutOfAmmo then
+if self.rtzOnOutOfAmmo and not self:IsMissionTypeInQueue(AUFTRAG.Type.REARMING)then
+self:T(self.lid.."RTZ on out of ammo")
 self:__RTZ(-1)
 end
 end
@@ -59900,10 +61774,15 @@ function ARMYGROUP:onbeforeRearm(From,Event,To,Coordinate,Formation)
 local dt=nil
 local allowed=true
 if self:IsOnMission()then
+local mission=self:GetMissionCurrent()
+if mission and mission.type~=AUFTRAG.Type.REARMING then
 self:T(self.lid.."Rearm command but have current mission ==> Pausing mission!")
 self:PauseMission()
 dt=-0.1
 allowed=false
+else
+self:T(self.lid.."Rearm command and current mission is REARMING ==> Transition ALLOWED!")
+end
 end
 if self:IsEngaging()then
 self:T(self.lid.."Rearm command but currently engaging ==> Disengage!")
@@ -59927,7 +61806,7 @@ return allowed
 end
 function ARMYGROUP:onafterRearm(From,Event,To,Coordinate,Formation)
 self:T(self.lid..string.format("Group send to rearm"))
-local uid=self:GetWaypointCurrent().uid
+local uid=self:GetWaypointCurrentUID()
 local wp=self:AddWaypoint(Coordinate,nil,uid,Formation,true)
 wp.detour=0
 end
@@ -59941,6 +61820,7 @@ self:_CheckGroupDone(1)
 end
 end
 function ARMYGROUP:onbeforeRTZ(From,Event,To,Zone,Formation)
+self:T2(self.lid.."onbeforeRTZ")
 local zone=Zone or self.homezone
 if zone then
 if(not self.isMobile)and(not self:IsInZone(zone))then
@@ -59954,6 +61834,7 @@ end
 return true
 end
 function ARMYGROUP:onafterRTZ(From,Event,To,Zone,Formation)
+self:T2(self.lid.."onafterRTZ")
 local zone=Zone or self.homezone
 self:CancelAllMissions()
 if zone then
@@ -60004,8 +61885,9 @@ end
 return true
 end
 function ARMYGROUP:onafterRetreat(From,Event,To,Zone,Formation)
-local uid=self:GetWaypointCurrent().uid
+local uid=self:GetWaypointCurrentUID()
 local Coordinate=Zone:GetRandomCoordinate()
+self:T(self.lid..string.format("Retreating to zone %s",Zone:GetName()))
 local wp=self:AddWaypoint(Coordinate,nil,uid,Formation,true)
 wp.detour=0
 self:CancelAllMissions()
@@ -60024,7 +61906,7 @@ self:T(self.lid.."WARNING: Cannot engage TARGET because no ammo left!")
 return false
 end
 local mission=self:GetMissionCurrent()
-if mission and mission.type~=AUFTRAG.Type.GROUNDATTACK then
+if mission and mission.type~=AUFTRAG.Type.GROUNDATTACK and mission.type~=AUFTRAG.Type.CAPTUREZONE then
 self:T(self.lid.."Engage command but have current mission ==> Pausing mission!")
 self:PauseMission()
 dt=-0.1
@@ -60061,9 +61943,10 @@ if self.engage.Target and self.engage.Target:IsAlive()then
 local vec3=self.engage.Target:GetVec3()
 if vec3 then
 local dist=UTILS.VecDist3D(vec3,self.engage.Coordinate:GetVec3())
-if dist>100 then
+local los=self:HasLoS(vec3)
+if dist>100 or los==false then
 self.engage.Coordinate:UpdateFromVec3(vec3)
-local uid=self:GetWaypointCurrent().uid
+local uid=self:GetWaypointCurrentUID()
 self:RemoveWaypointByID(self.engage.Waypoint.uid)
 local intercoord=self:GetCoordinate():GetIntermediateCoordinate(self.engage.Coordinate,0.9)
 self.engage.Waypoint=self:AddWaypoint(intercoord,self.engage.Speed,uid,self.engage.Formation,true)
@@ -60120,6 +62003,8 @@ Speed=Speed or self:GetSpeedCruise()
 if not Formation then
 if self.formationPerma then
 Formation=self.formationPerma
+elseif self.optionDefault.Formation then
+Formation=self.optionDefault.Formation
 elseif self.option.Formation then
 Formation=self.option.Formation
 else
@@ -60163,7 +62048,8 @@ self.radio.On=false
 self.radio.Freq=133
 self.radio.Modu=radio.modulation.AM
 self:SetDefaultRadio(self.radio.Freq,self.radio.Modu,self.radio.On)
-self.optionDefault.Formation=template.route.points[1].action
+self.option.Formation=template.route.points[1].action
+self.optionDefault.Formation=ENUMS.Formation.Vehicle.OnRoad
 self:SetDefaultTACAN(nil,nil,nil,nil,true)
 self.tacan=UTILS.DeepCopy(self.tacanDefault)
 local units=self.group:GetUnits()
@@ -60304,6 +62190,7 @@ markerid=nil,
 relHumidity=nil,
 ReportmBar=false,
 TransmitOnlyWithPlayers=false,
+ATISforFARPs=false,
 }
 ATIS.Alphabet={
 [1]="Alfa",
@@ -60431,7 +62318,7 @@ RSBNChannel={filename="RSBNChannel.ogg",duration=1.14},
 Zulu={filename="Zulu.ogg",duration=0.62},
 }
 _ATIS={}
-ATIS.version="0.9.12"
+ATIS.version="0.9.14"
 function ATIS:New(AirbaseName,Frequency,Modulation)
 local self=BASE:Inherit(self,FSM:New())
 self.airbasename=AirbaseName
@@ -60709,9 +62596,14 @@ local coal=self.airbase and self.airbase:GetCoalition()or nil
 return coal
 end
 function ATIS:onafterStart(From,Event,To)
-if self.airbase:GetAirbaseCategory()~=Airbase.Category.AIRDROME then
-self:E(self.lid..string.format("ERROR: Cannot start ATIS for airbase %s! Only AIRDROMES are supported but NOT FARPS or SHIPS.",self.airbasename))
+if self.airbase:GetAirbaseCategory()==Airbase.Category.SHIP then
+self:E(self.lid..string.format("ERROR: Cannot start ATIS for airbase %s! Only AIRDROMES are supported but NOT SHIPS.",self.airbasename))
 return
+end
+if self.airbase:GetAirbaseCategory()==Airbase.Category.HELIPAD then
+self:E(self.lid..string.format("EXPERIMENTAL: Starting ATIS for Helipad %s! SRS must be ON",self.airbasename))
+self.ATISforFARPs=true
+self.useSRS=true
 end
 self:I(self.lid..string.format("Starting ATIS v%s for airbase %s on %.3f MHz Modulation=%d",ATIS.version,self.airbasename,self.frequency,self.modulation))
 if not self.useSRS then
@@ -60828,8 +62720,15 @@ end
 if self.metric then
 WINDSPEED=string.format("%d",windSpeed)
 end
-local runwayLanding,rwyLandingLeft=self:GetActiveRunway()
-local runwayTakeoff,rwyTakeoffLeft=self:GetActiveRunway(true)
+local runwayLanding,rwyLandingLeft
+local runwayTakeoff,rwyTakeoffLeft
+if self.airbase:GetAirbaseCategory()==Airbase.Category.HELIPAD then
+runwayLanding,rwyLandingLeft="PAD 01",false
+runwayTakeoff,rwyTakeoffLeft="PAD 02",false
+else
+runwayLanding,rwyLandingLeft=self:GetActiveRunway()
+runwayTakeoff,rwyTakeoffLeft=self:GetActiveRunway(true)
+end
 local time=timer.getAbsTime()
 if self.zuludiff then
 time=time-self.zuludiff*60*60
@@ -61028,7 +62927,7 @@ end
 end
 local subtitle=""
 subtitle=string.format("%s",self.airbasename)
-if self.airbasename:find("AFB")==nil and self.airbasename:find("Airport")==nil and self.airbasename:find("Airstrip")==nil and self.airbasename:find("airfield")==nil and self.airbasename:find("AB")==nil then
+if(not self.ATISforFARPs)and self.airbasename:find("AFB")==nil and self.airbasename:find("Airport")==nil and self.airbasename:find("Airstrip")==nil and self.airbasename:find("airfield")==nil and self.airbasename:find("AB")==nil then
 subtitle=subtitle.." Airport"
 end
 if not self.useSRS then
@@ -61312,6 +63211,7 @@ end
 end
 end
 alltext=alltext..";\n"..subtitle
+if not self.ATISforFARPs then
 local subtitle=string.format("Active runway %s",runwayLanding)
 if rwyLandingLeft==true then
 subtitle=subtitle.." Left"
@@ -61359,6 +63259,7 @@ self:Transmission(ATIS.Sound.Feet,0.1)
 end
 end
 alltext=alltext..";\n"..subtitle
+end
 end
 if self.elevation then
 local elevation=self.airbase:GetHeight()
@@ -61531,6 +63432,8 @@ local text=string.gsub(text,"inHg","inches of Mercury")
 local text=string.gsub(text,"mmHg","millimeters of Mercury")
 local text=string.gsub(text,"hPa","hectopascals")
 local text=string.gsub(text,"m/s","meters per second")
+local text=string.gsub(text,"TACAN","tackan")
+local text=string.gsub(text,"FARP","farp")
 local text=string.gsub(text,";"," . ")
 self:T("SRS TTS: "..text)
 local duration=STTS.getSpeechTime(text,0.95)
@@ -61679,6 +63582,8 @@ conditionStart={},
 conditionSuccess={},
 conditionFailure={},
 conditionPush={},
+conditionSuccessSet=false,
+conditionFailureSet=false,
 }
 _AUFTRAGSNR=0
 AUFTRAG.Type={
@@ -61722,6 +63627,7 @@ AIRDEFENSE="Air Defence",
 EWR="Early Warning Radar",
 RECOVERYTANKER="Recovery Tanker",
 REARMING="Rearming",
+CAPTUREZONE="Capture Zone",
 NOTHING="Nothing",
 }
 AUFTRAG.SpecialTask={
@@ -61743,6 +63649,7 @@ AIRDEFENSE="Air Defense",
 EWR="Early Warning Radar",
 RECOVERYTANKER="Recovery Tanker",
 REARMING="Rearming",
+CAPTUREZONE="Capture Zone",
 NOTHING="Nothing",
 }
 AUFTRAG.Status={
@@ -61782,7 +63689,7 @@ HELICOPTER="Helicopter",
 GROUND="Ground",
 NAVAL="Naval",
 }
-AUFTRAG.version="0.9.7"
+AUFTRAG.version="1.1.0"
 function AUFTRAG:New(Type)
 local self=BASE:Inherit(self,FSM:New())
 _AUFTRAGSNR=_AUFTRAGSNR+1
@@ -61871,7 +63778,7 @@ mission.orbitAltitude=UTILS.FeetToMeters(Altitude)
 else
 mission.orbitAltitude=Coordinate.y
 end
-mission.orbitSpeed=UTILS.KnotsToMps(UTILS.KnotsToAltKIAS(Speed or 350,UTILS.MetersToFeet(mission.orbitAltitude)))
+mission.orbitSpeed=UTILS.IasToTas(UTILS.KnotsToMps(Speed or 350),mission.orbitAltitude)
 mission.missionSpeed=UTILS.KnotsToKmph(Speed or 350)
 if Leg then
 mission.orbitLeg=UTILS.NMToMeters(Leg)
@@ -61963,12 +63870,8 @@ mission.DCStask=mission:GetDCSMissionTask()
 return mission
 end
 function AUFTRAG:NewCAP(ZoneCAP,Altitude,Speed,Coordinate,Heading,Leg,TargetTypes)
-if TargetTypes then
-if type(TargetTypes)~="table"then
-TargetTypes={TargetTypes}
-end
-end
-local mission=AUFTRAG:NewORBIT(Coordinate or ZoneCAP:GetCoordinate(),Altitude or 10000,Speed,Heading,Leg)
+TargetTypes=UTILS.EnsureTable(TargetTypes,true)
+local mission=AUFTRAG:NewORBIT(Coordinate or ZoneCAP:GetCoordinate(),Altitude or 10000,Speed or 350,Heading,Leg)
 mission.type=AUFTRAG.Type.CAP
 mission:_SetLogID()
 mission.engageZone=ZoneCAP
@@ -61976,16 +63879,13 @@ mission.engageTargetTypes=TargetTypes or{"Air"}
 mission.missionTask=ENUMS.MissionTask.CAP
 mission.optionROE=ENUMS.ROE.OpenFire
 mission.optionROT=ENUMS.ROT.EvadeFire
+mission.missionSpeed=UTILS.KnotsToKmph(UTILS.KnotsToAltKIAS(Speed or 350,Altitude))
 mission.categories={AUFTRAG.Category.AIRCRAFT}
 mission.DCStask=mission:GetDCSMissionTask()
 return mission
 end
 function AUFTRAG:NewCAPGROUP(Grp,Altitude,Speed,RelHeading,Leg,OffsetDist,OffsetAngle,UpdateDistance,TargetTypes,EngageRange)
-if TargetTypes then
-if type(TargetTypes)~="table"then
-TargetTypes={TargetTypes}
-end
-end
+TargetTypes=UTILS.EnsureTable(TargetTypes,true)
 local OffsetVec2={r=OffsetDist or 6,phi=OffsetAngle or 180}
 Leg=Leg or 14
 local Heading=nil
@@ -62007,11 +63907,7 @@ mission.DCStask=mission:GetDCSMissionTask()
 return mission
 end
 function AUFTRAG:NewCAS(ZoneCAS,Altitude,Speed,Coordinate,Heading,Leg,TargetTypes)
-if TargetTypes then
-if type(TargetTypes)~="table"then
-TargetTypes={TargetTypes}
-end
-end
+TargetTypes=UTILS.EnsureTable(TargetTypes,true)
 local mission=AUFTRAG:NewORBIT(Coordinate or ZoneCAS:GetCoordinate(),Altitude or 10000,Speed,Heading,Leg)
 mission.type=AUFTRAG.Type.CAS
 mission:_SetLogID()
@@ -62037,6 +63933,7 @@ mission.optionROT=ENUMS.ROT.EvadeFire
 mission.missionFraction=1.0
 mission.missionSpeed=Speed and UTILS.KnotsToKmph(Speed)or nil
 mission.missionAltitude=Altitude and UTILS.FeetToMeters(Altitude)or nil
+mission.dTevaluate=15
 mission.categories={AUFTRAG.Category.AIRCRAFT}
 mission.DCStask=mission:GetDCSMissionTask()
 return mission
@@ -62289,6 +64186,28 @@ mission.missionAltitude=Altitude and UTILS.FeetToMeters(Altitude)or nil
 mission.categories={AUFTRAG.Category.ALL}
 mission.DCStask=mission:GetDCSMissionTask()
 mission.DCStask.params.formation=Formation or"Off Road"
+return mission
+end
+function AUFTRAG:NewCAPTUREZONE(OpsZone,Coalition,Speed,Altitude,Formation)
+local mission=AUFTRAG:New(AUFTRAG.Type.CAPTUREZONE)
+mission:_TargetFromObject(OpsZone)
+mission.coalition=Coalition
+mission.missionTask=mission:GetMissionTaskforMissionType(AUFTRAG.Type.CAPTUREZONE)
+mission.optionROE=ENUMS.ROE.ReturnFire
+mission.optionROT=ENUMS.ROT.PassiveDefense
+mission.optionAlarm=ENUMS.AlarmState.Auto
+mission.missionFraction=0.1
+mission.missionSpeed=Speed and UTILS.KnotsToKmph(Speed)or nil
+mission.missionAltitude=Altitude and UTILS.FeetToMeters(Altitude)or nil
+mission.categories={AUFTRAG.Category.ALL}
+mission.DCStask=mission:GetDCSMissionTask()
+mission.updateDCSTask=true
+local params={}
+params.formation=Formation or"Off Road"
+params.zone=mission:GetObjective()
+params.altitude=mission.missionAltitude
+params.speed=mission.missionSpeed
+mission.DCStask.params=params
 return mission
 end
 function AUFTRAG:NewARMORATTACK(Target,Speed,Formation)
@@ -62601,6 +64520,11 @@ end
 self.teleport=Switch
 return self
 end
+function AUFTRAG:SetReturnToLegion(Switch)
+self.legionReturn=Switch
+self:T(self.lid..string.format("Setting ReturnToLetion=%s",tostring(self.legionReturn)))
+return self
+end
 function AUFTRAG:SetPushTime(ClockPush)
 if ClockPush then
 if type(ClockPush)=="string"then
@@ -62629,6 +64553,10 @@ function AUFTRAG:SetRepeatOnSuccess(Nrepeat)
 self.NrepeatSuccess=Nrepeat or 0
 return self
 end
+function AUFTRAG:SetReinforce(Nreinforce)
+self.reinforce=Nreinforce
+return self
+end
 function AUFTRAG:SetRequiredAssets(NassetsMin,NassetsMax)
 self.NassetsMin=NassetsMin or 1
 self.NassetsMax=NassetsMax or self.NassetsMin
@@ -62637,13 +64565,22 @@ self.NassetsMax=self.NassetsMin
 end
 return self
 end
-function AUFTRAG:GetRequiredAssets(Legion)
+function AUFTRAG:GetRequiredAssets()
 local Nmin=self.NassetsMin
 local Nmax=self.NassetsMax
 if self.type==AUFTRAG.Type.RELOCATECOHORT then
 local cohort=self.DCStask.params.cohort
 Nmin=#cohort.assets
 Nmax=Nmin
+else
+if self:IsExecuting()and self.reinforce and self.reinforce>0 then
+local N=self:CountOpsGroups()
+if N<Nmin then
+Nmin=math.min(Nmin-N,self.reinforce)
+Nmax=Nmin
+self:T(self.lid..string.format("FF Executing Nmin=%d, N=%d, Nreinfoce=%d ==> Nmin=%d",self.NassetsMin,N,self.reinforce,Nmin))
+end
+end
 end
 return Nmin,Nmax
 end
@@ -62761,18 +64698,15 @@ elseif Carriers:IsInstanceOf("OPSGROUP")then
 Carriers:AddOpsTransport(self.opstransport)
 end
 end
+return self
 end
 function AUFTRAG:SetRequiredAttribute(Attributes)
-if Attributes and type(Attributes)~="table"then
-Attributes={Attributes}
-end
-self.attributes=Attributes
+self.attributes=UTILS.EnsureTable(Attributes,true)
+return self
 end
 function AUFTRAG:SetRequiredProperty(Properties)
-if Properties and type(Properties)~="table"then
-Properties={Properties}
-end
-self.properties=Properties
+self.properties=UTILS.EnsureTable(Properties,true)
+return self
 end
 function AUFTRAG:SetRequiredCarriers(NcarriersMin,NcarriersMax)
 self.NcarriersMin=NcarriersMin or 1
@@ -62937,6 +64871,7 @@ if arg then
 condition.arg=arg
 end
 table.insert(self.conditionSuccess,condition)
+self.conditionSuccessSet=true
 return self
 end
 function AUFTRAG:AddConditionFailure(ConditionFunction,...)
@@ -62947,6 +64882,7 @@ if arg then
 condition.arg=arg
 end
 table.insert(self.conditionFailure,condition)
+self.conditionFailureSet=true
 return self
 end
 function AUFTRAG:AddConditionPush(ConditionFunction,...)
@@ -63161,10 +65097,20 @@ end
 local Ntargets=self:CountMissionTargets()
 local Ntargets0=self:GetTargetInitialNumber()
 local Ngroups=self:CountOpsGroups()
+local Nassigned=self.Nassigned and self.Nassigned-self.Ndead or 0
+local conditionDone=false
+if self.conditionFailureSet then
+conditionDone=self:EvalConditionsAny(self.conditionFailure)
+end
+if self.conditionSuccessSet and not conditionDone then
+conditionDone=self:EvalConditionsAny(self.conditionSuccess)
+end
 if self:IsNotOver()then
 if self:CheckGroupsDone()then
 self:Done()
 elseif(self.Tstop and Tnow>self.Tstop+10)then
+self:Cancel()
+elseif conditionDone then
 self:Cancel()
 elseif self.durationExe and self.Texecuting and Tnow-self.Texecuting>self.durationExe then
 local Nrepeat=self.Nrepeat
@@ -63177,7 +65123,7 @@ self.NrepeatFailure=NrepeatF
 elseif(Ntargets0>0 and Ntargets==0)then
 self:T(self.lid.."No targets left cancelling mission!")
 self:Cancel()
-elseif self:IsExecuting()then
+elseif self:IsExecuting()and((not self.reinforce)or(self.reinforce==0 and Nassigned<=0))then
 if Ngroups==0 then
 self:Done()
 else
@@ -63214,6 +65160,14 @@ local text="Group data:"
 for groupname,_groupdata in pairs(self.groupdata)do
 local groupdata=_groupdata
 text=text..string.format("\n- %s: status mission=%s opsgroup=%s",groupname,groupdata.status,groupdata.opsgroup and groupdata.opsgroup:GetState()or"N/A")
+end
+self:I(self.lid..text)
+end
+if self.verbose>=3 then
+local text=string.format("Assets [N=%d,Nassigned=%s, Ndead=%s]:",self.Nassets or 0,self.Nassigned or 0,self.Ndead or 0)
+for i,_asset in pairs(self.assets or{})do
+local asset=_asset
+text=text..string.format("\n[%d] %s: spawned=%s, requested=%s, reserved=%s",i,asset.spawngroupname,tostring(asset.spawned),tostring(asset.requested),tostring(asset.reserved))
 end
 self:I(self.lid..text)
 end
@@ -63467,6 +65421,10 @@ if self:IsPlanned()or self:IsQueued()or self:IsRequested()then
 self:T2(self.lid..string.format("CheckGroupsDone: Mission is still in state %s [FSM=%s] (PLANNED or QUEUED or REQUESTED). Mission NOT DONE!",self.status,self:GetState()))
 return false
 end
+if self:IsExecuting()and self.reinforce and(self.reinforce>0 or self.Nassigned-self.Ndead>0)then
+self:T2(self.lid..string.format("CheckGroupsDone: Mission is still in state %s [FSM=%s] and reinfoce=%d. Mission NOT DONE!",self.status,self:GetState(),self.reinforce))
+return false
+end
 if self:IsStarted()and self:CountOpsGroups()==0 then
 self:T(self.lid..string.format("CheckGroupsDone: Mission is STARTED state %s [FSM=%s] but count of alive OPSGROUP is zero. Mission DONE!",self.status,self:GetState()))
 return true
@@ -63529,7 +65487,7 @@ end
 function AUFTRAG:onafterAssetDead(From,Event,To,Asset)
 local N=self:CountOpsGroups()
 self:T(self.lid..string.format("Asset %s dead! Number of ops groups remaining %d",tostring(Asset.spawngroupname),N))
-if N==0 then
+if N==0 and(self.reinforce==nil or self.reinforce==0)then
 if self:IsNotOver()then
 self:Cancel()
 else
@@ -63734,8 +65692,9 @@ return self
 end
 function AUFTRAG:CountMissionTargets()
 local N=0
+local Coalitions=self.coalition and UTILS.GetCoalitionEnemy(self.coalition,true)or nil
 if self.engageTarget then
-N=self.engageTarget:CountTargets()
+N=self.engageTarget:CountTargets(Coalitions)
 end
 return N
 end
@@ -63774,8 +65733,8 @@ end
 function AUFTRAG:GetTargetData()
 return self.engageTarget
 end
-function AUFTRAG:GetObjective()
-local objective=self:GetTargetData():GetObject()
+function AUFTRAG:GetObjective(RefCoordinate,Coalitions)
+local objective=self:GetTargetData():GetObject(RefCoordinate,Coalitions)
 return objective
 end
 function AUFTRAG:GetTargetType()
@@ -63950,7 +65909,41 @@ function AUFTRAG:_SetLogID()
 self.lid=string.format("Auftrag #%d %s | ",self.auftragsnummer,tostring(self.type))
 return self
 end
-function AUFTRAG:_UpdateTask()
+function AUFTRAG:_GetRequestID(Legion)
+local requestid=nil
+local name=nil
+if type(Legion)=="string"then
+name=Legion
+else
+name=Legion.alias
+end
+if name then
+requestid=self.requestID[name]
+end
+return nil
+end
+function AUFTRAG:_GetRequest(Legion)
+local request=nil
+local requestID=self:_GetRequestID(Legion)
+if requestID then
+request=Legion:GetRequestByID(requestID)
+end
+return request
+end
+function AUFTRAG:_SetRequestID(Legion,RequestID)
+local requestid=nil
+local name=nil
+if type(Legion)=="string"then
+name=Legion
+else
+name=Legion.alias
+end
+if name then
+if self.requestID[name]then
+self:I(self.lid..string.format("WARNING: Mission already has a request ID=%d!",self.requestID[name]))
+end
+self.requestID[name]=RequestID
+end
 return self
 end
 function AUFTRAG:UpdateMarker()
@@ -64101,6 +66094,12 @@ param.altitude=self.missionAltitude
 param.speed=self.missionSpeed
 DCStask.params=param
 table.insert(DCStasks,DCStask)
+elseif self.type==AUFTRAG.Type.CAPTUREZONE then
+local DCStask={}
+DCStask.id=AUFTRAG.SpecialTask.CAPTUREZONE
+local param={}
+DCStask.params=param
+table.insert(DCStasks,DCStask)
 elseif self.type==AUFTRAG.Type.CASENHANCED then
 local DCStask={}
 DCStask.id=AUFTRAG.SpecialTask.PATROLZONE
@@ -64133,7 +66132,7 @@ local param={}
 param.zone=self:GetObjective()
 DCStask.params=param
 table.insert(DCStasks,DCStask)
-elseif self.type==AUFTRAG.Type.AMMOSUPPLY then
+elseif self.type==AUFTRAG.Type.REARMING then
 local DCStask={}
 DCStask.id=AUFTRAG.SpecialTask.REARMING
 local param={}
@@ -64229,7 +66228,11 @@ heading=self.targetHeading or 0
 end
 orbitRaceTrack=UTILS.Vec2Translate(orbitVec2,self.orbitLeg,heading)
 end
-local DCStask=CONTROLLABLE.TaskOrbit(nil,COORDINATE:NewFromVec2(orbitVec2),self.orbitAltitude,self.orbitSpeed,orbitRaceTrack)
+local orbitRaceTrackCoord=nil
+if orbitRaceTrack then
+orbitRaceTrackCoord=COORDINATE:NewFromVec2(orbitRaceTrack)
+end
+local DCStask=CONTROLLABLE.TaskOrbit(nil,COORDINATE:NewFromVec2(orbitVec2),self.orbitAltitude,self.orbitSpeed,orbitRaceTrackCoord)
 table.insert(DCStasks,DCStask)
 end
 end
@@ -64351,7 +66354,7 @@ end
 do
 AWACS={
 ClassName="AWACS",
-version="0.2.50",
+version="0.2.54",
 lid="",
 coalition=coalition.side.BLUE,
 coalitiontxt="blue",
@@ -64438,6 +66441,7 @@ PlayerStationName=nil,
 GCI=false,
 GCIGroup=nil,
 locale="en",
+IncludeHelicopters=false,
 }
 AWACS.CallSignClear={
 [1]="Overlord",
@@ -64682,7 +66686,7 @@ self.intelstarted=false
 self.sunrisedone=false
 local speed=250
 self.SpeedBase=speed
-self.Speed=UTILS.KnotsToAltKIAS(speed,self.AwacsAngels*1000)
+self.Speed=speed
 self.Heading=0
 self.Leg=50
 self.invisible=false
@@ -65105,10 +67109,10 @@ function AWACS:SetAwacsDetails(CallSign,CallSignNo,Angels,Speed,Heading,Leg)
 self:T(self.lid.."SetAwacsDetails")
 self.CallSign=CallSign or CALLSIGN.AWACS.Magic
 self.CallSignNo=CallSignNo or 1
-self.Angels=Angels or 25
+self.AwacsAngels=Angels or 25
 local speed=Speed or 250
 self.SpeedBase=speed
-self.Speed=UTILS.KnotsToAltKIAS(speed,self.Angels*1000)
+self.Speed=speed
 self.Heading=Heading or 0
 self.Leg=Leg or 25
 return self
@@ -65464,7 +67468,7 @@ if entry.FlightGroup:IsAirborne()and((not entry.HasAssignedTask)or overridetask)
 self:T("Adding AI with Callsign: "..entry.CallSign)
 AIPilots[#AIPilots+1]=_entry
 end
-elseif entry.IsPlayer and not entry.Blocked then
+elseif entry.IsPlayer and(not entry.Blocked)and(not entry.Group:IsHelicopter())then
 if(not entry.HasAssignedTask)or overridetask then
 local TNow=timer.getTime()
 if entry.LastTasking and(TNow-entry.LastTasking>self.ReassignTime)then
@@ -65824,6 +67828,7 @@ else
 if contactsAO>0 then
 local dope=self.gettext:GetEntry("DOPE",self.locale)
 text=string.format(dope,self:_GetCallSign(Group,GID)or"Ghost 1",self.callsigntxt)
+textScreen=string.format(dope,self:_GetCallSign(Group,GID)or"Ghost 1",self.callsigntxt)
 local onetxt=self.gettext:GetEntry("ONE",self.locale)
 local grptxt=self.gettext:GetEntry("GROUP",self.locale)
 local groupstxt=self.gettext:GetEntry("GROUPMULTI",self.locale)
@@ -67812,6 +69817,13 @@ self:__Intercept(2)
 end
 return self
 end
+function AWACS:onbeforeStart(From,Event,to)
+self:T({From,Event,To})
+if self.IncludeHelicopters then
+self.clientset:FilterCategories("helicopter")
+end
+return self
+end
 function AWACS:onafterStart(From,Event,To)
 self:T({From,Event,To})
 local controlzonename="FEZ-"..self.AOName
@@ -68773,6 +70785,14 @@ text=text..string.format("\n* %s: Mission status=%s, suppliers=%d",refuellingzon
 end
 self:I(self.lid..text)
 end
+if self.verbose>=5 then
+local text="Assets in stock:"
+for i,_asset in pairs(self.stock)do
+local asset=_asset
+text=text..string.format("\n* %s: spawned=%s",asset.spawngroupname,tostring(asset.spawned))
+end
+self:I(self.lid..text)
+end
 end
 function BRIGADE:onafterArmyOnMission(From,Event,To,ArmyGroup,Mission)
 self:T(self.lid..string.format("Group %s on %s mission %s",ArmyGroup:GetName(),Mission:GetType(),Mission:GetName()))
@@ -68802,7 +70822,7 @@ OFFENSIVE="Offensive",
 AGGRESSIVE="Aggressive",
 TOTALWAR="Total War"
 }
-CHIEF.version="0.5.3"
+CHIEF.version="0.6.0"
 function CHIEF:New(Coalition,AgentSet,Alias)
 Alias=Alias or"CHIEF"
 if type(Coalition)=="string"then
@@ -69874,7 +71894,11 @@ end
 if MissionType==AUFTRAG.Type.ARMOREDGUARD then
 RangeMax=UTILS.NMToMeters(50)
 end
-local recruited,assets,legions=LEGION.RecruitCohortAssets(Cohorts,MissionType,nil,NassetsMin,NassetsMax,TargetVec2,nil,RangeMax,nil,nil,nil,Categories,Attributes,Properties)
+self:T(self.lid.."Missiontype="..MissionType)
+self:T({categories=Categories})
+self:T({attributes=Attributes})
+self:T({properties=Properties})
+local recruited,assets,legions=LEGION.RecruitCohortAssets(Cohorts,MissionType,nil,NassetsMin,NassetsMax,TargetVec2,nil,RangeMax,nil,nil,nil,nil,Categories,Attributes,Properties)
 if recruited then
 local mission=nil
 self:T2(self.lid..string.format("Recruited %d assets for %s mission STRATEGIC zone %s",#assets,MissionType,tostring(StratZone.opszone.zoneName)))
@@ -69893,14 +71917,16 @@ self:T(self.lid..string.format("Could not allocate assets or transport of OPSZON
 LEGION.UnRecruitAssets(assets)
 return false
 end
+self:T2(self.lid..string.format("Recruited %d assets for mission %s",#assets,MissionType))
 if MissionType==AUFTRAG.Type.PATROLZONE or MissionType==AUFTRAG.Type.ONGUARD then
-self:T2(self.lid..string.format("Recruited %d assets for PATROL mission",#assets))
 if MissionType==AUFTRAG.Type.PATROLZONE then
 mission=AUFTRAG:NewPATROLZONE(TargetZone)
 elseif MissionType==AUFTRAG.Type.ONGUARD then
 mission=AUFTRAG:NewONGUARD(TargetZone:GetRandomCoordinate(nil,nil,{land.SurfaceType.LAND}))
 end
 mission:SetEngageDetected(25,{"Ground Units","Light armed ships","Helicopters"})
+elseif MissionType==AUFTRAG.Type.CAPTUREZONE then
+mission=AUFTRAG:NewCAPTUREZONE(StratZone.opszone,self.coalition)
 elseif MissionType==AUFTRAG.Type.CASENHANCED then
 local height=UTILS.MetersToFeet(TargetCoord:GetLandHeight())+2500
 local Speed=200
@@ -69918,6 +71944,7 @@ if assets[1].speedmax then
 Speed=UTILS.KmphToKnots(assets[1].speedmax*0.7)or 200
 end
 end
+TargetZone=StratZone.opszone.zoneCircular
 local Leg=TargetZone:GetRadius()<=10000 and 5 or UTILS.MetersToNM(TargetZone:GetRadius())
 mission=AUFTRAG:NewCAS(TargetZone,height,Speed,TargetCoord,math.random(0,359),Leg)
 elseif MissionType==AUFTRAG.Type.ARTY then
@@ -69938,9 +71965,7 @@ elseif MissionType==AUFTRAG.Type.AMMOSUPPLY then
 mission=AUFTRAG:NewAMMOSUPPLY(TargetZone)
 end
 if mission then
-for _,asset in pairs(assets)do
-mission:AddAsset(asset)
-end
+mission:_AddAssets(assets)
 self:MissionAssign(mission,legions)
 StratZone.opszone:_AddMission(self.coalition,MissionType,mission)
 Resource.mission=mission
@@ -70065,7 +72090,11 @@ self.weightAsset=0
 for i,_unit in pairs(units)do
 local unit=_unit
 local desc=unit:GetDesc()
-self.weightAsset=self.weightAsset+(desc.massMax or 666)
+local mass=666
+if desc then
+mass=desc.massMax or desc.massEmpty
+end
+self.weightAsset=self.weightAsset+(mass or 666)
 if i==1 then
 self.cargobayLimit=unit:GetCargoBayFreeWeight()
 end
@@ -71440,13 +73469,38 @@ return cohorts
 end
 function COMMANDER:RecruitAssetsForMission(Mission)
 self:T2(self.lid..string.format("Recruiting assets for mission \"%s\" [%s]",Mission:GetName(),Mission:GetType()))
-local Cohorts=self:_GetCohorts(Mission.specialLegions,Mission.specialCohorts,Mission.operation)
-self:T(self.lid..string.format("Found %d cohort candidates for mission",#Cohorts))
 local NreqMin,NreqMax=Mission:GetRequiredAssets()
 local TargetVec2=Mission:GetTargetVec2()
 local Payloads=Mission.payloads
+local MaxWeight=nil
+if Mission.NcarriersMin then
+local legions=self.legions
+local cohorts=nil
+if Mission.transportLegions or Mission.transportCohorts then
+legions=Mission.transportLegions
+cohorts=Mission.transportCohorts
+end
+local Cohorts=LEGION._GetCohorts(legions,cohorts)
+local transportcohorts={}
+for _,_cohort in pairs(Cohorts)do
+local cohort=_cohort
+local can=LEGION._CohortCan(cohort,AUFTRAG.Type.OPSTRANSPORT,Categories,Attributes,Properties,nil,TargetVec2)
+if can and(MaxWeight==nil or cohort.cargobayLimit>MaxWeight)then
+MaxWeight=cohort.cargobayLimit
+end
+end
+self:T(self.lid..string.format("Largest cargo bay available=%.1f",MaxWeight))
+end
+local legions=self.legions
+local cohorts=nil
+if Mission.specialLegions or Mission.specialCohorts then
+legions=Mission.specialLegions
+cohorts=Mission.specialCohorts
+end
+local Cohorts=LEGION._GetCohorts(legions,cohorts,Mission.operation,self.opsqueue)
+self:T(self.lid..string.format("Found %d cohort candidates for mission",#Cohorts))
 local recruited,assets,legions=LEGION.RecruitCohortAssets(Cohorts,Mission.type,Mission.alert5MissionType,NreqMin,NreqMax,TargetVec2,Payloads,
-Mission.engageRange,Mission.refuelSystem,nil,nil,nil,Mission.attributes,Mission.properties,{Mission.engageWeaponType})
+Mission.engageRange,Mission.refuelSystem,nil,nil,MaxWeight,nil,Mission.attributes,Mission.properties,{Mission.engageWeaponType})
 return recruited,assets,legions
 end
 function COMMANDER:RecruitAssetsForEscort(Mission,Assets)
@@ -71662,9 +73716,10 @@ CSAR.AircraftType["Bell-47"]=2
 CSAR.AircraftType["UH-60L"]=10
 CSAR.AircraftType["AH-64D_BLK_II"]=2
 CSAR.AircraftType["Bronco-OV-10A"]=2
-CSAR.version="1.0.16"
+CSAR.version="1.0.17"
 function CSAR:New(Coalition,Template,Alias)
 local self=BASE:Inherit(self,FSM:New())
+BASE:T({Coalition,Prefixes,Alias})
 if Coalition and type(Coalition)=="string"then
 if Coalition=="blue"then
 self.coalition=coalition.side.BLUE
@@ -71705,6 +73760,8 @@ self:AddTransition("*","Boarded","*")
 self:AddTransition("*","Returning","*")
 self:AddTransition("*","Rescued","*")
 self:AddTransition("*","KIA","*")
+self:AddTransition("*","Load","*")
+self:AddTransition("*","Save","*")
 self:AddTransition("*","Stop","Stopped")
 self.addedTo={}
 self.allheligroupset={}
@@ -71775,6 +73832,11 @@ self.SRSVoice=nil
 self.SRSGPathToCredentials=nil
 self.SRSVolume=1.0
 self.SRSGender="male"
+local AliaS=string.gsub(self.alias," ","_")
+self.filename=string.format("CSAR_%s_Persist.csv",AliaS)
+self.enableLoadSave=false
+self.filepath=nil
+self.saveinterval=600
 return self
 end
 function CSAR:_CreateDownedPilotTrack(Group,Groupname,Side,OriginalUnit,Description,Typename,Frequency,Playername,Wetfeet)
@@ -72854,9 +74916,10 @@ if _group:IsAlive()then
 local _radioUnit=_group:GetUnit(1)
 if _radioUnit then
 local Frequency=_freq
+local name=_radioUnit:GetName()
 local Sound="l10n/DEFAULT/"..self.radioSound
 local vec3=_radioUnit:GetVec3()or _radioUnit:GetPositionVec3()or{x=0,y=0,z=0}
-trigger.action.radioTransmission(Sound,vec3,0,false,Frequency,self.ADFRadioPwr or 1000)
+trigger.action.radioTransmission(Sound,vec3,0,false,Frequency,self.ADFRadioPwr or 1000,name..math.random(1,10000))
 end
 end
 return self
@@ -72941,6 +75004,12 @@ self.msrs:SetLabel("CSAR")
 self.SRSQueue=MSRSQUEUE:New("CSAR")
 end
 self:__Status(-10)
+if self.enableLoadSave then
+local interval=self.saveinterval
+local filename=self.filename
+local filepath=self.filepath
+self:__Save(interval,filepath,filename)
+end
 return self
 end
 function CSAR:_CheckDownedPilotTable()
@@ -73085,6 +75154,150 @@ return self
 end
 function CSAR:onbeforeLanded(From,Event,To,HeliName,Airbase)
 self:T({From,Event,To,HeliName,Airbase})
+return self
+end
+function CSAR:onbeforeSave(From,Event,To,path,filename)
+self:T({From,Event,To,path,filename})
+if not self.enableLoadSave then
+return self
+end
+if not io then
+self:E(self.lid.."ERROR: io not desanitized. Can't save current state.")
+return false
+end
+if path==nil and not lfs then
+self:E(self.lid.."WARNING: lfs not desanitized. State will be saved in DCS installation root directory rather than your \"Saved Games\\DCS\" folder.")
+end
+return true
+end
+function CSAR:onafterSave(From,Event,To,path,filename)
+self:T({From,Event,To,path,filename})
+if not self.enableLoadSave then
+return self
+end
+local function _savefile(filename,data)
+local f=assert(io.open(filename,"wb"))
+f:write(data)
+f:close()
+end
+if lfs then
+path=self.filepath or lfs.writedir()
+end
+filename=filename or self.filename
+if path~=nil then
+filename=path.."\\"..filename
+end
+local pilots=self.downedPilots
+local data="playerName,x,y,z,coalition,country,description,typeName,unitName,freq\n"
+local n=0
+for _,_grp in pairs(pilots)do
+local DownedPilot=_grp
+if DownedPilot and DownedPilot.alive then
+local playerName=DownedPilot.player
+local group=DownedPilot.group
+local coalition=group:GetCoalition()
+local country=group:GetCountry()
+local description=DownedPilot.desc
+local typeName=DownedPilot.typename
+local freq=DownedPilot.frequency
+local location=group:GetVec3()
+local unitName=DownedPilot.originalUnit
+local txt=string.format("%s,%d,%d,%d,%s,%s,%s,%s,%s,%d\n",playerName,location.x,location.y,location.z,coalition,country,description,typeName,unitName,freq)
+self:I(self.lid.."Saving to CSAR File: "..txt)
+data=data..txt
+end
+end
+_savefile(filename,data)
+if self.enableLoadSave then
+local interval=self.saveinterval
+local filename=self.filename
+local filepath=self.filepath
+self:__Save(interval,filepath,filename)
+end
+return self
+end
+function CSAR:onbeforeLoad(From,Event,To,path,filename)
+self:T({From,Event,To,path,filename})
+if not self.enableLoadSave then
+return self
+end
+local function _fileexists(name)
+local f=io.open(name,"r")
+if f~=nil then
+io.close(f)
+return true
+else
+return false
+end
+end
+filename=filename or self.filename
+path=path or self.filepath
+if not io then
+self:E(self.lid.."WARNING: io not desanitized. Cannot load file.")
+return false
+end
+if path==nil and not lfs then
+self:E(self.lid.."WARNING: lfs not desanitized. State will be saved in DCS installation root directory rather than your \"Saved Games\\DCS\" folder.")
+end
+if lfs then
+path=path or lfs.writedir()
+end
+if path~=nil then
+filename=path.."\\"..filename
+end
+local exists=_fileexists(filename)
+if exists then
+return true
+else
+self:E(self.lid..string.format("WARNING: State file %s might not exist.",filename))
+return false
+end
+end
+function CSAR:onafterLoad(From,Event,To,path,filename)
+self:T({From,Event,To,path,filename})
+if not self.enableLoadSave then
+return self
+end
+local function _loadfile(filename)
+local f=assert(io.open(filename,"rb"))
+local data=f:read("*all")
+f:close()
+return data
+end
+filename=filename or self.filename
+path=path or self.filepath
+if lfs then
+path=path or lfs.writedir()
+end
+if path~=nil then
+filename=path.."\\"..filename
+end
+local text=string.format("Loading CSAR state from file %s",filename)
+MESSAGE:New(text,10):ToAllIf(self.Debug)
+self:I(self.lid..text)
+local file=assert(io.open(filename,"rb"))
+local loadeddata={}
+for line in file:lines()do
+loadeddata[#loadeddata+1]=line
+end
+file:close()
+table.remove(loadeddata,1)
+for _id,_entry in pairs(loadeddata)do
+local dataset=UTILS.Split(_entry,",")
+local playerName=dataset[1]
+local vec3={}
+vec3.x=tonumber(dataset[2])
+vec3.y=tonumber(dataset[3])
+vec3.z=tonumber(dataset[4])
+local point=COORDINATE:NewFromVec3(vec3)
+local coalition=tonumber(dataset[5])
+local country=tonumber(dataset[6])
+local description=dataset[7]
+local typeName=dataset[8]
+local unitName=dataset[9]
+local freq=tonumber(dataset[10])
+self:_AddCsar(coalition,country,point,typeName,unitName,playerName,freq,nil,description,nil)
+end
 return self
 end
 do
@@ -73427,8 +75640,9 @@ CTLD.UnitTypes={
 ["SA342Minigun"]={type="SA342Minigun",crates=false,troops=true,cratelimit=0,trooplimit=2,length=12,cargoweightlimit=400},
 ["UH-1H"]={type="UH-1H",crates=true,troops=true,cratelimit=1,trooplimit=8,length=15,cargoweightlimit=700},
 ["Mi-8MTV2"]={type="Mi-8MTV2",crates=true,troops=true,cratelimit=2,trooplimit=12,length=15,cargoweightlimit=3000},
-["Mi-8MT"]={type="Mi-8MTV2",crates=true,troops=true,cratelimit=2,trooplimit=12,length=15,cargoweightlimit=3000},
+["Mi-8MT"]={type="Mi-8MT",crates=true,troops=true,cratelimit=2,trooplimit=12,length=15,cargoweightlimit=3000},
 ["Ka-50"]={type="Ka-50",crates=false,troops=false,cratelimit=0,trooplimit=0,length=15,cargoweightlimit=0},
+["Ka-50_3"]={type="Ka-50_3",crates=false,troops=false,cratelimit=0,trooplimit=0,length=15,cargoweightlimit=0},
 ["Mi-24P"]={type="Mi-24P",crates=true,troops=true,cratelimit=2,trooplimit=8,length=18,cargoweightlimit=700},
 ["Mi-24V"]={type="Mi-24V",crates=true,troops=true,cratelimit=2,trooplimit=8,length=18,cargoweightlimit=700},
 ["Hercules"]={type="Hercules",crates=true,troops=true,cratelimit=7,trooplimit=64,length=25,cargoweightlimit=19000},
@@ -73436,7 +75650,7 @@ CTLD.UnitTypes={
 ["AH-64D_BLK_II"]={type="AH-64D_BLK_II",crates=false,troops=true,cratelimit=0,trooplimit=2,length=17,cargoweightlimit=200},
 ["Bronco-OV-10A"]={type="Bronco-OV-10A",crates=false,troops=true,cratelimit=0,trooplimit=5,length=13,cargoweightlimit=1450},
 }
-CTLD.version="1.0.21"
+CTLD.version="1.0.31"
 function CTLD:New(Coalition,Prefixes,Alias)
 local self=BASE:Inherit(self,FSM:New())
 BASE:T({Coalition,Prefixes,Alias})
@@ -73493,6 +75707,7 @@ self.UsedVHFFrequencies={}
 self.UsedUHFFrequencies={}
 self.UsedFMFrequencies={}
 self.RadioSound="beacon.ogg"
+self.RadioPath="l10n/DEFAULT/"
 self.pickupZones={}
 self.dropOffZones={}
 self.wpZones={}
@@ -73515,6 +75730,7 @@ self.TroopCounter=0
 self.Engineers=0
 self.EngineersInField={}
 self.EngineerSearch=2000
+self.nobuildmenu=false
 self.CrateDistance=35
 self.ExtractFactor=3.33
 self.prefixes=Prefixes or{"Cargoheli"}
@@ -73548,6 +75764,8 @@ self.eventoninject=true
 self.usesubcats=false
 self.subcats={}
 self.nobuildinloadzones=true
+self.movecratesbeforebuild=true
+self.surfacetypes={land.SurfaceType.LAND,land.SurfaceType.ROAD,land.SurfaceType.RUNWAY,land.SurfaceType.SHALLOW_WATER}
 local AliaS=string.gsub(self.alias," ","_")
 self.filename=string.format("CTLD_%s_Persist.csv",AliaS)
 self.allowcratepickupagain=true
@@ -73649,14 +75867,104 @@ local m=MESSAGE:New(Text,Time,"CTLD",Clearscreen):ToGroup(Group)
 end
 return self
 end
-function CTLD:_LoadTroops(Group,Unit,Cargotype)
+function CTLD:_FindTroopsCargoObject(Name)
+self:T(self.lid.." _FindTroopsCargoObject")
+local cargo=nil
+for _,_cargo in pairs(self.Cargo_Troops)do
+local cargo=_cargo
+if cargo.Name==Name then
+return cargo
+end
+end
+return nil
+end
+function CTLD:_FindCratesCargoObject(Name)
+self:T(self.lid.." _FindCratesCargoObject")
+local cargo=nil
+for _,_cargo in pairs(self.Cargo_Crates)do
+local cargo=_cargo
+if cargo.Name==Name then
+return cargo
+end
+end
+return nil
+end
+function CTLD:PreloadTroops(Unit,Troopname)
+self:T(self.lid.." PreloadTroops")
+local name=Troopname or"Unknown"
+if Unit and Unit:IsAlive()then
+local cargo=self:_FindTroopsCargoObject(name)
+local group=Unit:GetGroup()
+if cargo then
+self:_LoadTroops(group,Unit,cargo,true)
+else
+self:E(self.lid.." Troops preload - Cargo Object "..name.." not found!")
+end
+end
+return self
+end
+function CTLD:_PreloadCrates(Group,Unit,Cargo,NumberOfCrates)
+local group=Group
+local unit=Unit
+local unitname=unit:GetName()
+local unittype=unit:GetTypeName()
+local capabilities=self:_GetUnitCapabilities(Unit)
+local cancrates=capabilities.crates
+local cratelimit=capabilities.cratelimit
+if not cancrates then
+self:_SendMessage("Sorry this chopper cannot carry crates!",10,false,Group)
+return self
+else
+local numberonboard=0
+local massonboard=0
+local loaded={}
+if self.Loaded_Cargo[unitname]then
+loaded=self.Loaded_Cargo[unitname]
+numberonboard=loaded.Cratesloaded or 0
+massonboard=self:_GetUnitCargoMass(Unit)
+else
+loaded={}
+loaded.Troopsloaded=0
+loaded.Cratesloaded=0
+loaded.Cargo={}
+end
+local crate=Cargo
+local numbercrates=NumberOfCrates or crate:GetCratesNeeded()
+for i=1,numbercrates do
+loaded.Cratesloaded=loaded.Cratesloaded+1
+crate:SetHasMoved(true)
+crate:SetWasDropped(false)
+table.insert(loaded.Cargo,crate)
+crate.Positionable=nil
+self:_SendMessage(string.format("Crate ID %d for %s loaded!",crate:GetID(),crate:GetName()),10,false,Group)
+self.Loaded_Cargo[unitname]=loaded
+self:_UpdateUnitCargoMass(Unit)
+end
+end
+return self
+end
+function CTLD:PreloadCrates(Unit,Cratesname,NumberOfCrates)
+self:T(self.lid.." PreloadCrates")
+local name=Cratesname or"Unknown"
+if Unit and Unit:IsAlive()then
+local cargo=self:_FindCratesCargoObject(name)
+local group=Unit:GetGroup()
+if cargo then
+self:_PreloadCrates(group,Unit,cargo,NumberOfCrates)
+else
+self:E(self.lid.." Crates preload - Cargo Object "..name.." not found!")
+end
+end
+return self
+end
+function CTLD:_LoadTroops(Group,Unit,Cargotype,Inject)
 self:T(self.lid.." _LoadTroops")
 local instock=Cargotype:GetStock()
 local cgoname=Cargotype:GetName()
 local cgotype=Cargotype:GetType()
 local cgonetmass=Cargotype:GetNetMass()
 local maxloadable=self:_GetMaxLoadableMass(Unit)
-if type(instock)=="number"and tonumber(instock)<=0 and tonumber(instock)~=-1 then
+if type(instock)=="number"and tonumber(instock)<=0 and tonumber(instock)~=-1 and not Inject then
 self:_SendMessage(string.format("Sorry, all %s are gone!",cgoname),10,false,Group)
 return self
 end
@@ -73666,6 +75974,7 @@ local inzone,zonename,zone,distance=self:IsUnitInZone(Unit,CTLD.CargoZoneType.LO
 if not inzone then
 inzone,zonename,zone,distance=self:IsUnitInZone(Unit,CTLD.CargoZoneType.SHIP)
 end
+if not Inject then
 if not inzone then
 self:_SendMessage("You are not close enough to a logistics zone!",10,false,Group)
 if not self.debug then return self end
@@ -73675,6 +75984,7 @@ if not self.debug then return self end
 elseif self.pilotmustopendoors and not UTILS.IsLoadingDoorOpen(Unit:GetName())then
 self:_SendMessage("You need to open the door(s) to load troops!",10,false,Group)
 if not self.debug then return self end
+end
 end
 local group=Group
 local unit=Unit
@@ -74224,7 +76534,7 @@ if _crate:GetID()>crateind and _crate.Positionable~=nil then
 crateind=_crate:GetID()
 end
 else
-if not _crate:HasMoved()and _crate:WasDropped()and _crate:GetID()>crateind then
+if not _crate:HasMoved()and not _crate:WasDropped()and _crate:GetID()>crateind then
 crateind=_crate:GetID()
 end
 end
@@ -74635,7 +76945,7 @@ local canbuild=false
 if number>0 then
 for _,_crate in pairs(crates)do
 local Crate=_crate
-if Crate:WasDropped()and not Crate:IsRepair()and not Crate:IsStatic()then
+if(Crate:WasDropped()or not self.movecratesbeforebuild)and not Crate:IsRepair()and not Crate:IsStatic()then
 local name=Crate:GetName()
 local required=Crate:GetCratesNeeded()
 local template=Crate:GetTemplates()
@@ -74677,7 +76987,12 @@ end
 local text=string.format("Type: %s | Required %d | Found %d | Can Build %s",name,needed,found,txtok)
 report:Add(text)
 end
-if not foundbuilds then report:Add("     --- None Found ---")end
+if not foundbuilds then
+report:Add("     --- None found! ---")
+if self.movecratesbeforebuild then
+report:Add("*** Crates need to be moved before building!")
+end
+end
 report:Add("------------------------------------------------------------")
 local text=report:Text()
 if not Engineering then
@@ -74890,6 +77205,12 @@ if not self.subcats[entry.Subcategory]then
 self.subcats[entry.Subcategory]=entry.Subcategory
 end
 end
+for _id,_cargo in pairs(self.Cargo_Statics)do
+local entry=_cargo
+if not self.subcats[entry.Subcategory]then
+self.subcats[entry.Subcategory]=entry.Subcategory
+end
+end
 end
 local menucount=0
 local menus={}
@@ -74945,6 +77266,13 @@ menucount=menucount+1
 local menutext=string.format("Crate %s (%dkg)",entry.Name,entry.PerCrateMass or 0)
 menus[menucount]=MENU_GROUP_COMMAND:New(_group,menutext,subcatmenus[subcat],self._GetCrates,self,_group,_unit,entry)
 end
+for _,_entry in pairs(self.Cargo_Statics)do
+local entry=_entry
+local subcat=entry.Subcategory
+menucount=menucount+1
+local menutext=string.format("Crate %s (%dkg)",entry.Name,entry.PerCrateMass or 0)
+menus[menucount]=MENU_GROUP_COMMAND:New(_group,menutext,subcatmenus[subcat],self._GetCrates,self,_group,_unit,entry)
+end
 else
 for _,_entry in pairs(self.Cargo_Crates)do
 local entry=_entry
@@ -74952,17 +77280,21 @@ menucount=menucount+1
 local menutext=string.format("Crate %s (%dkg)",entry.Name,entry.PerCrateMass or 0)
 menus[menucount]=MENU_GROUP_COMMAND:New(_group,menutext,cratesmenu,self._GetCrates,self,_group,_unit,entry)
 end
-end
 for _,_entry in pairs(self.Cargo_Statics)do
 local entry=_entry
 menucount=menucount+1
 local menutext=string.format("Crate %s (%dkg)",entry.Name,entry.PerCrateMass or 0)
 menus[menucount]=MENU_GROUP_COMMAND:New(_group,menutext,cratesmenu,self._GetCrates,self,_group,_unit,entry)
 end
+end
 listmenu=MENU_GROUP_COMMAND:New(_group,"List crates nearby",topcrates,self._ListCratesNearby,self,_group,_unit)
 local unloadmenu=MENU_GROUP_COMMAND:New(_group,"Drop crates",topcrates,self._UnloadCrates,self,_group,_unit)
+if not self.nobuildmenu then
 local buildmenu=MENU_GROUP_COMMAND:New(_group,"Build crates",topcrates,self._BuildCrates,self,_group,_unit)
 local repairmenu=MENU_GROUP_COMMAND:New(_group,"Repair",topcrates,self._RepairCrates,self,_group,_unit):Refresh()
+else
+unloadmenu:Refresh()
+end
 end
 if self:IsHercules(_unit)then
 local hoverpars=MENU_GROUP_COMMAND:New(_group,"Show flight parameters",topmenu,self._ShowFlightParams,self,_group,_unit):Refresh()
@@ -75015,12 +77347,12 @@ local cargo=CTLD_CARGO:New(self.CargoCounter,Name,Templates,Type,false,false,NoC
 table.insert(self.Cargo_Crates,cargo)
 return self
 end
-function CTLD:AddStaticsCargo(Name,Mass,Stock)
+function CTLD:AddStaticsCargo(Name,Mass,Stock,SubCategory)
 self:T(self.lid.." AddStaticsCargo")
 self.CargoCounter=self.CargoCounter+1
 local type=CTLD_CARGO.Enum.STATIC
 local template=STATIC:FindByName(Name,true):GetTypeName()
-local cargo=CTLD_CARGO:New(self.CargoCounter,Name,template,type,false,false,1,nil,nil,Mass,Stock)
+local cargo=CTLD_CARGO:New(self.CargoCounter,Name,template,type,false,false,1,nil,nil,Mass,Stock,SubCategory)
 table.insert(self.Cargo_Statics,cargo)
 return self
 end
@@ -75265,19 +77597,37 @@ Zone=AIRBASE:FindByName(Name):GetZone()
 end
 end
 local Sound=Sound or"beacon.ogg"
-if IsDropped and Zone then
+if Zone then
+if IsDropped then
 local ZoneCoord=Zone
-local ZoneVec3=ZoneCoord:GetVec3(1)
-local Frequency=string.format("%09d",Mhz*1000000)
-local Sound="l10n/DEFAULT/"..Sound
-trigger.action.radioTransmission(Sound,ZoneVec3,Modulation,false,tonumber(Frequency),1000)
-elseif Zone then
-local ZoneCoord=Zone:GetCoordinate(1)
-local ZoneVec3=ZoneCoord:GetVec3()
-local Frequency=string.format("%09d",Mhz*1000000)
-local Sound="l10n/DEFAULT/"..Sound
-trigger.action.radioTransmission(Sound,ZoneVec3,Modulation,false,tonumber(Frequency),1000)
+local ZoneVec3=ZoneCoord:GetVec3()or{x=0,y=0,z=0}
+local Frequency=Mhz*1000000
+local Sound=self.RadioPath..Sound
+trigger.action.radioTransmission(Sound,ZoneVec3,Modulation,false,Frequency,1000,Name..math.random(1,10000))
+self:T2(string.format("Beacon added | Name = %s | Sound = %s | Vec3 = %d %d %d | Freq = %f | Modulation = %d (0=AM/1=FM)",Name,Sound,ZoneVec3.x,ZoneVec3.y,ZoneVec3.z,Mhz,Modulation))
+else
+local ZoneCoord=Zone:GetCoordinate()
+local ZoneVec3=ZoneCoord:GetVec3()or{x=0,y=0,z=0}
+local Frequency=Mhz*1000000
+local Sound=self.RadioPath..Sound
+trigger.action.radioTransmission(Sound,ZoneVec3,Modulation,false,Frequency,1000,Name..math.random(1,10000))
+self:T2(string.format("Beacon added | Name = %s | Sound = %s | Vec3 = {x=%d, y=%d, z=%d} | Freq = %f | Modulation = %d (0=AM/1=FM)",Name,Sound,ZoneVec3.x,ZoneVec3.y,ZoneVec3.z,Mhz,Modulation))
 end
+else
+self:E(self.lid.."***** _AddRadioBeacon: Zone does not exist: "..Name)
+end
+return self
+end
+function CTLD:SetSoundfilesFolder(FolderPath)
+self:T(self.lid.." SetSoundfilesFolder")
+if FolderPath then
+local lastchar=string.sub(FolderPath,-1)
+if lastchar~="/"then
+FolderPath=FolderPath.."/"
+end
+end
+self.RadioPath=FolderPath
+self:I(self.lid..string.format("Setting sound files folder to: %s",self.RadioPath))
 return self
 end
 function CTLD:_RefreshRadioBeacons()
@@ -75684,7 +78034,7 @@ end
 end
 return self
 end
-function CTLD:InjectTroops(Zone,Cargo)
+function CTLD:InjectTroops(Zone,Cargo,Surfacetypes,PreciseLocation)
 self:T(self.lid.." InjectTroops")
 local cargo=Cargo
 local function IsTroopsMatch(cargo)
@@ -75712,7 +78062,10 @@ local name=cargo:GetName()or"none"
 local temptable=cargo:GetTemplates()or{}
 local factor=1.5
 local zone=Zone
-local randomcoord=zone:GetRandomCoordinate(10,30*factor):GetVec2()
+local randomcoord=zone:GetRandomCoordinate(10,30*factor,Surfacetypes):GetVec2()
+if PreciseLocation then
+randomcoord=zone:GetCoordinate():GetVec2()
+end
 for _,_template in pairs(temptable)do
 self.TroopCounter=self.TroopCounter+1
 local alias=string.format("%s-%d",_template,math.random(1,100000))
@@ -75988,7 +78341,7 @@ self:T(self.lid.."Bulding Statics Table for Saving")
 for _,_cargo in pairs(stcstable)do
 local cargo=_cargo
 local object=cargo:GetPositionable()
-if object and object:IsAlive()and cargo:WasDropped()then
+if object and object:IsAlive()and(cargo:WasDropped()or not cargo:HasMoved())then
 statics[#statics+1]=cargo
 end
 end
@@ -76165,7 +78518,7 @@ local injectvehicle=CTLD_CARGO:New(nil,cargoname,cargotemplates,cargotype,true,t
 self:InjectVehicles(dropzone,injectvehicle)
 elseif cargotype==CTLD_CARGO.Enum.TROOPS or cargotype==CTLD_CARGO.Enum.ENGINEERS then
 local injecttroops=CTLD_CARGO:New(nil,cargoname,cargotemplates,cargotype,true,true,size,nil,true,mass)
-self:InjectTroops(dropzone,injecttroops)
+self:InjectTroops(dropzone,injecttroops,self.surfacetypes)
 end
 elseif(type(groupname)=="string"and groupname=="STATIC")or cargotype==CTLD_CARGO.Enum.REPAIR then
 local cargotemplates=dataset[6]
@@ -76194,7 +78547,7 @@ CTLD_HERCULES={
 ClassName="CTLD_HERCULES",
 lid="",
 Name="",
-Version="0.0.2",
+Version="0.0.3",
 }
 CTLD_HERCULES.Types={
 ["ATGM M1045 HMMWV TOW Air [7183lb]"]={['name']="M1045 HMMWV TOW",['container']=true},
@@ -76374,8 +78727,6 @@ self:T(self.lid..'Cargo_SpawnObjects')
 local CargoHeading=self.CargoHeading
 if offload_cargo==true or ParatrooperGroupSpawn==true then
 if ParatrooperGroupSpawn==true then
-self:Soldier_SpawnGroup(Cargo_Drop_initiator,Cargo_Content_position,Cargo_Type_name,CargoHeading,Cargo_Country,0)
-self:Soldier_SpawnGroup(Cargo_Drop_initiator,Cargo_Content_position,Cargo_Type_name,CargoHeading,Cargo_Country,5)
 self:Soldier_SpawnGroup(Cargo_Drop_initiator,Cargo_Content_position,Cargo_Type_name,CargoHeading,Cargo_Country,10)
 else
 self:Cargo_SpawnGroup(Cargo_Drop_initiator,Cargo_Content_position,Cargo_Type_name,CargoHeading,Cargo_Country)
@@ -78725,6 +81076,9 @@ isHelo=nil,
 RTBRecallCount=0,
 playerSettings={},
 playerWarnings={},
+prohibitAB=false,
+jettisonEmptyTanks=true,
+jettisonWeapons=true,
 }
 FLIGHTGROUP.Attribute={
 TRANSPORTPLANE="TransportPlane",
@@ -78748,7 +81102,7 @@ GRADUATE="Graduate",
 INSTRUCTOR="Instructor",
 }
 FLIGHTGROUP.Players={}
-FLIGHTGROUP.version="0.8.2"
+FLIGHTGROUP.version="1.0.0"
 function FLIGHTGROUP:New(group)
 local og=_DATABASE:GetOpsGroup(group)
 if og then
@@ -78835,6 +81189,34 @@ return name
 end
 function FLIGHTGROUP:SetVTOL()
 self.isVTOL=true
+return self
+end
+function FLIGHTGROUP:SetProhibitAfterburner()
+self.prohibitAB=true
+if self:GetGroup():IsAlive()then
+self:GetGroup():SetOption(AI.Option.Air.id.PROHIBIT_AB,true)
+end
+return self
+end
+function FLIGHTGROUP:SetAllowAfterburner()
+self.prohibitAB=false
+if self:GetGroup():IsAlive()then
+self:GetGroup():SetOption(AI.Option.Air.id.PROHIBIT_AB,false)
+end
+return self
+end
+function FLIGHTGROUP:SetJettisonEmptyTanks(Switch)
+self.jettisonEmptyTanks=Switch
+if self:GetGroup():IsAlive()then
+self:GetGroup():SetOption(AI.Option.Air.id.JETT_TANKS_IF_EMPTY,Switch)
+end
+return self
+end
+function FLIGHTGROUP:SetJettisonWeapons(Switch)
+self.jettisonWeapons=not Switch
+if self:GetGroup():IsAlive()then
+self:GetGroup():SetOption(AI.Option.Air.id.PROHIBIT_JETT,not Switch)
+end
 return self
 end
 function FLIGHTGROUP:SetReadyForTakeoff(ReadyTO,Delay)
@@ -79000,7 +81382,7 @@ local is=self:Is("LandingAt")
 return is
 end
 function FLIGHTGROUP:IsLandedAt()
-is=self:Is("LandedAt")
+local is=self:Is("LandedAt")
 return is
 end
 function FLIGHTGROUP:IsFuelLow()
@@ -79115,7 +81497,7 @@ self:T3(self.lid..string.format("Checking orbit mission dist=%d meters",dist))
 if distchange or hdgchange then
 self:T3(self.lid..string.format("Updating orbit!"))
 local DCSTask=mission:GetDCSMissionTask()
-local Task=self:GetTaskByID(mission.auftragsnummer)
+local Task=mission:GetGroupWaypointTask(self)
 self.controller:resetTask()
 self:_SandwitchDCSTask(DCSTask,Task,false,1)
 end
@@ -79484,9 +81866,10 @@ self:SwitchCallsign(self.callsignDefault.NumberSquad,self.callsignDefault.Number
 else
 self:SetDefaultCallsign(self.callsign.NumberSquad,self.callsign.NumberGroup)
 end
-self:GetGroup():SetOption(AI.Option.Air.id.PROHIBIT_JETT,true)
-self:GetGroup():SetOption(AI.Option.Air.id.PROHIBIT_AB,true)
+self:GetGroup():SetOption(AI.Option.Air.id.PROHIBIT_JETT,self.jettisonWeapons)
+self:GetGroup():SetOption(AI.Option.Air.id.PROHIBIT_AB,self.prohibitAB)
 self:GetGroup():SetOption(AI.Option.Air.id.RTB_ON_BINGO,false)
+self:GetGroup():SetOption(AI.Option.Air.id.JETT_TANKS_IF_EMPTY,self.jettisonEmptyTanks)
 self:__UpdateRoute(-0.5)
 else
 if self.currbase then
@@ -79739,6 +82122,9 @@ table.insert(wp,current)
 for i=n,N do
 table.insert(wp,self.waypoints[i])
 end
+if wp[2]then
+self.speedWp=wp[2].speed
+end
 local hb=self.homebase and self.homebase:GetName()or"unknown"
 local db=self.destbase and self.destbase:GetName()or"unknown"
 self:T(self.lid..string.format("Updating route for WP #%d-%d [%s], homebase=%s destination=%s",n,#wp,self:GetState(),hb,db))
@@ -79903,15 +82289,7 @@ end
 function FLIGHTGROUP:onafterRTB(From,Event,To,airbase,SpeedTo,SpeedHold,SpeedLand)
 self:T(self.lid..string.format("RTB: event=%s: %s --> %s to %s",Event,From,To,airbase:GetName()))
 self.destbase=airbase
-for _,_mission in pairs(self.missionqueue)do
-local mission=_mission
-local mystatus=mission:GetGroupStatus(self)
-if not(mystatus==AUFTRAG.GroupStatus.DONE or mystatus==AUFTRAG.GroupStatus.CANCELLED)then
-local text=string.format("Canceling mission %s in state=%s",mission.name,mission.status)
-self:T(self.lid..text)
-self:MissionCancel(mission)
-end
-end
+self:CancelAllMissions()
 self:_LandAtAirbase(airbase,SpeedTo,SpeedHold,SpeedLand)
 end
 function FLIGHTGROUP:onbeforeLandAtAirbase(From,Event,To,airbase)
@@ -80027,7 +82405,7 @@ local pland=airbase:GetCoordinate()
 wp[#wp+1]=pland:WaypointAirLanding(UTILS.KnotsToKmph(SpeedLand),airbase,{},"Landing")
 end
 if self.isAI then
-self:Route(wp,0.1)
+self:Route(wp,1.0)
 end
 end
 function FLIGHTGROUP:onbeforeWait(From,Event,To,Duration,Altitude,Speed)
@@ -80456,6 +82834,7 @@ function FLIGHTGROUP:AddWaypoint(Coordinate,Speed,AfterWaypointWithID,Altitude,U
 local coordinate=self:_CoordinateFromObject(Coordinate)
 local wpnumber=self:GetWaypointIndexAfterID(AfterWaypointWithID)
 Speed=Speed or self:GetSpeedCruise()
+self:T3(self.lid..string.format("Waypoint Speed=%.1f knots",Speed))
 local alttype=COORDINATE.WaypointAltType.BARO
 if self.isHelo then
 alttype=COORDINATE.WaypointAltType.RADIO
@@ -80611,10 +82990,14 @@ return-1
 end
 function FLIGHTGROUP:GetClosestAirbase()
 local group=self.group
+if group and group:IsAlive()then
 local coord=group:GetCoordinate()
 local coalition=self:GetCoalition()
 local airbase=coord:GetClosestAirbase()
 return airbase
+else
+return nil
+end
 end
 function FLIGHTGROUP:GetParking(airbase)
 local scanradius=50
@@ -82126,7 +84509,7 @@ missionqueue={},
 transportqueue={},
 cohorts={},
 }
-LEGION.version="0.3.4"
+LEGION.version="0.4.0"
 function LEGION:New(WarehouseName,LegionName)
 local self=BASE:Inherit(self,WAREHOUSE:New(WarehouseName,LegionName))
 if not self then
@@ -82322,13 +84705,18 @@ end
 end
 for _,_mission in pairs(self.missionqueue)do
 local mission=_mission
-if mission:IsQueued(self)and mission:IsReadyToGo()and(mission.importance==nil or mission.importance<=vip)then
+local reinforce=false
+if mission:IsExecuting()and mission.reinforce and mission.reinforce>0 then
+local N=mission.Nassigned-mission.Ndead
+if N<mission.NassetsMin then
+reinforce=true
+end
+self:T(self.lid..string.format("Checking Reinforcement Nreinf=%d, Nops=%d, Nassigned=%d, Ndead=%d, Nmin=%d ==> Reinforce=%s",
+mission.reinforce,N,mission.Nassigned,mission.Ndead,mission.NassetsMin,tostring(reinforce)))
+end
+if(mission:IsQueued(self)or reinforce)and mission:IsReadyToGo()and(mission.importance==nil or mission.importance<=vip)then
 local recruited,assets,legions=self:RecruitAssetsForMission(mission)
 if recruited then
-for _,_asset in pairs(assets)do
-local asset=_asset
-mission:AddAsset(asset)
-end
 local EscortAvail=self:RecruitAssetsForEscort(mission,assets)
 local TransportAvail=true
 if EscortAvail then
@@ -82342,7 +84730,11 @@ mission.opstransport=Transport
 end
 end
 if EscortAvail and TransportAvail then
-self:MissionRequest(mission)
+self:MissionRequest(mission,assets)
+if reinforce then
+mission.reinforce=mission.reinforce-#assets
+self:I(self.lid..string.format("Reinforced with N=%d Nreinforce=%d",#assets,mission.reinforce))
+end
 return true
 else
 LEGION.UnRecruitAssets(assets,mission)
@@ -82394,16 +84786,49 @@ Legion:AddMission(Mission)
 Legion:MissionRequest(Mission)
 end
 end
-function LEGION:onafterMissionRequest(From,Event,To,Mission)
+function LEGION:_AddRequest(AssetDescriptor,AssetDescriptorValue,nAsset,Prio,Assignment)
+nAsset=nAsset or 1
+Prio=Prio or 50
+self.queueid=self.queueid+1
+local request={
+uid=self.queueid,
+prio=Prio,
+warehouse=self,
+assetdesc=AssetDescriptor,
+assetdescval=AssetDescriptorValue,
+nasset=nAsset,
+transporttype=WAREHOUSE.TransportType.SELFPROPELLED,
+ntransport=0,
+assignment=tostring(Assignment),
+airbase=self:GetAirbase(),
+category=self:GetAirbaseCategory(),
+ndelivered=0,
+ntransporthome=0,
+assets={},
+toself=true,
+}
+table.insert(self.queue,request)
+local descval="assetlist"
+if request.assetdesc==WAREHOUSE.Descriptor.ASSETLIST then
+else
+descval=tostring(request.assetdescval)
+end
+local text=string.format("Warehouse %s: New request from warehouse %s.\nDescriptor %s=%s, #assets=%s; Transport=%s, #transports=%s.",
+self.alias,self.alias,request.assetdesc,descval,tostring(request.nasset),request.transporttype,tostring(request.ntransport))
+self:_DebugMessage(text,5)
+return request
+end
+function LEGION:onafterMissionRequest(From,Event,To,Mission,Assets)
 self:T(self.lid..string.format("MissionRequest for mission %s [%s]",Mission:GetName(),Mission:GetType()))
+Assets=Assets or Mission.assets
 Mission:Requested()
 Mission:SetLegionStatus(self,AUFTRAG.Status.REQUESTED)
 local Assetlist={}
-for _,_asset in pairs(Mission.assets)do
+for _,_asset in pairs(Assets)do
 local asset=_asset
 if asset.wid==self.uid then
 if asset.spawned then
-if asset.flightgroup then
+if asset.flightgroup and not asset.flightgroup:IsMissionInQueue(Mission)then
 asset.flightgroup:AddMission(Mission)
 local currM=asset.flightgroup:GetMissionCurrent()
 if currM then
@@ -82421,8 +84846,7 @@ cancel=true
 end
 if Mission.type==AUFTRAG.Type.RELOCATECOHORT then
 cancel=true
-local requestID=currM.requestID[self.alias]
-local request=self:GetRequestByID(requestID)
+local request=currM:_GetRequest(self)
 if request then
 self:T2(self.lid.."Removing group from cargoset")
 request.cargogroupset:Remove(asset.spawngroupname,true)
@@ -82439,9 +84863,10 @@ asset.flightgroup:PauseMission()
 end
 asset.isReserved=false
 end
+Mission:AddAsset(asset)
 self:__OpsOnMission(2,asset.flightgroup,Mission)
 else
-self:E(self.lid.."ERROR: OPSGROUP for asset does NOT exist but it seems to be SPAWNED (asset.spawned=true)!")
+self:T(self.lid.."ERROR: OPSGROUP for asset does NOT exist but it seems to be SPAWNED (asset.spawned=true)!")
 end
 else
 table.insert(Assetlist,asset)
@@ -82462,11 +84887,12 @@ end
 if Mission.type==AUFTRAG.Type.ALERT5 then
 asset.takeoffType=COORDINATE.WaypointType.TakeOffParking
 end
+Mission:AddAsset(asset)
 end
 local assignment=string.format("Mission-%d",Mission.auftragsnummer)
-self:AddRequest(self,WAREHOUSE.Descriptor.ASSETLIST,Assetlist,#Assetlist,nil,nil,Mission.prio,assignment)
-Mission.requestID[self.alias]=self.queueid
-local request=self:GetRequestByID(self.queueid)
+local request=self:_AddRequest(WAREHOUSE.Descriptor.ASSETLIST,Assetlist,#Assetlist,Mission.prio,assignment)
+self:T(self.lid..string.format("Added request=%d for Nasssets=%d",request.uid,#Assetlist))
+Mission:_SetRequestID(self,self.queueid)
 self:T(self.lid..string.format("Mission %s [%s] got Request ID=%d",Mission:GetName(),Mission:GetType(),self.queueid))
 if request then
 if self:IsShip()then
@@ -82499,7 +84925,7 @@ if#AssetList>0 then
 OpsTransport:Requested()
 OpsTransport:SetLegionStatus(self,OPSTRANSPORT.Status.REQUESTED)
 local assignment=string.format("Transport-%d",OpsTransport.uid)
-self:AddRequest(self,WAREHOUSE.Descriptor.ASSETLIST,AssetList,#AssetList,nil,nil,OpsTransport.prio,assignment)
+self:_AddRequest(WAREHOUSE.Descriptor.ASSETLIST,AssetList,#AssetList,OpsTransport.prio,assignment)
 OpsTransport.requestID[self.alias]=self.queueid
 end
 end
@@ -82547,8 +84973,9 @@ asset.requested=nil
 asset.isReserved=nil
 end
 end
-if Mission.requestID[self.alias]then
-self:_DeleteQueueItemByID(Mission.requestID[self.alias],self.queue)
+local requestID=Mission:_GetRequestID(self)
+if requestID then
+self:_DeleteQueueItemByID(requestID,self.queue)
 end
 end
 function LEGION:onafterOpsOnMission(From,Event,To,OpsGroup,Mission)
@@ -82982,23 +85409,34 @@ function LEGION:RecruitAssetsForMission(Mission)
 local NreqMin,NreqMax=Mission:GetRequiredAssets()
 local TargetVec2=Mission:GetTargetVec2()
 local Payloads=Mission.payloads
-local Cohorts={}
-for _,_legion in pairs(Mission.specialLegions or{})do
-local legion=_legion
-for _,_cohort in pairs(legion.cohorts)do
+local MaxWeight=nil
+if Mission.NcarriersMin then
+local legions={self}
+local cohorts=self.cohorts
+if Mission.transportLegions or Mission.transportCohorts then
+legions=Mission.transportLegions
+cohorts=Mission.transportCohorts
+end
+local Cohorts=LEGION._GetCohorts(legions,cohorts)
+local transportcohorts={}
+for _,_cohort in pairs(Cohorts)do
 local cohort=_cohort
-table.insert(Cohorts,cohort)
+local can=LEGION._CohortCan(cohort,AUFTRAG.Type.OPSTRANSPORT,Categories,Attributes,Properties,nil,TargetVec2)
+if can and(MaxWeight==nil or cohort.cargobayLimit>MaxWeight)then
+MaxWeight=cohort.cargobayLimit
 end
 end
-for _,_cohort in pairs(Mission.specialCohorts or{})do
-local cohort=_cohort
-table.insert(Cohorts,cohort)
+self:T(self.lid..string.format("Largest cargo bay available=%.1f",MaxWeight))
 end
-if#Cohorts==0 then
-Cohorts=self.cohorts
+local legions={self}
+local cohorts=self.cohorts
+if Mission.specialLegions or Mission.specialCohorts then
+legions=Mission.specialLegions
+cohorts=Mission.specialCohorts
 end
+local Cohorts=LEGION._GetCohorts(legions,cohorts,Operation,OpsQueue)
 local recruited,assets,legions=LEGION.RecruitCohortAssets(Cohorts,Mission.type,Mission.alert5MissionType,NreqMin,NreqMax,TargetVec2,Payloads,
-Mission.engageRange,Mission.refuelSystem,nil,nil,nil,Mission.attributes,Mission.properties,{Mission.engageWeaponType})
+Mission.engageRange,Mission.refuelSystem,nil,nil,MaxWeight,nil,Mission.attributes,Mission.properties,{Mission.engageWeaponType})
 return recruited,assets,legions
 end
 function LEGION:RecruitAssetsForTransport(Transport)
@@ -83046,12 +85484,56 @@ return assigned
 end
 return true
 end
-function LEGION.RecruitCohortAssets(Cohorts,MissionTypeRecruit,MissionTypeOpt,NreqMin,NreqMax,TargetVec2,Payloads,RangeMax,RefuelSystem,CargoWeight,TotalWeight,Categories,Attributes,Properties,WeaponTypes)
-local Assets={}
-local Legions={}
-if MissionTypeOpt==nil then
-MissionTypeOpt=MissionTypeRecruit
+function LEGION._GetCohorts(Legions,Cohorts,Operation,OpsQueue)
+OpsQueue=OpsQueue or{}
+local function CheckOperation(LegionOrCohort)
+if#OpsQueue==0 then
+return true
 end
+local isAvail=true
+if Operation then
+isAvail=false
+end
+for _,_operation in pairs(OpsQueue)do
+local operation=_operation
+local isOps=operation:IsAssignedCohortOrLegion(LegionOrCohort)
+if isOps and operation:IsRunning()then
+isAvail=false
+if Operation==nil then
+return false
+else
+if Operation.uid==operation.uid then
+return true
+end
+end
+end
+end
+return isAvail
+end
+local cohorts={}
+if(Legions and#Legions>0)or(Cohorts and#Cohorts>0)then
+for _,_legion in pairs(Legions or{})do
+local legion=_legion
+local Runway=legion:IsAirwing()and legion:IsRunwayOperational()or true
+if legion:IsRunning()and Runway then
+for _,_cohort in pairs(legion.cohorts)do
+local cohort=_cohort
+if(CheckOperation(cohort.legion)or CheckOperation(cohort))and not UTILS.IsInTable(cohorts,cohort,"name")then
+table.insert(cohorts,cohort)
+end
+end
+end
+end
+for _,_cohort in pairs(Cohorts or{})do
+local cohort=_cohort
+if CheckOperation(cohort)and not UTILS.IsInTable(cohorts,cohort,"name")then
+table.insert(cohorts,cohort)
+end
+end
+end
+return cohorts
+end
+function LEGION._CohortCan(Cohort,MissionType,Categories,Attributes,Properties,WeaponTypes,TargetVec2,RangeMax,RefuelSystem,CargoWeight,MaxWeight)
 local function CheckCategory(_cohort)
 local cohort=_cohort
 if Categories and#Categories>0 then
@@ -83110,34 +85592,119 @@ else
 return true
 end
 end
-for _,_cohort in pairs(Cohorts)do
+local function CheckRange(_cohort)
 local cohort=_cohort
 local TargetDistance=TargetVec2 and UTILS.VecDist2D(TargetVec2,cohort.legion:GetVec2())or 0
 local Rmax=cohort:GetMissionRange(WeaponTypes)
 local InRange=(RangeMax and math.max(RangeMax,Rmax)or Rmax)>=TargetDistance
-local Refuel=RefuelSystem~=nil and(RefuelSystem==cohort.tankerSystem)or true
-local Refuel=true
+return InRange
+end
+local function CheckRefueling(_cohort)
+local cohort=_cohort
 if RefuelSystem then
 if cohort.tankerSystem then
-Refuel=RefuelSystem==cohort.tankerSystem
+return RefuelSystem==cohort.tankerSystem
 else
-Refuel=false
+return false
+end
+else
+return true
 end
 end
-local Capable=AUFTRAG.CheckMissionCapability({MissionTypeRecruit},cohort.missiontypes)
-local CanCarry=CargoWeight and cohort.cargobayLimit>=CargoWeight or true
-local RightCategory=CheckCategory(cohort)
-local RightAttribute=CheckAttribute(cohort)
-local RightProperty=CheckProperty(cohort)
-local RightWeapon=CheckWeapon(cohort)
-local Ready=cohort:IsOnDuty()
-if MissionTypeRecruit==AUFTRAG.Type.RELOCATECOHORT then
-Ready=cohort:IsRelocating()
-Capable=true
+local function CheckCargoWeight(_cohort)
+local cohort=_cohort
+if CargoWeight~=nil then
+return cohort.cargobayLimit>=CargoWeight
+else
+return true
 end
-cohort:T(cohort.lid..string.format("State=%s: Capable=%s, InRange=%s, Refuel=%s, CanCarry=%s, Category=%s, Attribute=%s, Property=%s, Weapon=%s",
-cohort:GetState(),tostring(Capable),tostring(InRange),tostring(Refuel),tostring(CanCarry),tostring(RightCategory),tostring(RightAttribute),tostring(RightProperty),tostring(RightWeapon)))
-if Ready and Capable and InRange and Refuel and CanCarry and RightCategory and RightAttribute and RightProperty and RightWeapon then
+end
+local function CheckMaxWeight(_cohort)
+local cohort=_cohort
+if MaxWeight~=nil then
+cohort:T(string.format("Cohort weight=%.1f | max weight=%.1f",cohort.weightAsset,MaxWeight))
+return cohort.weightAsset<=MaxWeight
+else
+return true
+end
+end
+local can=AUFTRAG.CheckMissionCapability(MissionType,Cohort.missiontypes)
+if can then
+can=CheckCategory(Cohort)
+else
+Cohort:T(Cohort.lid..string.format("Cohort %s cannot because of mission types",Cohort.name))
+return false
+end
+if can then
+if MissionType==AUFTRAG.Type.RELOCATECOHORT then
+can=Cohort:IsRelocating()
+else
+can=Cohort:IsOnDuty()
+end
+else
+Cohort:T(Cohort.lid..string.format("Cohort %s cannot because of category",Cohort.name))
+return false
+end
+if can then
+can=CheckAttribute(Cohort)
+else
+Cohort:T(Cohort.lid..string.format("Cohort %s cannot because of readyiness",Cohort.name))
+return false
+end
+if can then
+can=CheckProperty(Cohort)
+else
+Cohort:T(Cohort.lid..string.format("Cohort %s cannot because of attribute",Cohort.name))
+return false
+end
+if can then
+can=CheckWeapon(Cohort)
+else
+Cohort:T(Cohort.lid..string.format("Cohort %s cannot because of property",Cohort.name))
+return false
+end
+if can then
+can=CheckRange(Cohort)
+else
+Cohort:T(Cohort.lid..string.format("Cohort %s cannot because of weapon type",Cohort.name))
+return false
+end
+if can then
+can=CheckRefueling(Cohort)
+else
+Cohort:T(Cohort.lid..string.format("Cohort %s cannot because of range",Cohort.name))
+return false
+end
+if can then
+can=CheckCargoWeight(Cohort)
+else
+Cohort:T(Cohort.lid..string.format("Cohort %s cannot because of refueling system",Cohort.name))
+return false
+end
+if can then
+can=CheckMaxWeight(Cohort)
+else
+Cohort:T(Cohort.lid..string.format("Cohort %s cannot because of cargo weight",Cohort.name))
+return false
+end
+if can then
+return true
+else
+Cohort:T(Cohort.lid..string.format("Cohort %s cannot because of max weight",Cohort.name))
+return false
+end
+return nil
+end
+function LEGION.RecruitCohortAssets(Cohorts,MissionTypeRecruit,MissionTypeOpt,NreqMin,NreqMax,TargetVec2,Payloads,RangeMax,RefuelSystem,CargoWeight,TotalWeight,MaxWeight,Categories,Attributes,Properties,WeaponTypes)
+local Assets={}
+local Legions={}
+if MissionTypeOpt==nil then
+MissionTypeOpt=MissionTypeRecruit
+end
+for _,_cohort in pairs(Cohorts)do
+local cohort=_cohort
+local can=LEGION._CohortCan(cohort,MissionTypeRecruit,Categories,Attributes,Properties,WeaponTypes,TargetVec2,RangeMax,RefuelSystem,CargoWeight,MaxWeight)
+if can then
 local assets,npayloads=cohort:RecruitAssets(MissionTypeRecruit,999)
 for _,asset in pairs(assets)do
 table.insert(Assets,asset)
@@ -83223,7 +85790,7 @@ Categories={Group.Category.AIRPLANE}
 targetTypes={"Air"}
 end
 TargetTypes=TargetTypes or targetTypes
-local Erecruited,eassets,elegions=LEGION.RecruitCohortAssets(Cohorts,AUFTRAG.Type.ESCORT,MissionType,NescortMin,NescortMax,TargetVec2,nil,nil,nil,nil,nil,Categories)
+local Erecruited,eassets,elegions=LEGION.RecruitCohortAssets(Cohorts,AUFTRAG.Type.ESCORT,MissionType,NescortMin,NescortMax,TargetVec2,nil,nil,nil,nil,nil,nil,Categories)
 if Erecruited then
 Escorts[asset.spawngroupname]={EscortLegions=elegions,EscortAssets=eassets,ecategory=asset.category}
 else
@@ -83254,6 +85821,8 @@ end
 local escort=AUFTRAG:NewESCORT(groupname,OffsetVector,EngageRange,TargetTypes)
 if MissionType==AUFTRAG.Type.SEAD then
 escort.missionTask=ENUMS.MissionTask.SEAD
+local DCStask=CONTROLLABLE.EnRouteTaskSEAD(nil)
+table.insert(escort.enrouteTasks,DCStask)
 end
 for _,_asset in pairs(Eassets)do
 local asset=_asset
@@ -83280,17 +85849,7 @@ end
 end
 function LEGION:AssignAssetsForTransport(Legions,CargoAssets,NcarriersMin,NcarriersMax,DeployZone,DisembarkZone,Categories,Attributes,Properties)
 if NcarriersMin and NcarriersMax and(NcarriersMin>0 or NcarriersMax>0)then
-local Cohorts={}
-for _,_legion in pairs(Legions)do
-local legion=_legion
-local Runway=legion:IsAirwing()and legion:IsRunwayOperational()or true
-if legion:IsRunning()and Runway then
-for _,_cohort in pairs(legion.cohorts)do
-local cohort=_cohort
-table.insert(Cohorts,cohort)
-end
-end
-end
+local Cohorts=LEGION._GetCohorts(Legions)
 local CargoLegions={};local CargoWeight=nil;local TotalWeight=0
 for _,_asset in pairs(CargoAssets)do
 local asset=_asset
@@ -83300,9 +85859,11 @@ CargoWeight=asset.weight
 end
 TotalWeight=TotalWeight+asset.weight
 end
+self:T(self.lid..string.format("Cargo weight=%.1f",CargoWeight))
+self:T(self.lid..string.format("Total weight=%.1f",TotalWeight))
 local TargetVec2=DeployZone:GetVec2()
 local TransportAvail,CarrierAssets,CarrierLegions=
-LEGION.RecruitCohortAssets(Cohorts,AUFTRAG.Type.OPSTRANSPORT,nil,NcarriersMin,NcarriersMax,TargetVec2,nil,nil,nil,CargoWeight,TotalWeight,Categories,Attributes,Properties)
+LEGION.RecruitCohortAssets(Cohorts,AUFTRAG.Type.OPSTRANSPORT,nil,NcarriersMin,NcarriersMax,TargetVec2,nil,nil,nil,CargoWeight,TotalWeight,nil,Categories,Attributes,Properties)
 if TransportAvail then
 local Transport=OPSTRANSPORT:New(nil,nil,DeployZone)
 if DisembarkZone then
@@ -83365,7 +85926,11 @@ local OrigVec2=asset.flightgroup and asset.flightgroup:GetVec2()or asset.legion:
 local distance=0
 if TargetVec2 and OrigVec2 then
 distance=UTILS.MetersToNM(UTILS.VecDist2D(OrigVec2,TargetVec2))
+if asset.category==Group.Category.AIRPLANE or asset.category==Group.Category.HELICOPTER then
 distance=UTILS.Round(distance/10,0)
+else
+distance=UTILS.Round(distance,0)
+end
 end
 score=score-distance
 if asset.spawned and asset.flightgroup and asset.flightgroup:IsAlive()then
@@ -83412,7 +85977,7 @@ if LEGION.verbose>0 then
 local text=string.format("Optimized %d assets for %s mission/transport (payload=%s):",#assets,MissionType,tostring(IncludePayload))
 for i,Asset in pairs(assets)do
 local asset=Asset
-text=text..string.format("\n%s %s: score=%d",asset.squadname,asset.spawngroupname,asset.score)
+text=text..string.format("\n%s %s: score=%d",asset.squadname,asset.spawngroupname,asset.score or-1)
 asset.score=nil
 end
 env.info(text)
@@ -83464,7 +86029,7 @@ Qintowind={},
 pathCorridor=400,
 engage={},
 }
-NAVYGROUP.version="0.7.9"
+NAVYGROUP.version="1.0.0"
 function NAVYGROUP:New(group)
 local og=_DATABASE:GetOpsGroup(group)
 if og then
@@ -83818,6 +86383,9 @@ return false
 elseif self:IsHolding()then
 self:T(self.lid.."Update route denied. Group is holding position!")
 return false
+elseif self:IsEngaging()then
+self:T(self.lid.."Update route allowed. Group is engaging!")
+return true
 end
 if self.taskcurrent>0 then
 local task=self:GetTaskByID(self.taskcurrent)
@@ -83828,6 +86396,8 @@ elseif task.dcstask.id=="ReconMission"then
 self:T2(self.lid.."Allowing update route for Task: ReconMission")
 elseif task.dcstask.id==AUFTRAG.SpecialTask.RELOCATECOHORT then
 self:T2(self.lid.."Allowing update route for Task: Relocate Cohort")
+elseif task.dcstask.id==AUFTRAG.SpecialTask.REARMING then
+self:T2(self.lid.."Allowing update route for Task: Rearming")
 else
 local taskname=task and task.description or"No description"
 self:T(self.lid..string.format("WARNING: Update route denied because taskcurrent=%d>0! Task description = %s",self.taskcurrent,tostring(taskname)))
@@ -84310,7 +86880,7 @@ PLANNED="Planned",
 ACTIVE="Active",
 OVER="Over",
 }
-OPERATION.version="0.1.0"
+OPERATION.version="0.2.0"
 function OPERATION:New(Name)
 local self=BASE:Inherit(self,FSM:New())
 _OPERATIONID=_OPERATIONID+1
@@ -84319,6 +86889,12 @@ self.name=Name or string.format("Operation-%02d",_OPERATIONID)
 self.lid=string.format("%s | ",self.name)
 self:SetStartState("Planned")
 self.branchMaster=self:AddBranch("Master")
+self.conditionStart=CONDITION:New("Operation %s start",self.name)
+self.conditionStart:SetNoneResult(false)
+self.conditionStart:SetDefaultPersistence(false)
+self.conditionOver=CONDITION:New("Operation %s over",self.name)
+self.conditionOver:SetNoneResult(false)
+self.conditionOver:SetDefaultPersistence(false)
 self.branchActive=self.branchMaster
 self:AddTransition("*","Start","Running")
 self:AddTransition("*","StatusUpdate","*")
@@ -84358,10 +86934,19 @@ self.duration=self.Tstop-self.Tstart
 end
 return self
 end
-function OPERATION:AddPhase(Name,Branch)
+function OPERATION:AddConditonOverAll(Function,...)
+local cf=self.conditionOver:AddFunctionAll(Function,...)
+return cf
+end
+function OPERATION:AddConditonOverAny(Phase,Function,...)
+local cf=self.conditionOver:AddFunctionAny(Function,...)
+return cf
+end
+function OPERATION:AddPhase(Name,Branch,Duration)
 Branch=Branch or self.branchMaster
 local phase=self:_CreatePhase(Name)
 phase.branch=Branch
+phase.duration=Duration
 self:T(self.lid..string.format("Adding phase %s to branch %s",phase.name,Branch.name))
 table.insert(Branch.phases,phase)
 return phase
@@ -84374,6 +86959,9 @@ local phase=self:_CreatePhase(Name)
 end
 end
 return nil
+end
+function OPERATION:GetName()
+return self.name or"Unknown"
 end
 function OPERATION:GetPhaseByName(Name)
 for _,_branch in pairs(self.branches)do
@@ -84389,8 +86977,14 @@ return nil
 end
 function OPERATION:SetPhaseStatus(Phase,Status)
 if Phase then
-self:T(self.lid..string.format("Phase %s status: %s-->%s"),Phase.status,Status)
+self:T(self.lid..string.format("Phase %s status: %s-->%s",tostring(Phase.name),tostring(Phase.status),tostring(Status)))
 Phase.status=Status
+if Phase.status==OPERATION.PhaseStatus.ACTIVE then
+Phase.Tstart=timer.getAbsTime()
+Phase.nActive=Phase.nActive+1
+elseif Phase.status==OPERATION.PhaseStatus.OVER then
+self:PhaseOver(Phase)
+end
 end
 return self
 end
@@ -84399,35 +86993,40 @@ return Phase.status
 end
 function OPERATION:SetPhaseConditonOver(Phase,Condition)
 if Phase then
-self:T(self.lid..string.format("Setting phase %s conditon over %s"),Phase.name,Condition and Condition.name or"None")
+self:T(self.lid..string.format("Setting phase %s conditon over %s",self:GetPhaseName(Phase),Condition and Condition.name or"None"))
 Phase.conditionOver=Condition
 end
 return self
 end
 function OPERATION:AddPhaseConditonOverAll(Phase,Function,...)
 if Phase then
-Phase.conditionOver:AddFunctionAll(Function,...)
+local cf=Phase.conditionOver:AddFunctionAll(Function,...)
+return cf
 end
-return self
+return nil
 end
 function OPERATION:AddPhaseConditonOverAny(Phase,Function,...)
 if Phase then
-Phase.conditionOver:AddFunctionAny(Function,...)
+local cf=Phase.conditionOver:AddFunctionAny(Function,...)
+return cf
+end
+return nil
+end
+function OPERATION:SetConditionFunctionPersistence(ConditionFunction,IsPersistent)
+ConditionFunction.persistence=IsPersistent
+return self
+end
+function OPERATION:AddPhaseConditonRepeatAll(Phase,Function,...)
+if Phase then
+Phase.conditionRepeat:AddFunctionAll(Function,...)
 end
 return self
 end
 function OPERATION:GetPhaseConditonOver(Phase,Condition)
 return Phase.conditionOver
 end
-function OPERATION:SetPhaseStatus(Phase,Status)
-if Phase then
-self:T(self.lid..string.format("Phase \"%s\" status: %s-->%s",Phase.name,Phase.status,Status))
-Phase.status=Status
-end
-return self
-end
-function OPERATION:GetPhaseActive()
-return self.phase
+function OPERATION:GetPhaseNactive(Phase)
+return Phase.nActive
 end
 function OPERATION:GetPhaseName(Phase)
 Phase=Phase or self.phase
@@ -84436,14 +87035,8 @@ return Phase.name
 end
 return"None"
 end
-function OPERATION:IsPhaseActive(Phase)
-local phase=self:GetPhaseActive()
-if phase and phase.uid==Phase.uid then
-return true
-else
-return false
-end
-return nil
+function OPERATION:GetPhaseActive()
+return self.phase
 end
 function OPERATION:GetPhaseIndex(Phase)
 local branch=Phase.branch
@@ -84497,6 +87090,9 @@ local branch=self:_CreateBranch(Name)
 table.insert(self.branches,branch)
 return branch
 end
+function OPERATION:GetBranchMaster()
+return self.branchMaster
+end
 function OPERATION:GetBranchActive()
 return self.branchActive or self.branchMaster
 end
@@ -84507,21 +87103,27 @@ return Branch.name
 end
 return"None"
 end
-function OPERATION:AddEdge(BranchTo,PhaseAfter,PhaseNext,ConditionSwitch)
+function OPERATION:AddEdge(PhaseFrom,PhaseTo,ConditionSwitch)
 local edge={}
-edge.branchFrom=PhaseAfter and PhaseAfter.branch or self.branchMaster
-edge.phaseFrom=PhaseAfter
-edge.branchTo=BranchTo
-edge.phaseTo=PhaseNext
-edge.conditionSwitch=ConditionSwitch or CONDITION:New("Edge")
+edge.phaseFrom=PhaseFrom
+edge.phaseTo=PhaseTo
+edge.branchFrom=PhaseFrom.branch
+edge.branchTo=PhaseTo.branch
+if ConditionSwitch then
+edge.conditionSwitch=ConditionSwitch
+else
+edge.conditionSwitch=CONDITION:New("Edge")
+edge.conditionSwitch:SetNoneResult(true)
+end
 table.insert(edge.branchFrom.edges,edge)
 return edge
 end
 function OPERATION:AddEdgeConditonSwitchAll(Edge,Function,...)
 if Edge then
-Edge.conditionSwitch:AddFunctionAll(Function,...)
+local cf=Edge.conditionSwitch:AddFunctionAll(Function,...)
+return cf
 end
-return self
+return nil
 end
 function OPERATION:AddMission(Mission,Phase)
 Mission.phase=Phase
@@ -84619,6 +87221,37 @@ function OPERATION:IsStopped()
 local is=self:is("Stopped")
 return is
 end
+function OPERATION:IsNotOver()
+local is=not(self:IsOver()or self:IsStopped())
+return is
+end
+function OPERATION:IsPhaseActive(Phase)
+if Phase and Phase.status and Phase.status==OPERATION.PhaseStatus.ACTIVE then
+return true
+end
+return false
+end
+function OPERATION:IsPhaseActive(Phase)
+local phase=self:GetPhaseActive()
+if phase and phase.uid==Phase.uid then
+return true
+else
+return false
+end
+return nil
+end
+function OPERATION:IsPhasePlanned(Phase)
+if Phase and Phase.status and Phase.status==OPERATION.PhaseStatus.PLANNED then
+return true
+end
+return false
+end
+function OPERATION:IsPhaseOver(Phase)
+if Phase and Phase.status and Phase.status==OPERATION.PhaseStatus.OVER then
+return true
+end
+return false
+end
 function OPERATION:onafterStart(From,Event,To)
 self:T(self.lid..string.format("Starting Operation!"))
 return self
@@ -84627,18 +87260,13 @@ function OPERATION:onafterStatusUpdate(From,Event,To)
 local Tnow=timer.getAbsTime()
 local fsmstate=self:GetState()
 if self:IsPlanned()then
-if self.Tstart and Tnow>self.Tstart then
+if(self.Tstart and Tnow>self.Tstart or self.Tstart==nil)and(self.conditionStart==nil or self.conditionStart:Evaluate())then
 self:Start()
 end
-end
-if(self.Tstop and Tnow>self.Tstop)and not(self:IsOver()or self:IsStopped())then
+elseif self:IsNotOver()then
+if(self.Tstop and Tnow>self.Tstop or self.Tstop==nil)and(self.conditionOver==nil or self.conditionOver:Evaluate())then
 self:Over()
 end
-if(not self:IsRunning())and(self.conditionStart and self.conditionStart:Evaluate())then
-self:Start()
-end
-if self:IsRunning()and(self.conditionStop and self.conditionStop:Evaluate())then
-self:Over()
 end
 if self:IsRunning()then
 self:_CheckPhases()
@@ -84657,7 +87285,7 @@ if self.verbose>=2 then
 local text="Phases:"
 for i,_phase in pairs(self.branchActive.phases)do
 local phase=_phase
-text=text..string.format("\n[%d] %s: status=%s",i,phase.name,tostring(phase.status))
+text=text..string.format("\n[%d] %s [uid=%d]: status=%s Nact=%d",i,phase.name,phase.uid,tostring(phase.status),phase.nActive)
 end
 if text=="Phases:"then text=text.." None"end
 self:I(self.lid..text)
@@ -84677,7 +87305,9 @@ end
 function OPERATION:onafterPhaseChange(From,Event,To,Phase)
 local oldphase="None"
 if self.phase then
+if self.phase.status~=OPERATION.PhaseStatus.OVER then
 self:SetPhaseStatus(self.phase,OPERATION.PhaseStatus.OVER)
+end
 oldphase=self.phase.name
 end
 self:I(self.lid..string.format("Phase change: %s --> %s",oldphase,Phase.name))
@@ -84685,9 +87315,13 @@ self.phase=Phase
 self:SetPhaseStatus(Phase,OPERATION.PhaseStatus.ACTIVE)
 return self
 end
-function OPERATION:onafterBranchSwitch(From,Event,To,Branch)
+function OPERATION:onafterPhaseOver(From,Event,To,Phase)
+Phase.conditionOver:RemoveNonPersistant()
+end
+function OPERATION:onafterBranchSwitch(From,Event,To,Branch,Phase)
 self:T(self.lid..string.format("Switching to branch %s",Branch.name))
 self.branchActive=Branch
+self:PhaseChange(Phase)
 return self
 end
 function OPERATION:onafterOver(From,Event,To)
@@ -84697,7 +87331,9 @@ for _,_branch in pairs(self.branches)do
 local branch=_branch
 for _,_phase in pairs(branch.phases)do
 local phase=_phase
+if not self:IsPhaseOver(phase)then
 self:SetPhaseStatus(phase,OPERATION.PhaseStatus.OVER)
+end
 end
 end
 return self
@@ -84706,6 +87342,10 @@ function OPERATION:_CheckPhases()
 local phase=self:GetPhaseActive()
 if phase and phase.conditionOver then
 local isOver=phase.conditionOver:Evaluate()
+local Tnow=timer.getAbsTime()
+if phase.duration and phase.Tstart and Tnow-phase.Tstart>phase.duration then
+isOver=true
+end
 if isOver then
 self:SetPhaseStatus(phase,OPERATION.PhaseStatus.OVER)
 end
@@ -84713,15 +87353,18 @@ end
 if phase==nil or phase.status==OPERATION.PhaseStatus.OVER then
 for _,_edge in pairs(self.branchActive.edges)do
 local edge=_edge
+if phase then
+end
 if(edge.phaseFrom==nil)or(phase and edge.phaseFrom.uid==phase.uid)then
 local switch=edge.conditionSwitch:Evaluate()
 if switch then
-self:BranchSwitch(edge.branchTo)
-if edge.phaseTo then
-self:PhaseChange(edge.phaseTo)
-return
+local phaseTo=edge.phaseTo or self:GetPhaseNext(edge.branchTo,nil)
+if phaseTo then
+self:BranchSwitch(edge.branchTo,phaseTo)
+else
+self:Over()
 end
-break
+return
 end
 end
 end
@@ -84734,7 +87377,9 @@ local phase={}
 phase.uid=self.counterPhase
 phase.name=Name or string.format("Phase-%02d",self.counterPhase)
 phase.conditionOver=CONDITION:New(Name.." Over")
+phase.conditionOver:SetDefaultPersistence(false)
 phase.status=OPERATION.PhaseStatus.PLANNED
+phase.nActive=0
 return phase
 end
 function OPERATION:_CreateBranch(Name)
@@ -84839,7 +87484,7 @@ ASSIGNED="assigned to carrier",
 BOARDING="boarding",
 LOADED="loaded",
 }
-OPSGROUP.version="0.8.0"
+OPSGROUP.version="1.0.0"
 function OPSGROUP:New(group)
 local self=BASE:Inherit(self,FSM:New())
 if type(group)=="string"then
@@ -84893,6 +87538,7 @@ self.detectedunits=SET_UNIT:New()
 self.detectedgroups=SET_GROUP:New()
 self.inzones=SET_ZONE:New()
 self:SetDefaultAltitude()
+self:SetReturnToLegion()
 self.spot={}
 self.spot.On=false
 self.spot.timer=TIMER:New(self._UpdateLaser,self)
@@ -85011,6 +87657,15 @@ end
 function OPSGROUP:_SetLegion(Legion)
 self:T2(self.lid..string.format("Adding opsgroup to legion %s",Legion.alias))
 self.legion=Legion
+return self
+end
+function OPSGROUP:SetReturnToLegion(Switch)
+if Switch==false then
+self.legionReturn=false
+else
+self.legionReturn=true
+end
+self:T(self.lid..string.format("Setting ReturnToLetion=%s",tostring(self.legionReturn)))
 return self
 end
 function OPSGROUP:SetDefaultSpeed(Speed)
@@ -85325,30 +87980,57 @@ function OPSGROUP:SetReturnOnOutOfAmmo()
 self.rtzOnOutOfAmmo=true
 return self
 end
+function OPSGROUP:SetCargoBayLimit(Weight,UnitName)
+for _,_element in pairs(self.elements)do
+local element=_element
+if UnitName==nil or UnitName==element.name then
+element.weightMaxCargo=Weight
+if element.unit then
+element.unit:SetCargoBayWeightLimit(Weight)
+end
+end
+end
+return self
+end
 function OPSGROUP:HasLoS(Coordinate,Element,OffsetElement,OffsetCoordinate)
-local Vec3=Coordinate:GetVec3()
+if Coordinate then
+local Vec3={x=Coordinate.x,y=Coordinate.y,z=Coordinate.z}
 if OffsetCoordinate then
 Vec3=UTILS.VecAdd(Vec3,OffsetCoordinate)
 end
-local function checklos(element)
-local vec3=element.unit:GetVec3()
+local function checklos(vec3)
+if vec3 then
 if OffsetElement then
 vec3=UTILS.VecAdd(vec3,OffsetElement)
 end
 local _los=land.isVisible(vec3,Vec3)
 return _los
 end
+return nil
+end
 if Element then
-local los=checklos(Element)
+if Element.unit and Element.unit:IsAlive()then
+local vec3=Element.unit:GetVec3()
+local los=checklos(vec3)
 return los
+end
 else
-for _,element in pairs(self.elements)do
-local los=checklos(element)
+local gotit=false
+for _,_element in pairs(self.elements)do
+local element=_element
+if element and element.unit and element.unit:IsAlive()then
+gotit=true
+local vec3=element.unit:GetVec3()
+local los=checklos(vec3)
 if los then
 return true
 end
 end
+end
+if gotit then
 return false
+end
+end
 end
 return nil
 end
@@ -86233,6 +88915,9 @@ end
 else
 self.currentwp=self.currentwp-1
 end
+if(self.adinfinitum or istemp)then
+self:_PassedFinalWaypoint(false,"Removed PASSED temporary waypoint ")
+end
 end
 end
 return self
@@ -86596,10 +89281,9 @@ end
 return true
 end
 function OPSGROUP:onafterTaskExecute(From,Event,To,Task)
-self:T({Task})
 local text=string.format("Task %s ID=%d execute",tostring(Task.description),Task.id)
 self:T(self.lid..text)
-self:T({Task})
+self:T2({Task})
 if self.taskcurrent>0 then
 self:TaskCancel()
 end
@@ -86616,7 +89300,7 @@ self:MissionExecute(Mission)
 end
 end
 function OPSGROUP:_UpdateTask(Task,Mission)
-local Mission=Mission or self:GetMissionByTaskID(self.taskcurrent)
+Mission=Mission or self:GetMissionByTaskID(self.taskcurrent)
 if Task.dcstask.id==AUFTRAG.SpecialTask.FORMATION then
 local followSet=SET_GROUP:New():AddGroup(self.group)
 local param=Task.dcstask.params
@@ -86677,6 +89361,13 @@ wp.missionUID=Mission and Mission.auftragsnummer or nil
 elseif Task.dcstask.id==AUFTRAG.SpecialTask.AMMOSUPPLY or Task.dcstask.id==AUFTRAG.SpecialTask.FUELSUPPLY then
 elseif Task.dcstask.id==AUFTRAG.SpecialTask.REARMING then
 local rearmed=self:_CheckAmmoFull()
+if rearmed then
+self:T2(self.lid.."Ammo already full ==> reaming task done!")
+self:TaskDone(Task)
+else
+self:T2(self.lid.."Ammo not full ==> Rearm()")
+self:Rearm()
+end
 elseif Task.dcstask.id==AUFTRAG.SpecialTask.ALERT5 then
 elseif Task.dcstask.id==AUFTRAG.SpecialTask.ONGUARD or Task.dcstask.id==AUFTRAG.SpecialTask.ARMOREDGUARD then
 if self:IsArmygroup()or self:IsNavygroup()then
@@ -86685,7 +89376,7 @@ else
 end
 elseif Task.dcstask.id==AUFTRAG.SpecialTask.NOTHING then
 if self:IsArmygroup()or self:IsNavygroup()then
-self:FullStop()
+self:__FullStop(0.1)
 else
 end
 elseif Task.dcstask.id==AUFTRAG.SpecialTask.AIRDEFENSE or Task.dcstask.id==AUFTRAG.SpecialTask.EWR then
@@ -86745,6 +89436,36 @@ wp=NAVYGROUP.AddWaypoint(self,Coordinate,UTILS.KmphToKnots(self.speedCruise),cur
 else
 end
 wp.missionUID=Mission and Mission.auftragsnummer or nil
+elseif Task.dcstask.id==AUFTRAG.SpecialTask.CAPTUREZONE then
+if self:IsEngaging()then
+self:T2(self.lid..string.format("CaptureZone: Engaging currently!"))
+else
+local Coalitions=UTILS.GetCoalitionEnemy(self:GetCoalition(),false)
+local zoneCurr=Task.target
+if zoneCurr then
+self:T(self.lid..string.format("Current target zone=%s owner=%s",zoneCurr:GetName(),zoneCurr:GetOwnerName()))
+if zoneCurr:GetOwner()==self:GetCoalition()then
+self:T(self.lid..string.format("Zone %s captured ==> Task DONE!",zoneCurr:GetName()))
+self:TaskDone(Task)
+else
+self:T(self.lid..string.format("Zone %s NOT captured!",zoneCurr:GetName()))
+if Mission:GetGroupStatus(self)==AUFTRAG.GroupStatus.EXECUTING then
+self:T(self.lid..string.format("Zone %s NOT captured and EXECUTING ==> Find target",zoneCurr:GetName()))
+local targetgroup=zoneCurr:GetScannedGroupSet():GetClosestGroup(self.coordinate,Coalitions)
+if targetgroup then
+self:T(self.lid..string.format("Zone %s NOT captured: engaging target %s",zoneCurr:GetName(),targetgroup:GetName()))
+self:EngageTarget(targetgroup)
+else
+self:T(self.lid..string.format("Zone %s not captured but no target group could be found. Should be captured in the next zone evaluation.",zoneCurr:GetName()))
+end
+else
+self:T(self.lid..string.format("Zone %s NOT captured and NOT EXECUTING",zoneCurr:GetName()))
+end
+end
+else
+self:T(self.lid..string.format("NO Current target zone=%s"))
+end
+end
 else
 if Task.type==OPSGROUP.TaskType.SCHEDULED or Task.ismission then
 local DCSTask=nil
@@ -86884,6 +89605,13 @@ local Mission=self:GetMissionByTaskID(Task.id)
 if Mission and Mission:IsNotOver()then
 local status=Mission:GetGroupStatus(self)
 if status~=AUFTRAG.GroupStatus.PAUSED then
+if Mission.type==AUFTRAG.Type.CAPTUREZONE and Mission:CountMissionTargets()>0 then
+self:T(self.lid.."Remove mission waypoints")
+self:_RemoveMissionWaypoints(Mission,false)
+self:T(self.lid.."Task done ==> Route to mission for next opszone")
+self:MissionStart(Mission)
+return
+end
 local EgressUID=Mission:GetGroupEgressWaypointUID(self)
 if EgressUID then
 self:T(self.lid..string.format("Task Done but Egress waypoint defined ==> Will call Mission Done once group passed waypoint UID=%d!",EgressUID))
@@ -86949,6 +89677,17 @@ return self
 end
 end
 return self
+end
+function OPSGROUP:CancelAllMissions()
+self:T(self.lid.."Cancelling ALL missions!")
+for _,_mission in pairs(self.missionqueue)do
+local mission=_mission
+local mystatus=mission:GetGroupStatus(self)
+if not(mystatus==AUFTRAG.GroupStatus.DONE or mystatus==AUFTRAG.GroupStatus.CANCELLED)then
+self:T(self.lid.."Cancelling mission "..tostring(mission:GetName()))
+self:MissionCancel(mission)
+end
+end
 end
 function OPSGROUP:CountRemainingMissison()
 local N=0
@@ -87045,6 +89784,24 @@ end
 end
 return nil
 end
+function OPSGROUP:IsMissionInQueue(Mission)
+for _,_mission in pairs(self.missionqueue)do
+local mission=_mission
+if mission.auftragsnummer==Mission.auftragsnummer then
+return true
+end
+end
+return false
+end
+function OPSGROUP:IsMissionTypeInQueue(MissionType)
+for _,_mission in pairs(self.missionqueue)do
+local mission=_mission
+if mission:GetType()==MissionType then
+return true
+end
+end
+return false
+end
 function OPSGROUP:GetMissionByTaskID(taskid)
 if taskid then
 for _,_mission in pairs(self.missionqueue)do
@@ -87100,7 +89857,7 @@ Mission:__Started(3)
 if self.speedMax>3.6 or true then
 self:RouteToMission(Mission,3)
 else
-env.info(self.lid.."FF Immobile GROUP")
+self:T(self.lid.."Immobile GROUP!")
 local Clock=Mission.Tpush and UTILS.SecondsToClock(Mission.Tpush)or 5
 local Task=self:AddTask(Mission.DCStask,Clock,Mission.name,Mission.prio,Mission.duration)
 Task.ismission=true
@@ -87230,6 +89987,9 @@ end
 if Mission.icls then
 self:_SwitchICLS()
 end
+if self.legion and Mission.legionReturn~=nil then
+self:SetReturnToLegion(Mission.legionReturn)
+end
 local delay=1
 if Mission.type==AUFTRAG.Type.ARTY then
 delay=60
@@ -87291,6 +90051,10 @@ surfacetypes={land.SurfaceType.LAND,land.SurfaceType.ROAD}
 elseif self:IsNavygroup()then
 surfacetypes={land.SurfaceType.WATER,land.SurfaceType.SHALLOW_WATER}
 end
+local targetobject=mission:GetObjective(currentcoord,UTILS.GetCoalitionEnemy(self:GetCoalition(),true))
+if targetobject then
+self:T(self.lid..string.format("Route to mission target object %s",targetobject:GetName()))
+end
 if mission.opstransport and not mission.opstransport:IsCargoDelivered(self.groupname)then
 local tzc=mission.opstransport:GetTZCofCargo(self.groupname)
 local pickupzone=tzc.PickupZone
@@ -87308,15 +90072,15 @@ mission.type==AUFTRAG.Type.FUELSUPPLY or
 mission.type==AUFTRAG.Type.REARMING or
 mission.type==AUFTRAG.Type.AIRDEFENSE or
 mission.type==AUFTRAG.Type.EWR then
-targetzone=mission.engageTarget:GetObject()
+targetzone=targetobject
 waypointcoord=targetzone:GetRandomCoordinate(nil,nil,surfacetypes)
 elseif mission.type==AUFTRAG.Type.ONGUARD or mission.type==AUFTRAG.Type.ARMOREDGUARD then
 waypointcoord=mission:GetMissionWaypointCoord(self.group,nil,surfacetypes)
 elseif mission.type==AUFTRAG.Type.NOTHING then
-targetzone=mission.engageTarget:GetObject()
+targetzone=targetobject
 waypointcoord=targetzone:GetRandomCoordinate(nil,nil,surfacetypes)
 elseif mission.type==AUFTRAG.Type.HOVER then
-local zone=mission.engageTarget:GetObject()
+local zone=targetobject
 waypointcoord=zone:GetCoordinate()
 elseif mission.type==AUFTRAG.Type.RELOCATECOHORT then
 local ToCoordinate=mission.DCStask.params.legion:GetCoordinate()
@@ -87331,6 +90095,9 @@ end
 else
 waypointcoord=currentcoord:GetIntermediateCoordinate(ToCoordinate,0.05)
 end
+elseif mission.type==AUFTRAG.Type.CAPTUREZONE then
+targetzone=targetobject:GetZone()
+waypointcoord=targetzone:GetRandomCoordinate(nil,nil,surfacetypes)
 else
 waypointcoord=mission:GetMissionWaypointCoord(self.group,randomradius,surfacetypes)
 end
@@ -87389,6 +90156,7 @@ end
 waypoint.missionUID=mission.auftragsnummer
 local waypointtask=self:AddTaskWaypoint(mission.DCStask,waypoint,mission.name,mission.prio,mission.duration)
 waypointtask.ismission=true
+waypointtask.target=targetobject
 mission:SetGroupWaypointTask(self,waypointtask)
 mission:SetGroupWaypointIndex(self,waypoint.uid)
 local egresscoord=mission:GetMissionEgressCoord()
@@ -87590,6 +90358,9 @@ elseif task and task.dcstask.id==AUFTRAG.SpecialTask.RELOCATECOHORT then
 local legion=task.dcstask.params.legion
 self:T(self.lid..string.format("Asset arrived at relocation task waypoint ==> Task Done!"))
 self:TaskDone(task)
+elseif task and task.dcstask.id==AUFTRAG.SpecialTask.REARMING then
+self:T(self.lid..string.format("FF Rearming Mission ==> Rearm()"))
+self:Rearm()
 else
 local ntasks=self:_SetWaypointTasks(Waypoint)
 local wpindex=self:GetWaypointIndex(Waypoint.uid)
@@ -87633,6 +90404,10 @@ end
 local text=string.format("Group passed waypoint %s/%d ID=%d: final=%s detour=%s astar=%s",
 tostring(wpindex),#self.waypoints,Waypoint.uid,tostring(self.passedfinalwp),tostring(Waypoint.detour),tostring(Waypoint.astar))
 self:T(self.lid..text)
+end
+local wpnext=self:GetWaypointNext()
+if wpnext then
+self.speedWp=wpnext.speed
 end
 end
 function OPSGROUP:_SetWaypointTasks(Waypoint)
@@ -87942,7 +90717,7 @@ function OPSGROUP:onafterElementDamaged(From,Event,To,Element)
 self:T(self.lid..string.format("Element damaged %s",Element.name))
 if Element and(Element.status~=OPSGROUP.ElementStatus.DEAD and Element.status~=OPSGROUP.ElementStatus.INUTERO)then
 local lifepoints=0
-if Element.DCSunit and Element.DCSunit:isExist()then
+if Element.DCSunit then
 lifepoints=Element.DCSunit:getLife()
 self:T(self.lid..string.format("Element life %s: %.2f/%.2f",Element.name,lifepoints,Element.life0))
 end
@@ -88127,13 +90902,6 @@ if self.Ndestroyed==#self.elements then
 self:Destroyed()
 end
 end
-function OPSGROUP:CancelAllMissions()
-for _,_mission in pairs(self.missionqueue)do
-local mission=_mission
-self:T(self.lid.."Cancelling mission "..tostring(mission:GetName()))
-self:MissionCancel(mission)
-end
-end
 function OPSGROUP:onafterDead(From,Event,To)
 self:T(self.lid..string.format("Group dead at t=%.3f",timer.getTime()))
 self.isDead=true
@@ -88276,8 +91044,12 @@ self:DelOpsTransport(self.cargoTransport)
 self.cargoTransport=nil
 self.cargoTZC=nil
 end
-if not self.cargoTransport and not self:IsOnMission()then
+local mission=self:GetMissionCurrent()
+if(not self.cargoTransport)and(mission==nil or mission.type==AUFTRAG.Type.NOTHING)then
 self.cargoTransport=self:_GetNextCargoTransport()
+if self.cargoTransport and mission then
+self:MissionCancel(mission)
+end
 if self.cargoTransport and not self:IsActive()then
 self:Activate()
 end
@@ -88314,7 +91086,7 @@ if cargo.opsgroup:IsLoaded(self.groupname)then
 gotcargo=true
 end
 end
-if gotcargo and self.cargoTransport:_CheckRequiredCargos(self.cargoTZC)and not boarding then
+if gotcargo and self.cargoTransport:_CheckRequiredCargos(self.cargoTZC,self)and not boarding then
 self:T(self.lid.."Boarding finished ==> Loaded")
 self:LoadingDone()
 else
@@ -88817,7 +91589,7 @@ local inZone=cargo.opsgroup:IsInZone(self.cargoTZC.EmbarkZone)or cargo.opsgroup:
 local isOnMission=cargo.opsgroup:IsOnMission()
 if isOnMission then
 local mission=cargo.opsgroup:GetMissionCurrent()
-if mission and mission.opstransport and mission.opstransport.uid==self.cargoTransport.uid then
+if mission and((mission.opstransport and mission.opstransport.uid==self.cargoTransport.uid)or mission.type==AUFTRAG.Type.NOTHING)then
 isOnMission=not isHolding
 end
 end
@@ -88987,13 +91759,18 @@ end
 end
 function OPSGROUP:onafterUnloading(From,Event,To)
 self:_NewCarrierStatus(OPSGROUP.CarrierStatus.UNLOADING)
+self:T(self.lid.."Unloading..")
 local zone=self.cargoTZC.DisembarkZone or self.cargoTZC.DeployZone
 for _,_cargo in pairs(self.cargoTZC.Cargos)do
 local cargo=_cargo
 if cargo.opsgroup:IsLoaded(self.groupname)and not cargo.opsgroup:IsDead()then
-local needscarrier=false
 local carrier=nil
 local carrierGroup=nil
+local disembarkToCarriers=cargo.disembarkCarriers~=nil or self.cargoTZC.disembarkToCarriers
+if cargo.disembarkZone then
+zone=cargo.disembarkZone
+end
+self:T(self.lid..string.format("Unloading cargo %s to zone %s",cargo.opsgroup:GetName(),zone and zone:GetName()or"No Zone Found!"))
 if zone and zone:IsInstanceOf("ZONE_AIRBASE")and zone:GetAirbase():IsShip()then
 local shipname=zone:GetAirbase():GetName()
 local ship=UNIT:FindByName(shipname)
@@ -89001,11 +91778,12 @@ local group=ship:GetGroup()
 carrierGroup=_DATABASE:GetOpsGroup(group:GetName())
 carrier=carrierGroup:GetElementByName(shipname)
 end
-if self.cargoTZC.DisembarkCarriers and#self.cargoTZC.DisembarkCarriers>0 then
-needscarrier=true
-carrier,carrierGroup=self.cargoTransport:FindTransferCarrierForCargo(cargo.opsgroup,zone,self.cargoTZC)
+if disembarkToCarriers then
+self:T(self.lid..string.format("Trying to find disembark carriers in zone %s",zone:GetName()))
+local disembarkCarriers=cargo.disembarkCarriers or self.cargoTZC.DisembarkCarriers
+carrier,carrierGroup=self.cargoTransport:FindTransferCarrierForCargo(cargo.opsgroup,zone,disembarkCarriers,self.cargoTZC.DeployAirbase)
 end
-if needscarrier==false or(needscarrier and carrier and carrierGroup)then
+if(disembarkToCarriers and carrier and carrierGroup)or(not disembarkToCarriers)then
 cargo.delivered=true
 self.cargoTransport.Ndelivered=self.cargoTransport.Ndelivered+1
 if carrier and carrierGroup then
@@ -89017,7 +91795,7 @@ else
 if self.cargoTransport:GetDisembarkInUtero(self.cargoTZC)then
 self:Unload(cargo.opsgroup)
 else
-local DisembarkZone=self.cargoTransport:GetDisembarkZone(self.cargoTZC)
+local DisembarkZone=cargo.disembarkZone or self.cargoTransport:GetDisembarkZone(self.cargoTZC)
 local Coordinate=nil
 if DisembarkZone then
 Coordinate=DisembarkZone:GetRandomCoordinate()
@@ -89027,7 +91805,7 @@ if element then
 local zoneCarrier=self:GetElementZoneUnload(element.name)
 Coordinate=zoneCarrier:GetRandomCoordinate()
 else
-env.info(string.format("FF ERROR carrier element nil!"))
+self:E(self.lid..string.format("ERROR carrier element nil!"))
 end
 end
 local Heading=math.random(0,359)
@@ -89408,11 +92186,13 @@ self:__FullStop(-1)
 end
 else
 if self:HasPassedFinalWaypoint()then
-if self.legion then
+if self.legion and self.legionReturn then
 self:T(self.lid..string.format("Passed final WP, adinfinitum=FALSE, LEGION set ==> RTZ"))
 if self.isArmygroup then
+self:T2(self.lid.."RTZ to legion spawn zone")
 self:RTZ(self.legion.spawnzone)
 elseif self.isNavygroup then
+self:T2(self.lid.."RTZ to legion port zone")
 self:RTZ(self.legion.portzone)
 end
 else
@@ -89455,6 +92235,7 @@ self:T(self.lid..string.format("WARNING: Group came to an unexpected standstill.
 if self:IsEngaging()then
 self:__Disengage(1)
 elseif self:IsReturning()then
+self:T2(self.lid.."RTZ because of stuck")
 self:__RTZ(1)
 else
 self:__Cruise(1)
@@ -89467,6 +92248,7 @@ self:T(self.lid..string.format("WARNING: Cancelling mission %s [%s] due to being
 self:MissionCancel(mission)
 else
 if self:IsReturning()then
+self:T2(self.lid.."RTZ because of stuck")
 self:__RTZ(1)
 else
 self:__Cruise(1)
@@ -89482,6 +92264,7 @@ end
 end
 end
 function OPSGROUP:_CheckDamage()
+self:T(self.lid..string.format("Checking damage..."))
 self.life=0
 local damaged=false
 for _,_element in pairs(self.elements)do
@@ -89514,7 +92297,7 @@ function OPSGROUP:_CheckAmmoStatus()
 if self.ammo.Total>0 then
 local ammo=self:GetAmmoTot()
 if self:IsRearming()then
-if ammo.Total==self.ammo.Total then
+if ammo.Total>=self.ammo.Total then
 self:Rearmed()
 end
 end
@@ -91028,7 +93811,7 @@ SUCCESS="success",
 FAILED="failed",
 }
 _OPSTRANSPORTID=0
-OPSTRANSPORT.version="0.6.1"
+OPSTRANSPORT.version="0.7.0"
 function OPSTRANSPORT:New(CargoGroups,PickupZone,DeployZone)
 local self=BASE:Inherit(self,FSM:New())
 _OPSTRANSPORTID=_OPSTRANSPORTID+1
@@ -91086,10 +93869,10 @@ end
 table.insert(self.tzCombos,tzcombo)
 return tzcombo
 end
-function OPSTRANSPORT:AddCargoGroups(GroupSet,TransportZoneCombo,DisembarkActivation)
+function OPSTRANSPORT:AddCargoGroups(GroupSet,TransportZoneCombo,DisembarkActivation,DisembarkZone,DisembarkCarriers)
 TransportZoneCombo=TransportZoneCombo or self.tzcDefault
 if GroupSet:IsInstanceOf("GROUP")or GroupSet:IsInstanceOf("OPSGROUP")then
-local cargo=self:_CreateCargoGroupData(GroupSet,TransportZoneCombo,DisembarkActivation)
+local cargo=self:_CreateCargoGroupData(GroupSet,TransportZoneCombo,DisembarkActivation,DisembarkZone,DisembarkCarriers)
 if cargo then
 self.Ncargo=self.Ncargo+1
 table.insert(TransportZoneCombo.Cargos,cargo)
@@ -91173,22 +93956,26 @@ end
 function OPSTRANSPORT:SetDisembarkCarriers(Carriers,TransportZoneCombo)
 self:T(self.lid.."Setting transfer carriers!")
 TransportZoneCombo=TransportZoneCombo or self.tzcDefault
+TransportZoneCombo.disembarkToCarriers=true
+self:_AddDisembarkCarriers(Carriers,TransportZoneCombo.DisembarkCarriers)
+return self
+end
+function OPSTRANSPORT:_AddDisembarkCarriers(Carriers,Table)
 if Carriers:IsInstanceOf("GROUP")or Carriers:IsInstanceOf("OPSGROUP")then
 local carrier=self:_GetOpsGroupFromObject(Carriers)
 if carrier then
-table.insert(TransportZoneCombo.DisembarkCarriers,carrier)
+table.insert(Table,carrier)
 end
 elseif Carriers:IsInstanceOf("SET_GROUP")or Carriers:IsInstanceOf("SET_OPSGROUP")then
 for _,object in pairs(Carriers:GetSet())do
 local carrier=self:_GetOpsGroupFromObject(object)
 if carrier then
-table.insert(TransportZoneCombo.DisembarkCarriers,carrier)
+table.insert(Table,carrier)
 end
 end
 else
 self:E(self.lid.."ERROR: Carriers must be a GROUP, OPSGROUP, SET_GROUP or SET_OPSGROUP object!")
 end
-return self
 end
 function OPSTRANSPORT:GetDisembarkCarriers(TransportZoneCombo)
 TransportZoneCombo=TransportZoneCombo or self.tzcDefault
@@ -91576,12 +94363,8 @@ return is
 end
 function OPSTRANSPORT:IsDelivered(Nmin)
 local is=self:is(OPSTRANSPORT.Status.DELIVERED)
-Nmin=Nmin or 0
-if Nmin>self.Ncargo then
-Nmin=self.Ncargo
-end
-if self.Ndelivered<Nmin then
-is=false
+if is==false and Nmin and self.Ndelivered>=math.min(self.Ncargo,Nmin)then
+is=true
 end
 return is
 end
@@ -91743,18 +94526,40 @@ self:Delivered()
 end
 end
 end
-function OPSTRANSPORT:_CheckRequiredCargos(TransportZoneCombo)
+function OPSTRANSPORT:_CheckRequiredCargos(TransportZoneCombo,CarrierGroup)
 TransportZoneCombo=TransportZoneCombo or self.tzcDefault
-local requiredCargos=TransportZoneCombo.RequiredCargos
+local requiredCargos=TransportZoneCombo.Cargos
+if TransportZoneCombo.RequiredCargos and#TransportZoneCombo.RequiredCargos>0 then
+requiredCargos=TransportZoneCombo.RequiredCargos
+else
+requiredCargos={}
+for _,_cargo in pairs(TransportZoneCombo.Cargos)do
+local cargo=_cargo
+table.insert(requiredCargos,cargo.opsgroup)
+end
+end
 if requiredCargos==nil or#requiredCargos==0 then
 return true
 end
 local carrierNames=self:_GetCarrierNames()
-local gotit=true
+local weightmin=nil
 for _,_cargo in pairs(requiredCargos)do
 local cargo=_cargo
-if not cargo:IsLoaded(carrierNames)then
+local isLoaded=cargo:IsLoaded(carrierNames)
+if not isLoaded then
+local weight=cargo:GetWeightTotal()
+if weightmin==nil or weight<weightmin then
+weightmin=weight
+end
+end
+end
+if weightmin then
+local freeSpace=CarrierGroup:GetFreeCargobayMax(true)
+self:T(self.lid..string.format("Check required cargos for carrier=%s free=%.1f, weight=%.1f",CarrierGroup:GetName(),freeSpace,weightmin))
+if weightmin<freeSpace then
 return false
+else
+return true
 end
 end
 return true
@@ -91769,13 +94574,12 @@ end
 end
 return true
 end
-function OPSTRANSPORT:FindTransferCarrierForCargo(CargoGroup,Zone,TransportZoneCombo)
-TransportZoneCombo=TransportZoneCombo or self.tzcDefault
+function OPSTRANSPORT:FindTransferCarrierForCargo(CargoGroup,Zone,DisembarkCarriers,DeployAirbase)
 local carrier=nil
 local carrierGroup=nil
-for _,_carrier in pairs(TransportZoneCombo.DisembarkCarriers)do
+for _,_carrier in pairs(DisembarkCarriers or{})do
 local carrierGroup=_carrier
-if carrierGroup and carrierGroup:IsAlive()and(carrierGroup:IsLoading()or TransportZoneCombo.DeployAirbase)then
+if carrierGroup and carrierGroup:IsAlive()and(carrierGroup:IsLoading()or DeployAirbase)then
 carrier=carrierGroup:FindCarrierForCargo(CargoGroup)
 if carrier then
 if Zone==nil or Zone:IsVec2InZone(carrier.unit:GetVec2())then
@@ -91788,9 +94592,10 @@ self:T2(self.lid.."No transfer carrier available!")
 end
 end
 end
+self:T2(self.lid.."Could NOT find any carrier that is ALIVE and LOADING (or DELOYAIRBASE))!")
 return nil,nil
 end
-function OPSTRANSPORT:_CreateCargoGroupData(group,TransportZoneCombo,DisembarkActivation)
+function OPSTRANSPORT:_CreateCargoGroupData(group,TransportZoneCombo,DisembarkActivation,DisembarkZone,DisembarkCarriers)
 local opsgroup=self:_GetOpsGroupFromObject(group)
 for _,_cargo in pairs(TransportZoneCombo.Cargos or{})do
 local cargo=_cargo
@@ -91802,8 +94607,12 @@ local cargo={}
 cargo.opsgroup=opsgroup
 cargo.delivered=false
 cargo.status="Unknown"
-cargo.disembarkActivation=DisembarkActivation
 cargo.tzcUID=TransportZoneCombo
+cargo.disembarkZone=DisembarkZone
+if DisembarkCarriers then
+cargo.disembarkCarriers={}
+self:_AddDisembarkCarriers(DisembarkCarriers,cargo.disembarkCarriers)
+end
 return cargo
 end
 function OPSTRANSPORT:_CountCargosInZone(Zone,Delivered,Carrier,TransportZoneCombo)
@@ -91817,6 +94626,19 @@ for _,_carrier in pairs(carriers)do
 local carrier=_carrier
 if Carrier:GetName()==carrier:GetName()then
 return true
+end
+end
+if mycarrier.cargoTZC and mycarrier.cargoTZC.Cargos then
+for _,_cargodata in pairs(mycarrier.cargoTZC.Cargos)do
+local cargodata=_cargodata
+if cargo:GetName()==cargodata.opsgroup:GetName()then
+for _,_carrier in pairs(cargodata.disembarkCarriers)do
+local carrier=_carrier
+if Carrier:GetName()==carrier:GetName()then
+return true
+end
+end
+end
 end
 end
 end
@@ -91910,16 +94732,23 @@ verbose=0,
 Nred=0,
 Nblu=0,
 Nnut=0,
+Tred=0,
+Tblu=0,
+Tnut=0,
 chiefs={},
 Missions={},
 }
-OPSZONE.version="0.3.1"
+OPSZONE.ZoneType={
+Circular="Circular",
+Polygon="Polygon",
+}
+OPSZONE.version="0.5.0"
 function OPSZONE:New(Zone,CoalitionOwner)
 local self=BASE:Inherit(self,FSM:New())
 if Zone then
 if type(Zone)=="string"then
 local Name=Zone
-Zone=ZONE:New(Name)
+Zone=ZONE:FindByName(Name)
 if not Zone then
 local airbase=AIRBASE:FindByName(Name)
 if airbase then
@@ -91938,7 +94767,15 @@ end
 if Zone:IsInstanceOf("ZONE_AIRBASE")then
 self.airbase=Zone._.ZoneAirbase
 self.airbaseName=self.airbase:GetName()
+self.zoneType=OPSZONE.ZoneType.Circular
+self.zoneCircular=Zone
 elseif Zone:IsInstanceOf("ZONE_RADIUS")then
+self.zoneType=OPSZONE.ZoneType.Circular
+self.zoneCircular=Zone
+elseif Zone:IsInstanceOf("ZONE_POLYGON_BASE")then
+self.zoneType=OPSZONE.ZoneType.Polygon
+local zone=Zone
+self.zoneCircular=zone:GetZoneRadius(nil,true)
 else
 self:E("ERROR: OPSZONE must be a SPHERICAL zone due to DCS restrictions!")
 return nil
@@ -91946,8 +94783,11 @@ end
 self.lid=string.format("OPSZONE %s | ",Zone:GetName())
 self.zone=Zone
 self.zoneName=Zone:GetName()
-self.zoneRadius=Zone:GetRadius()
+self.zoneRadius=self.zoneCircular:GetRadius()
 self.Missions={}
+self.ScanUnitSet=SET_UNIT:New():FilterZones({Zone})
+self.ScanGroupSet=SET_GROUP:New():FilterZones({Zone})
+_DATABASE:AddOpsZone(self)
 self.ownerCurrent=CoalitionOwner or coalition.side.NEUTRAL
 self.ownerPrevious=CoalitionOwner or coalition.side.NEUTRAL
 self.isContested=false
@@ -91955,15 +94795,18 @@ if self.airbase then
 self.ownerCurrent=self.airbase:GetCoalition()
 self.ownerPrevious=self.airbase:GetCoalition()
 end
-self:SetTimeCapture()
 self:SetObjectCategories()
 self:SetUnitCategories()
 self:SetDrawZone()
 self:SetMarkZone(true)
+self:SetCaptureTime()
+self:SetCaptureNunits()
+self:SetCaptureThreatlevel()
 self.timerStatus=TIMER:New(OPSZONE.Status,self)
 self:SetStartState("Stopped")
 self:AddTransition("Stopped","Start","Empty")
 self:AddTransition("*","Stop","Stopped")
+self:AddTransition("*","Evaluated","*")
 self:AddTransition("*","Captured","Guarded")
 self:AddTransition("Empty","Guarded","Guarded")
 self:AddTransition("*","Empty","Empty")
@@ -91989,15 +94832,16 @@ end
 self.UnitCategories=Categories or{Unit.Category.GROUND_UNIT}
 return self
 end
-function OPSZONE:SetThreatlevelDefinding(Threatlevel)
-self.threatlevelDefending=Threatlevel or 0
+function OPSZONE:SetCaptureThreatlevel(Threatlevel)
+self.threatlevelCapture=Threatlevel or 0
 return self
 end
-function OPSZONE:SetThreatlevelOffending(Threatlevel)
-self.threatlevelOffending=Threatlevel or 0
+function OPSZONE:SetCaptureNunits(Nunits)
+Nunits=Nunits or 1
+self.nunitsCapture=Nunits
 return self
 end
-function OPSZONE:SetTimeCapture(Tcapture)
+function OPSZONE:SetCaptureTime(Tcapture)
 self.TminCaptured=Tcapture or 0
 return self
 end
@@ -92030,6 +94874,7 @@ if self.marker then
 self.marker:Remove()
 end
 self.marker=nil
+self.markZone=false
 end
 return self
 end
@@ -92042,6 +94887,12 @@ end
 function OPSZONE:GetCoordinate()
 local coordinate=self.zone:GetCoordinate()
 return coordinate
+end
+function OPSZONE:GetScannedUnitSet()
+return self.ScanUnitSet
+end
+function OPSZONE:GetScannedGroupSet()
+return self.ScanGroupSet
 end
 function OPSZONE:GetRandomCoordinate(inner,outer,surfacetypes)
 local zone=self:GetZone()
@@ -92078,6 +94929,14 @@ return is
 end
 function OPSZONE:IsCoalition(Coalition)
 local is=self.ownerCurrent==Coalition
+return is
+end
+function OPSZONE:IsStarted()
+local is=not self:IsStopped()
+return is
+end
+function OPSZONE:IsStopped()
+local is=self:is("Stopped")
 return is
 end
 function OPSZONE:IsGuarded()
@@ -92155,27 +95014,16 @@ end
 end
 function OPSZONE:onafterEmpty(From,Event,To)
 self:T(self.lid..string.format("Zone is empty EVENT"))
-for _,_chief in pairs(self.chiefs)do
-local chief=_chief
-chief:ZoneEmpty(self)
-end
 end
 function OPSZONE:onafterAttacked(From,Event,To,AttackerCoalition)
 self:T(self.lid..string.format("Zone is being attacked by coalition=%s!",tostring(AttackerCoalition)))
-if AttackerCoalition then
-for _,_chief in pairs(self.chiefs)do
-local chief=_chief
-if chief.coalition~=AttackerCoalition then
-chief:ZoneAttacked(self)
-end
-end
-end
 end
 function OPSZONE:onafterDefeated(From,Event,To,DefeatedCoalition)
 self:T(self.lid..string.format("Defeated attack on zone by coalition=%d",DefeatedCoalition))
 self.Tattacked=nil
 end
 function OPSZONE:onenterGuarded(From,Event,To)
+if From~=To then
 self:T(self.lid..string.format("Zone is guarded"))
 self.Tattacked=nil
 if self.drawZone then
@@ -92184,9 +95032,19 @@ local color=self:_GetZoneColor()
 self.zone:DrawZone(nil,color,1.0,color,0.5)
 end
 end
-function OPSZONE:onenterAttacked(From,Event,To)
+end
+function OPSZONE:onenterAttacked(From,Event,To,AttackerCoalition)
+if From~="Attacked"then
 self:T(self.lid..string.format("Zone is Attacked"))
 self.Tattacked=timer.getAbsTime()
+if AttackerCoalition then
+for _,_chief in pairs(self.chiefs)do
+local chief=_chief
+if chief.coalition~=AttackerCoalition then
+chief:ZoneAttacked(self)
+end
+end
+end
 if self.drawZone then
 self.zone:UndrawZone()
 local color={1,204/255,204/255}
@@ -92194,12 +95052,19 @@ self.zone:DrawZone(nil,color,1.0,color,0.5)
 end
 self:_CleanMissionTable()
 end
+end
 function OPSZONE:onenterEmpty(From,Event,To)
+if From~=To then
 self:T(self.lid..string.format("Zone is empty now"))
+for _,_chief in pairs(self.chiefs)do
+local chief=_chief
+chief:ZoneEmpty(self)
+end
 if self.drawZone then
 self.zone:UndrawZone()
 local color=self:_GetZoneColor()
 self.zone:DrawZone(nil,color,1.0,color,0.2)
+end
 end
 end
 function OPSZONE:Scan()
@@ -92211,6 +95076,11 @@ local SphereSearch={id=world.VolumeType.SPHERE,params={point=self.zone:GetVec3()
 local Nred=0
 local Nblu=0
 local Nnut=0
+local Tred=0
+local Tblu=0
+local Tnut=0
+self.ScanGroupSet:Clear(false)
+self.ScanUnitSet:Clear(false)
 local function EvaluateZone(_ZoneObject)
 local ZoneObject=_ZoneObject
 if ZoneObject then
@@ -92232,20 +95102,45 @@ return false
 end
 if Included()then
 local Coalition=DCSUnit:getCoalition()
+local tl=0
+local unit=UNIT:Find(DCSUnit)
+if unit then
+local inzone=true
+if self.zoneType==OPSZONE.ZoneType.Polygon then
+inzone=unit:IsInZone(self.zone)
+end
+if inzone then
+tl=unit:GetThreatLevel()
+self.ScanUnitSet:AddUnit(unit)
+local group=unit:GetGroup()
+if group then
+self.ScanGroupSet:AddGroup(group,true)
+end
 if Coalition==coalition.side.RED then
 Nred=Nred+1
+Tred=Tred+tl
 elseif Coalition==coalition.side.BLUE then
 Nblu=Nblu+1
+Tblu=Tblu+tl
 elseif Coalition==coalition.side.NEUTRAL then
 Nnut=Nnut+1
+Tnut=Tnut+tl
 end
 if self.verbose>=4 then
 self:I(self.lid..string.format("Found unit %s (coalition=%d)",DCSUnit:getName(),Coalition))
 end
 end
+end
+end
 elseif ObjectCategory==Object.Category.STATIC and ZoneObject:isExist()then
 local DCSStatic=ZoneObject
 local Coalition=DCSStatic:getCoalition()
+local inzone=true
+if self.zoneType==OPSZONE.ZoneType.Polygon then
+local Vec3=DCSStatic:getPoint()
+inzone=self.zone:IsVec3InZone(Vec3)
+end
+if inzone then
 if Coalition==coalition.side.RED then
 Nred=Nred+1
 elseif Coalition==coalition.side.BLUE then
@@ -92255,6 +95150,7 @@ Nnut=Nnut+1
 end
 if self.verbose>=4 then
 self:I(self.lid..string.format("Found static %s (coalition=%d)",DCSStatic:getName(),Coalition))
+end
 end
 elseif ObjectCategory==Object.Category.SCENERY then
 local SceneryType=ZoneObject:getTypeName()
@@ -92267,45 +95163,48 @@ end
 world.searchObjects(self.ObjectCategories,SphereSearch,EvaluateZone)
 if self.verbose>=3 then
 local text=string.format("Scan result Nred=%d, Nblue=%d, Nneutral=%d",Nred,Nblu,Nnut)
+if self.verbose>=4 then
+for _,_unit in pairs(self.ScanUnitSet:GetSet())do
+local unit=_unit
+text=text..string.format("\nUnit %s coalition=%s",unit:GetName(),unit:GetCoalitionName())
+end
+for _,_group in pairs(self.ScanGroupSet:GetSet())do
+local group=_group
+text=text..string.format("\nGroup %s coalition=%s",group:GetName(),group:GetCoalitionName())
+end
+end
 self:I(self.lid..text)
 end
 self.Nred=Nred
 self.Nblu=Nblu
 self.Nnut=Nnut
+self.Tblu=Tblu
+self.Tred=Tred
+self.Tnut=Tnut
 return self
 end
 function OPSZONE:EvaluateZone()
 local Nred=self.Nred
 local Nblu=self.Nblu
 local Nnut=self.Nnut
+local Tnow=timer.getAbsTime()
+local function captured(coal)
+if not self.airbase then
+if not self.Tcaptured then
+self.Tcaptured=Tnow
+end
+if Tnow-self.Tcaptured>=self.TminCaptured then
+self:Captured(coal)
+self.Tcaptured=nil
+end
+end
+end
 if self:IsRed()then
 if Nred==0 then
-if Nblu>0 then
-if not self.airbase then
-local Tnow=timer.getAbsTime()
-if not self.Tcaptured then
-self.Tcaptured=Tnow
-end
-if Tnow-self.Tcaptured>=self.TminCaptured then
-self:Captured(coalition.side.BLUE)
-self.Tcaptured=nil
-end
-end
-elseif Nnut>0 and self.neutralCanCapture then
-if not self.airbase then
-local Tnow=timer.getAbsTime()
-if not self.Tcaptured then
-self.Tcaptured=Tnow
-end
-if Tnow-self.Tcaptured>=self.TminCaptured then
-self:Captured(coalition.side.NEUTRAL)
-self.Tcaptured=nil
-end
-end
-else
-if not self:IsEmpty()then
-self:Empty()
-end
+if Nblu>=self.nunitsCapture and self.Tblu>=self.threatlevelCapture then
+captured(coalition.side.BLUE)
+elseif Nnut>=self.nunitsCapture and self.Tnut>=self.threatlevelCapture and self.neutralCanCapture then
+captured(coalition.side.NEUTRAL)
 end
 else
 if Nblu>0 then
@@ -92327,18 +95226,10 @@ self.isContested=true
 end
 elseif self:IsBlue()then
 if Nblu==0 then
-if Nred>0 then
-if not self.airbase then
-self:Captured(coalition.side.RED)
-end
-elseif Nnut>0 and self.neutralCanCapture then
-if not self.airbase then
-self:Captured(coalition.side.NEUTRAL)
-end
-else
-if not self:IsEmpty()then
-self:Empty()
-end
+if Nred>=self.nunitsCapture and self.Tred>=self.threatlevelCapture then
+captured(coalition.side.RED)
+elseif Nnut>=self.nunitsCapture and self.Tnut>=self.threatlevelCapture and self.neutralCanCapture then
+captured(coalition.side.NEUTRAL)
 end
 else
 if Nred>0 then
@@ -92365,21 +95256,16 @@ if not self:IsAttacked()then
 self:Attacked()
 end
 self.isContested=true
-elseif Nred>0 then
-if not self.airbase then
-self:Captured(coalition.side.RED)
-end
-elseif Nblu>0 then
-if not self.airbase then
-self:Captured(coalition.side.BLUE)
-end
-else
-if not self:IsEmpty()then
-self:Empty()
-end
+elseif Nred>=self.nunitsCapture and self.Tred>=self.threatlevelCapture then
+captured(coalition.side.RED)
+elseif Nblu>=self.nunitsCapture and self.Tblu>=self.threatlevelCapture then
+captured(coalition.side.BLUE)
 end
 else
 self:E(self.lid.."ERROR: Unknown coaliton!")
+end
+if Nblu==0 and Nred==0 and Nnut==0 and(not self:IsEmpty())then
+self:Empty()
 end
 if self.airbase then
 local airbasecoalition=self.airbase:GetCoalition()
@@ -92388,6 +95274,7 @@ self:T(self.lid..string.format("Captured airbase %s: Coaltion %d-->%d",self.airb
 self:Captured(airbasecoalition)
 end
 end
+self:Evaluated()
 end
 function OPSZONE:OnEventHit(EventData)
 if self.HitsOn then
@@ -92437,8 +95324,10 @@ end
 function OPSZONE:_GetMarkerText()
 local owner=UTILS.GetCoalitionName(self.ownerCurrent)
 local prevowner=UTILS.GetCoalitionName(self.ownerPrevious)
-local text=string.format("%s: Owner=%s [%s]\nState=%s [Contested=%s]\nBlue=%d, Red=%d, Neutral=%d",
-self.zoneName,owner,prevowner,self:GetState(),tostring(self:IsContested()),self.Nblu,self.Nred,self.Nnut)
+local text=string.format("%s [N=%d, TL=%d T=%d]:\nOwner=%s [%s]\nState=%s [Contested=%s]\nBlue=%d [TL=%d]\nRed=%d [TL=%d]\nNeutral=%d [TL=%d]",
+self.zoneName,self.nunitsCapture or 0,self.threatlevelCapture or 0,self.TminCaptured or 0,
+owner,prevowner,self:GetState(),tostring(self:IsContested()),
+self.Nblu,self.Tblu,self.Nred,self.Tred,self.Nnut,self.Tnut)
 return text
 end
 function OPSZONE:_AddChief(Chief)
@@ -92555,7 +95444,7 @@ NextTaskSuccess={},
 NextTaskFailure={},
 FinalState="none",
 }
-PLAYERTASK.version="0.1.10"
+PLAYERTASK.version="0.1.14"
 function PLAYERTASK:New(Type,Target,Repeat,Times,TTSType)
 local self=BASE:Inherit(self,FSM:New())
 self.Type=Type
@@ -92616,6 +95505,10 @@ end
 function PLAYERTASK:GetCoalition()
 self:T(self.lid.."GetCoalition")
 return self.coalition
+end
+function PLAYERTASK:GetTarget()
+self:T(self.lid.."GetTarget")
+return self.Target
 end
 function PLAYERTASK:AddFreetext(Text)
 self:T(self.lid.."AddFreetext")
@@ -92827,6 +95720,7 @@ function PLAYERTASK:onafterStatus(From,Event,To)
 self:T({From,Event,To})
 self:T(self.lid.."onafterStatus")
 local status=self:GetState()
+if status=="Stopped"then return self end
 local targetdead=false
 if self.Type~=AUFTRAG.Type.CTLD and self.Type~=AUFTRAG.Type.CSAR then
 if self.Target:IsDead()or self.Target:IsDestroyed()or self.Target:CountTargets()==0 then
@@ -92836,8 +95730,8 @@ status="Success"
 return self
 end
 end
-if status=="Executing"then
 local clientsalive=false
+if status=="Executing"then
 local ClientTable=self.Clients:GetDataTable()
 for _,_client in pairs(ClientTable)do
 local client=_client
@@ -92849,6 +95743,8 @@ if status=="Executing"and(not clientsalive)and(not targetdead)then
 self:__Failed(-2)
 status="Failed"
 end
+end
+if status~="Done"and status~="Stopped"then
 local successCondition=self:_EvalConditionsAny(self.conditionSuccess)
 local failureCondition=self:_EvalConditionsAny(self.conditionFailure)
 if failureCondition and status~="Failed"then
@@ -92861,10 +95757,8 @@ end
 if self.verbose then
 self:I(self.lid.."Target dead: "..tostring(targetdead).." | Clients alive: "..tostring(clientsalive))
 end
-end
-if status~="Done"then
 self:__Status(-20)
-else
+elseif status~="Stopped"then
 self:__Stop(-1)
 end
 return self
@@ -93077,6 +95971,13 @@ TANKS="Tanks",
 AIRDEFENSE="Airdefense",
 SAM="SAM",
 GROUP="Group",
+UNARMEDSHIP="Merchant",
+LIGHTARMEDSHIP="Light Boat",
+CORVETTE="Corvette",
+FRIGATE="Frigate",
+CRUISER="Cruiser",
+DESTROYER="Destroyer",
+CARRIER="Aircraft Carrier",
 },
 DE={
 TASKABORT="Auftrag abgebrochen!",
@@ -93149,9 +96050,16 @@ TANKS="Panzer",
 AIRDEFENSE="Flak",
 SAM="Luftabwehr",
 GROUP="Einheit",
+UNARMEDSHIP="Handelsschiff",
+LIGHTARMEDSHIP="Tender",
+CORVETTE="Korvette",
+FRIGATE="Fregatte",
+CRUISER="Kreuzer",
+DESTROYER="Zerstörer",
+CARRIER="Flugzeugträger",
 },
 }
-PLAYERTASKCONTROLLER.version="0.1.54"
+PLAYERTASKCONTROLLER.version="0.1.58"
 function PLAYERTASKCONTROLLER:New(Name,Coalition,Type,ClientFilter)
 local self=BASE:Inherit(self,FSM:New())
 self.Name=Name or"CentCom"
@@ -93213,6 +96121,8 @@ self:AddTransition("*","TaskTargetSmoked","*")
 self:AddTransition("*","TaskTargetFlared","*")
 self:AddTransition("*","TaskTargetIlluminated","*")
 self:AddTransition("*","TaskRepeatOnFailed","*")
+self:AddTransition("*","PlayerJoinedTask","*")
+self:AddTransition("*","PlayerAbortedTask","*")
 self:AddTransition("*","Stop","Stopped")
 self:__Start(2)
 local starttime=math.random(5,10)
@@ -93580,6 +96490,7 @@ if object.freetext then
 target.freetext=object.freetext
 end
 end
+if object:IsInstanceOf("UNIT")or object:IsInstanceOf("GROUP")then
 if self.UseTypeNames and object:IsGround()then
 local threat=object:GetThreatLevel()
 local typekey="INFANTRY"
@@ -93597,6 +96508,26 @@ end
 local typename=self.gettext:GetEntry(typekey,self.locale)
 local gname=self.gettext:GetEntry("GROUP",self.locale)
 target.TypeName=string.format("%s %s",typename,gname)
+end
+if self.UseTypeNames and object:IsShip()then
+local threat=object:GetThreatLevel()
+local typekey="UNARMEDSHIP"
+if threat==1 then
+typekey="LIGHTARMEDSHIP"
+elseif threat==2 then
+typekey="CORVETTE"
+elseif threat==3 or threat==4 then
+typekey="FRIGATE"
+elseif threat==5 or threat==6 then
+typekey="CRUISER"
+elseif threat==7 or threat==8 then
+typekey="DESTROYER"
+elseif threat>=9 then
+typekey="CARRIER"
+end
+local typename=self.gettext:GetEntry(typekey,self.locale)
+target.TypeName=typename
+end
 end
 self:_AddTask(target)
 end
@@ -94030,6 +96961,7 @@ self:T(self.lid..text)
 self.SRSQueue:NewTransmission(text,nil,self.SRS,nil,2)
 end
 self.TasksPerPlayer:Push(Task,playername)
+self:__PlayerJoinedTask(1,Group,Client,Task)
 self:_BuildMenus(Client,true)
 end
 if Task.Type==AUFTRAG.Type.PRECISIONBOMBING then
@@ -94190,10 +97122,12 @@ if self.ShowMagnetic then
 text=string.gsub(text,"°M|","° magnetic; ")
 end
 if string.find(CoordText,"MGRS")then
-local Text=string.gsub(CoordText,"%d","%1;")
-Text=string.gsub(Text," $","")
-CoordText=string.gsub(Text,"0","zero")
-CoordText=string.gsub(Text,"MGRS","MGRS;")
+local Text=string.gsub(CoordText,"MGRS ","")
+Text=string.gsub(Text,"%s+","")
+Text=string.gsub(Text,"([%a%d])","%1;")
+Text=string.gsub(Text,"0","zero")
+Text=string.gsub(Text,"9","niner")
+CoordText="MGRS;"..Text
 if self.PathToGoogleKey then
 CoordText=string.format("<say-as interpret-as='characters'>%s</say-as>",CoordText)
 end
@@ -94325,6 +97259,7 @@ self:T(self.lid..text)
 if self.UseSRS then
 self.SRSQueue:NewTransmission(text,nil,self.SRS,nil,2)
 end
+self:__PlayerAbortedTask(1,Group,Client,task)
 else
 text=self.gettext:GetEntry("NOACTIVETASK",self.locale)
 end
@@ -94388,6 +97323,8 @@ clients={Client}
 enforced=true
 joinorabort=true
 end
+local tasktypes=self:_GetAvailableTaskTypes()
+local taskpertype=self:_GetTasksPerType()
 for _,_client in pairs(clients)do
 if _client and _client:IsAlive()then
 local client=_client
@@ -94416,6 +97353,7 @@ local T0=timer.getAbsTime()
 local TDiff=T0-self.PlayerMenu[playername].PTTimeStamp
 self:T("TDiff = "..string.format("%.2d",TDiff))
 if TDiff>=self.holdmenutime then
+self.PlayerMenu[playername]:RemoveSubMenus()
 self.PlayerMenu[playername]=MENU_GROUP_DELAYED:New(group,menuname,self.MenuParent)
 self.PlayerMenu[playername]:SetTag(newtag)
 self.PlayerMenu[playername].PTTimeStamp=timer.getAbsTime()
@@ -94455,8 +97393,6 @@ end
 local abort=MENU_GROUP_COMMAND_DELAYED:New(group,menuabort,active,self._AbortTask,self,group,client):SetTag(newtag)
 if self.activehasinfomenu and self.taskinfomenu then
 self:T("Building Active-Info Menus for "..playername)
-local tasktypes=self:_GetAvailableTaskTypes()
-local taskpertype=self:_GetTasksPerType()
 if self.PlayerInfoMenu[playername]then
 self.PlayerInfoMenu[playername]:RemoveSubMenus(nil,oldtag)
 end
@@ -94465,10 +97401,12 @@ end
 elseif(self.TaskQueue:Count()>0 and enforced)or(not playerhastask and(timedbuild or joinorabort))then
 self:T("Building Join Menus for "..playername)
 rebuilddone=true
-local tasktypes=self:_GetAvailableTaskTypes()
-local taskpertype=self:_GetTasksPerType()
 local menujoin=self.gettext:GetEntry("MENUJOIN",self.locale)
+if self.PlayerJoinMenu[playername]then
+self.PlayerJoinMenu[playername]:RemoveSubMenus(nil,oldtag)
+end
 local joinmenu=MENU_GROUP_DELAYED:New(group,menujoin,topmenu):SetTag(newtag)
+self.PlayerJoinMenu[playername]=joinmenu
 local ttypes={}
 local taskmenu={}
 for _tasktype,_data in pairs(tasktypes)do
@@ -94519,6 +97457,7 @@ rebuilddone=true
 end
 if rebuilddone then
 self.PlayerMenu[playername]:RemoveSubMenus(nil,oldtag)
+self.PlayerMenu[playername]:Set()
 self.PlayerMenu[playername]:Refresh()
 end
 end
@@ -94530,6 +97469,18 @@ function PLAYERTASKCONTROLLER:AddAgent(Recce)
 self:T(self.lid.."AddAgent")
 if self.Intel then
 self.Intel:AddAgent(Recce)
+else
+self:E(self.lid.."*****NO detection has been set up (yet)!")
+end
+return self
+end
+function PLAYERTASKCONTROLLER:AddAgentSet(RecceSet)
+self:T(self.lid.."AddAgentSet")
+if self.Intel then
+local Set=RecceSet:GetAliveSet()
+for _,_Recce in pairs(Set)do
+self.Intel:AddAgent(_Recce)
+end
 else
 self:E(self.lid.."*****NO detection has been set up (yet)!")
 end
@@ -94844,7 +97795,7 @@ PLAYERRECCE={
 ClassName="PLAYERRECCE",
 verbose=true,
 lid=nil,
-version="0.0.16",
+version="0.0.17",
 ViewZone={},
 ViewZoneVisual={},
 ViewZoneLaser={},
@@ -94878,7 +97829,8 @@ PLAYERRECCE.LaserRelativePos={
 ["SA342Mistral"]={x=1.7,y=1.2,z=0},
 ["SA342Minigun"]={x=1.7,y=1.2,z=0},
 ["SA342L"]={x=1.7,y=1.2,z=0},
-["Ka-50"]={x=6.1,y=-0.85,z=0}
+["Ka-50"]={x=6.1,y=-0.85,z=0},
+["Ka-50_3"]={x=6.1,y=-0.85,z=0}
 }
 PLAYERRECCE.MaxViewDistance={
 ["SA342M"]=8000,
@@ -94886,6 +97838,7 @@ PLAYERRECCE.MaxViewDistance={
 ["SA342Minigun"]=8000,
 ["SA342L"]=8000,
 ["Ka-50"]=8000,
+["Ka-50_3"]=8000,
 }
 PLAYERRECCE.Cameraheight={
 ["SA342M"]=2.85,
@@ -94893,6 +97846,7 @@ PLAYERRECCE.Cameraheight={
 ["SA342Minigun"]=2.85,
 ["SA342L"]=2.85,
 ["Ka-50"]=0.5,
+["Ka-50_3"]=0.5,
 }
 PLAYERRECCE.CanLase={
 ["SA342M"]=true,
@@ -94900,6 +97854,7 @@ PLAYERRECCE.CanLase={
 ["SA342Minigun"]=false,
 ["SA342L"]=true,
 ["Ka-50"]=true,
+["Ka-50_3"]=true,
 }
 PLAYERRECCE.SmokeColor={
 ["highsmoke"]=SMOKECOLOR.Orange,
@@ -95049,7 +98004,7 @@ local vivihorizontal=dcsunit:getDrawArgumentValue(215)or 0
 if vivihorizontal<-0.7 or vivihorizontal>0.7 then
 camera=false
 end
-elseif typename=="Ka-50"then
+elseif string.find(typename,"Ka-50")then
 camera=true
 end
 end
@@ -95226,7 +98181,7 @@ if string.find(typename,"SA342")and camera then
 heading,nod,maxview,camon=self:_GetGazelleVivianneSight(unit)
 angle=10
 maxview=self.MaxViewDistance[typename]or 5000
-elseif typename=="Ka-50"and camera then
+elseif string.find(typename,"Ka-50")and camera then
 heading=unit:GetHeading()
 nod,maxview,camon=10,1000,true
 angle=10
@@ -97416,6 +100371,7 @@ SCENERY="Scenery",
 COORDINATE="Coordinate",
 AIRBASE="Airbase",
 ZONE="Zone",
+OPSZONE="OpsZone"
 }
 TARGET.Category={
 AIRCRAFT="Aircraft",
@@ -97431,7 +100387,7 @@ DEAD="Dead",
 DAMAGED="Damaged",
 }
 _TARGETID=0
-TARGET.version="0.5.6"
+TARGET.version="0.6.0"
 function TARGET:New(TargetObject)
 local self=BASE:Inherit(self,FSM:New())
 _TARGETID=_TARGETID+1
@@ -97457,7 +100413,12 @@ self:__Start(-1)
 return self
 end
 function TARGET:AddObject(Object)
-if Object:IsInstanceOf("SET_GROUP")or Object:IsInstanceOf("SET_UNIT")or Object:IsInstanceOf("SET_STATIC")or Object:IsInstanceOf("SET_SCENERY")or Object:IsInstanceOf("SET_OPSGROUP")then
+if Object:IsInstanceOf("SET_GROUP")or
+Object:IsInstanceOf("SET_UNIT")or
+Object:IsInstanceOf("SET_STATIC")or
+Object:IsInstanceOf("SET_SCENERY")or
+Object:IsInstanceOf("SET_OPSGROUP")or
+Object:IsInstanceOf("SET_OPSZONE")then
 local set=Object
 for _,object in pairs(set.Set)do
 self:AddObject(object)
@@ -97607,7 +100568,7 @@ self:Damaged()
 end
 if self.verbose>=1 then
 local text=string.format("%s: Targets=%d/%d Life=%.1f/%.1f Damage=%.1f",fsmstate,self:CountTargets(),self.N0,self:GetLife(),self:GetLife0(),self:GetDamage())
-if self:CountTargets()==0 then
+if self:CountTargets()==0 or self:GetDamage()>=100 then
 text=text.." Dead!"
 elseif damaged then
 text=text.." Damaged!"
@@ -97623,7 +100584,7 @@ text=text..string.format("\n[%d] %s %s %s: Life=%.1f/%.1f, Damage=%.1f",i,target
 end
 self:I(self.lid..text)
 end
-if self:CountTargets()==0 then
+if self:CountTargets()==0 or self:GetDamage()>=100 then
 self:Dead()
 end
 if self:IsAlive()then
@@ -97764,6 +100725,7 @@ target.Type=TARGET.ObjectType.SCENERY
 target.Name=scenery:GetName()
 target.Coordinate=scenery:GetCoordinate()
 target.Life0=scenery:GetLife0()
+if target.Life0==0 then target.Life0=1 end
 target.Life=scenery:GetLife()
 target.N0=target.N0+1
 table.insert(self.elements,target.Name)
@@ -97789,6 +100751,15 @@ Object=zone
 target.Type=TARGET.ObjectType.ZONE
 target.Name=zone:GetName()
 target.Coordinate=zone:GetCoordinate()
+target.Life0=1
+target.Life=1
+elseif Object:IsInstanceOf("OPSZONE")then
+local zone=Object
+Object=zone
+target.Type=TARGET.ObjectType.OPSZONE
+target.Name=zone:GetName()
+target.Coordinate=zone:GetCoordinate()
+target.N0=target.N0+1
 target.Life0=1
 target.Life=1
 else
@@ -97843,7 +100814,8 @@ return 0
 end
 elseif Target.Type==TARGET.ObjectType.STATIC then
 if Target.Object and Target.Object:IsAlive()then
-return 1
+local life=Target.Object:GetLife()
+return life
 else
 return 0
 end
@@ -97862,7 +100834,7 @@ return 0
 end
 elseif Target.Type==TARGET.ObjectType.COORDINATE then
 return 1
-elseif Target.Type==TARGET.ObjectType.ZONE then
+elseif Target.Type==TARGET.ObjectType.ZONE or Target.Type==TARGET.ObjectType.OPSZONE then
 return 1
 else
 self:E("ERROR: unknown target object type in GetTargetLife!")
@@ -97979,6 +100951,10 @@ elseif Target.Type==TARGET.ObjectType.ZONE then
 local object=Target.Object
 local vec3=object:GetVec3()
 return vec3
+elseif Target.Type==TARGET.ObjectType.OPSZONE then
+local object=Target.Object
+local vec3=object:GetZone():GetVec3()
+return vec3
 end
 self:E(self.lid.."ERROR: Unknown TARGET type! Cannot get Vec3")
 end
@@ -98025,7 +101001,7 @@ return 0
 elseif Target.Type==TARGET.ObjectType.COORDINATE then
 local object=Target.Object
 return 0
-elseif Target.Type==TARGET.ObjectType.ZONE then
+elseif Target.Type==TARGET.ObjectType.ZONE or Target.Type==TARGET.ObjectType.OPSZONE then
 local object=Target.Object
 return 0
 end
@@ -98173,10 +101149,41 @@ elseif Target.Type==TARGET.ObjectType.COORDINATE then
 return TARGET.Category.COORDINATE
 elseif Target.Type==TARGET.ObjectType.ZONE then
 return TARGET.Category.ZONE
+elseif Target.Type==TARGET.ObjectType.OPSZONE then
+return TARGET.Category.OPSZONE
 else
 self:E("ERROR: unknown target category!")
 end
 return category
+end
+function TARGET:GetTargetCoalition(Target)
+local coal=coalition.side.NEUTRAL
+if Target.Type==TARGET.ObjectType.GROUP then
+if Target.Object and Target.Object:IsAlive()~=nil then
+local object=Target.Object
+coal=object:GetCoalition()
+end
+elseif Target.Type==TARGET.ObjectType.UNIT then
+if Target.Object and Target.Object:IsAlive()~=nil then
+local object=Target.Object
+coal=object:GetCoalition()
+end
+elseif Target.Type==TARGET.ObjectType.STATIC then
+local object=Target.Object
+coal=object:GetCoalition()
+elseif Target.Type==TARGET.ObjectType.SCENERY then
+elseif Target.Type==TARGET.ObjectType.AIRBASE then
+local object=Target.Object
+coal=object:GetCoalition()
+elseif Target.Type==TARGET.ObjectType.COORDINATE then
+elseif Target.Type==TARGET.ObjectType.ZONE then
+elseif Target.Type==TARGET.ObjectType.OPSZONE then
+local object=Target.Object
+coal=object:GetOwner()
+else
+self:E("ERROR: unknown target category!")
+end
+return coal
 end
 function TARGET:GetTargetByName(ObjectName)
 for _,_target in pairs(self.targets)do
@@ -98187,23 +101194,40 @@ end
 end
 return nil
 end
-function TARGET:GetObjective()
+function TARGET:GetObjective(RefCoordinate,Coalitions)
+if RefCoordinate then
+local dmin=math.huge
+local tmin=nil
 for _,_target in pairs(self.targets)do
 local target=_target
-if target.Status~=TARGET.ObjectStatus.DEAD then
+if target.Status~=TARGET.ObjectStatus.DEAD and(Coalitions==nil or UTILS.IsInTable(UTILS.EnsureTable(Coalitions),self:GetTargetCoalition(target)))then
+local vec3=self:GetTargetVec3(target)
+local d=UTILS.VecDist3D(vec3,RefCoordinate)
+if d<dmin then
+dmin=d
+tmin=target
+end
+end
+end
+return tmin
+else
+for _,_target in pairs(self.targets)do
+local target=_target
+if target.Status~=TARGET.ObjectStatus.DEAD and(Coalitions==nil or UTILS.IsInTable(UTILS.EnsureTable(Coalitions),self:GetTargetCoalition(target)))then
 return target
+end
 end
 end
 return nil
 end
-function TARGET:GetObject()
-local target=self:GetObjective()
+function TARGET:GetObject(RefCoordinate,Coalitions)
+local target=self:GetObjective(RefCoordinate,Coalitions)
 if target then
 return target.Object
 end
 return nil
 end
-function TARGET:CountObjectives(Target)
+function TARGET:CountObjectives(Target,Coalitions)
 local N=0
 if Target.Type==TARGET.ObjectType.GROUP then
 local target=Target.Object
@@ -98211,39 +101235,53 @@ local units=target:GetUnits()
 for _,_unit in pairs(units or{})do
 local unit=_unit
 if unit and unit:IsAlive()~=nil and unit:GetLife()>1 then
+if Coalitions==nil or UTILS.IsInTable(UTILS.EnsureTable(Coalitions),unit:GetCoalition())then
 N=N+1
+end
 end
 end
 elseif Target.Type==TARGET.ObjectType.UNIT then
 local target=Target.Object
 if target and target:IsAlive()~=nil and target:GetLife()>1 then
+if Coalitions==nil or UTILS.IsInTable(Coalitions,target:GetCoalition())then
 N=N+1
+end
 end
 elseif Target.Type==TARGET.ObjectType.STATIC then
 local target=Target.Object
 if target and target:IsAlive()then
+if Coalitions==nil or UTILS.IsInTable(Coalitions,target:GetCoalition())then
 N=N+1
+end
 end
 elseif Target.Type==TARGET.ObjectType.SCENERY then
 if Target.Status~=TARGET.ObjectStatus.DEAD then
 N=N+1
 end
 elseif Target.Type==TARGET.ObjectType.AIRBASE then
+local target=Target.Object
 if Target.Status==TARGET.ObjectStatus.ALIVE then
+if Coalitions==nil or UTILS.IsInTable(Coalitions,target:GetCoalition())then
 N=N+1
+end
 end
 elseif Target.Type==TARGET.ObjectType.COORDINATE then
 elseif Target.Type==TARGET.ObjectType.ZONE then
+elseif Target.Type==TARGET.ObjectType.OPSZONE then
+local target=Target.Object
+if Coalitions==nil or UTILS.IsInTable(Coalitions,target:GetOwner())then
+N=N+1
+end
 else
 self:E(self.lid.."ERROR: Unknown target type! Cannot count targets")
 end
 return N
 end
-function TARGET:CountTargets()
+function TARGET:CountTargets(Coalitions)
 local N=0
 for _,_target in pairs(self.targets)do
 local Target=_target
-N=N+self:CountObjectives(Target)
+N=N+self:CountObjectives(Target,Coalitions)
 end
 return N
 end
@@ -107590,8 +110628,9 @@ volume=1,
 speed=1,
 coordinate=nil,
 Label="ROBOT",
+AltBackend=nil,
 }
-MSRS.version="0.1.1"
+MSRS.version="0.1.2"
 MSRS.Voices={
 Microsoft={
 ["Hedda"]="Microsoft Hedda Desktop",
@@ -107690,10 +110729,20 @@ Wavenet={
 },
 },
 }
-function MSRS:New(PathToSRS,Frequency,Modulation,Volume)
+function MSRS:New(PathToSRS,Frequency,Modulation,Volume,AltBackend)
 Frequency=Frequency or 143
 Modulation=Modulation or radio.modulation.AM
 local self=BASE:Inherit(self,BASE:New())
+if type(AltBackend)=="table"or type(self.AltBackend)=="table"then
+local Backend=UTILS.DeepCopy(AltBackend)or UTILS.DeepCopy(self.AltBackend)
+Backend.Vars=Backend.Vars or{}
+Backend.Vars.PathToSRS=UTILS.DeepCopy(PathToSRS)
+Backend.Vars.Frequency=UTILS.DeepCopy(Frequency)
+Backend.Vars.Modulation=UTILS.DeepCopy(Modulation)
+Backend.Vars.Volume=UTILS.DeepCopy(Volume)
+Backend.Functions=Backend.Functions or{}
+return self:_NewAltBackend(Backend)
+end
 self:SetPath(PathToSRS)
 self:SetPort()
 self:SetFrequencies(Frequency)
@@ -107830,6 +110879,21 @@ env.info(data)
 env.info("======================================================================")
 return self
 end
+function MSRS.SetDefaultBackend(Backend)
+if type(Backend)=="table"then
+MSRS.AltBackend=UTILS.DeepCopy(Backend)
+else
+return false
+end
+return true
+end
+function MSRS.ResetDefaultBackend()
+MSRS.AltBackend=nil
+return true
+end
+function MSRS.SetDefaultBackendGRPC()
+return MSRS.SetDefaultBackend(MSRS_BACKEND_DCSGRPC)
+end
 function MSRS:PlaySoundFile(Soundfile,Delay)
 if Delay and Delay>0 then
 self:ScheduleOnce(Delay,MSRS.PlaySoundFile,self,Soundfile,0)
@@ -107891,6 +110955,23 @@ command=command..string.format(" --textFile=\"%s\"",tostring(TextFile))
 self:T(string.format("MSRS TextFile command=%s",command))
 local l=string.len(command)
 self:_ExecCommand(command)
+end
+return self
+end
+function MSRS:_NewAltBackend(Backend)
+BASE:T('Entering MSRS:_NewAltBackend()')
+for funcName,funcDef in pairs(Backend.Functions)do
+if type(funcDef)=='function'then
+BASE:T('MSRS (re-)defining function MSRS:'..funcName)
+self[funcName]=funcDef
+end
+end
+for varName,varVal in pairs(Backend.Vars)do
+BASE:T('MSRS setting self.'..varName)
+self[varName]=UTILS.DeepCopy(varVal)
+end
+if self._MSRSbackendInit and type(self._MSRSbackendInit)=='function'then
+return self:_MSRSbackendInit()
 end
 return self
 end
@@ -107961,6 +111042,137 @@ command=command..string.format(' --ssml -G "%s"',self.google)
 end
 self:T("MSRS command="..command)
 return command
+end
+MSRS_BACKEND_DCSGRPC={}
+MSRS_BACKEND_DCSGRPC.version=0.1
+MSRS_BACKEND_DCSGRPC.Functions={}
+MSRS_BACKEND_DCSGRPC.Vars={provider='win'}
+MSRS_BACKEND_DCSGRPC.Functions._MSRSbackendInit=function(self)
+BASE:I('Loaded MSRS DCS-gRPC alternate backend version '..self.AltBackend.version or'unspecified')
+return self
+end
+MSRS_BACKEND_DCSGRPC.Functions.SetPath=function(self)
+return self
+end
+MSRS_BACKEND_DCSGRPC.Functions.GetPath=function(self)
+return''
+end
+MSRS_BACKEND_DCSGRPC.Functions.SetVolume=function(self)
+BASE:I('NOTE: MSRS:SetVolume() not used with DCS-gRPC backend.')
+return self
+end
+MSRS_BACKEND_DCSGRPC.Functions.GetVolume=function(self)
+BASE:I('NOTE: MSRS:GetVolume() not used with DCS-gRPC backend.')
+return 1
+end
+MSRS_BACKEND_DCSGRPC.Functions.SetGender=function(self,Gender)
+if Gender then
+self.gender=Gender:lower()
+end
+self:T("Setting gender to "..tostring(self.gender))
+return self
+end
+MSRS_BACKEND_DCSGRPC.Functions.SetGoogle=function(self)
+self.provider='gcloud'
+return self
+end
+MSRS_BACKEND_DCSGRPC.Functions.SetAWS=function(self)
+self.provider='aws'
+return self
+end
+MSRS_BACKEND_DCSGRPC.Functions.SetAzure=function(self)
+self.provider='azure'
+return self
+end
+MSRS_BACKEND_DCSGRPC.Functions.SetWin=function(self)
+self.provider='win'
+return self
+end
+MSRS_BACKEND_DCSGRPC.Functions.Help=function(self)
+env.info('For DCS-gRPC help, please see: https://github.com/DCS-gRPC/rust-server')
+return self
+end
+MSRS_BACKEND_DCSGRPC.Functions.PlaySoundFile=function(self)
+BASE:E("ERROR: MSRS:PlaySoundFile() is not supported by the DCS-gRPC backend.")
+return self
+end
+MSRS_BACKEND_DCSGRPC.Functions.PlaySoundText=function(self,SoundText,Delay)
+if Delay and Delay>0 then
+self:ScheduleOnce(Delay,self.PlaySoundText,self,SoundText,0)
+else
+self:_DCSgRPCtts(tostring(SoundText.text))
+end
+return self
+end
+MSRS_BACKEND_DCSGRPC.Functions.PlayText=function(self,Text,Delay)
+if Delay and Delay>0 then
+self:ScheduleOnce(Delay,self.PlayText,self,Text,0)
+else
+self:_DCSgRPCtts(tostring(Text))
+end
+return self
+end
+MSRS_BACKEND_DCSGRPC.Functions.PlayTextExt=function(self,Text,Delay,Frequencies,Modulations,Gender,Culture,Voice,Volume,Label)
+if Delay and Delay>0 then
+self:ScheduleOnce(Delay,self.PlayTextExt,self,Text,0,Frequencies,Modulations,Gender,Culture,Voice,Volume,Label)
+else
+self:_DCSgRPCtts(tostring(Text,nil,Frequencies,Voice,Label))
+end
+return self
+end
+MSRS_BACKEND_DCSGRPC.Functions.PlayTextFile=function(self,TextFile,Delay)
+BASE:E("ERROR: MSRS:PlayTextFile() is not supported by the DCS-gRPC backend.")
+return self
+end
+MSRS_BACKEND_DCSGRPC.Functions._DCSgRPCtts=function(self,Text,Plaintext,Frequencies,Voice,Label)
+BASE:T("MSRS_BACKEND_DCSGRPC:_DCSgRPCtts()")
+BASE:T({Text,Plaintext,Frequencies,Voice,Label})
+local options={}
+local ssml=Text or''
+local XmitFrequencies=Frequencies or self.Frequency
+if type(XmitFrequencies)~="table"then
+XmitFrequencies={XmitFrequencies}
+end
+options.plaintext=Plaintext
+options.srsClientName=Label or self.Label
+options.position={}
+if self.coordinate then
+options.position.lat,options.position.lat,options.position.alt=self:_GetLatLongAlt(self.coordinate)
+end
+options.position.lat=options.position.lat or 0.0
+options.position.lon=options.position.lon or 0.0
+options.position.alt=options.position.alt or 0.0
+if UTILS.GetCoalitionName(self.coalition)=='Blue'then
+options.coalition='blue'
+elseif UTILS.GetCoalitionName(self.coalition)=='Red'then
+options.coalition='red'
+end
+options.provider={}
+options.provider[self.provider]={}
+if self.voice then
+options.provider[self.provider].voice=Voice or self.voice
+elseif ssml then
+local preTag,genderProp,langProp,postTag='','','',''
+if self.gender then
+genderProp=' gender=\"'..self.gender..'\"'
+end
+if self.culture then
+langProp=' language=\"'..self.culture..'\"'
+end
+if self.culture or self.gender then
+preTag='<voice'..langProp..genderProp..'>'
+postTag='</voice>'
+ssml=preTag..Text..postTag
+end
+end
+for _,_freq in ipairs(XmitFrequencies)do
+local freq=_freq*1000000
+BASE:T("GRPC.tts")
+BASE:T(ssml)
+BASE:T(freq)
+BASE:T(options)
+GRPC.tts(ssml,freq,options)
+end
 end
 MSRSQUEUE={
 ClassName="MSRSQUEUE",
