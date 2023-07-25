@@ -54,7 +54,7 @@ For %%I IN (%projectroot%*.miz) do (
 )
   
 cd %projectroot%
-rem rmdir /S /Q Temp
+rmdir /S /Q Temp
 
 :: Close log
 ECHO. >> %log%
