@@ -226,7 +226,9 @@ function SUPPORTAC:NewMission(mission, initDelay)
     SUPPORTAC:E(_msg)
   end
 
-  newMission:SetTACAN(mission.tacan, mission.tacanid)
+  if mission.tacan ~= nil then
+    newMission:SetTACAN(mission.tacan, mission.tacanid)
+  end
   newMission:SetRadio(mission.radio)
 
   local despawnDelay = SUPPORTAC.defaults.despawnDelay
@@ -302,11 +304,9 @@ function SUPPORTAC:NewMission(mission, initDelay)
   function newMission:OnAfterFailed(From, Event, To)
     local _msg = string.format("[SUPPORTAC] Mission failed with event: %s", Event)
     -- if the mission fails before the flightGroup RTBs create a new support mission
-
     if not flightGroup.isRTB then
       SUPPORTAC:NewMission(mission)
     end
-
   end
 
 end
@@ -327,8 +327,13 @@ end
 for index, mission in ipairs(SUPPORTAC.missions) do
 
   if BASE:IsTrace() or SUPPORTAC:IsTrace() then
-    -- draw mission zone on map
-    ZONE:FindByName(mission.zone):DrawZone()
+      if ZONE:FindByName(mission.zone) then
+      -- draw mission zone on map
+      ZONE:FindByName(mission.zone):DrawZone()
+    else
+      _msg = string.format("[SUPPORTAC] DrawZone - Zone %s not found!", mission.zone)
+      SUPPORTAC:E(_msg)
+    end
   end
 
   -- set spawn prefix unique to support mission
@@ -340,6 +345,7 @@ for index, mission in ipairs(SUPPORTAC.missions) do
     :InitHeading(mission.heading)
   -- create new mission
   SUPPORTAC:NewMission(mission, 0) -- create new mission with specified delay to flightgroup activation
+
 end
 
 -- END SUPPORT AIRCRAFT SECTION
