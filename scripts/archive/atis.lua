@@ -1,80 +1,94 @@
-env.info( '[JTF-1] *** JTF-1 ATIS START ***' )
-
+env.info( "[JTF-1] atis" )
 -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
---- BEGIN ATIS
+--- BEGIN ATIS SECTION
 -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+--
+-- NELLIS 270.100
+-- CREECH 290.450
+-- GROOM LAKE 123.500
+-- TONOPAH TEST RANGE 113.000
 
--- Load SRS config
+MISSIONATIS = {
+    defaultSrsPath = "C:/Program Files/DCS-SimpleRadio-Standalone",
+    defaultSrsPort = 5002,
+    defaultSex = "male",
+    defaultNationality = "en-US",
+    defaultSubtitleDuration = 0, --disable subtitles
+    defaultTransmitOnlyWithPlayers = true,
+    atis = {},
+    airfields = {
+        {
+            name = "Nellis",
+            frequency = 327.3,
+            modulation = 0,
+            sex = "male",
+            nationality = "en-US",
+            activeRunwayTakeoff = "03L",
+            activeRunwayTakeoffPreferLeft = true,
+            activeRunwayLanding = "21L",
+            activeRunwayLandingPreferLeft = true,
+            ILSFreq = 109.10,
+            ILSName = "21L",
+            TACAN = 12,
+            towerFrequencies = 327.3,
+            metricUnits = false,
+            reportmBar = true,
+            additionalInformation = "Takeoff from runway zero three Left.",
+        },
+    },
+}
+
+MISSIONATIS.SRSPath = MISSIONSRS.SRS_DIRECTORY or MISSIONATIS.defaultSrsPath
+MISSIONATIS.SRSPort = MISSIONSRS.SRS_PORT or MISSIONATIS.defaultSrsPort
+
+BASE:I(string.format("[MISSIONATIS] SRS Config:\nPath: %s\nPort: %d\n",MISSIONATIS.SRSPath, MISSIONATIS.SRSPort))
 
 
-local srsConfigFile = {}
-srsConfigFile.open, srsConfigFile.data = UTILS.LoadFromFile(nil, "server_config.lua")
-if srsConfigFile.open then
-    BASE:I("[SERVERCONFIG] SRS Config file loaded")
-else  
-    BASE:E("[SERVERCONFIG] SRS Config file load failed!")
+function MISSIONATIS:AddAtis(_airfields)
+
+    self.atis[_airfields.name] = ATIS:New(_airfields.name, _airfields.frequency, _airfields.modulation)
+    self.atis[_airfields.name]:SetSRS(self.SRSPath,(_airfields.sex or self.defaultSex),(_airfields.nationality or self.defaultnationality),nil,self.STSPort)
+    if _airfields.activeRunwayTakeoff then
+        self.atis[_airfields.name]:SetActiveRunwayTakeoff(_airfields.activeRunwayTakeoff, (_airfields.activeRunwayTakeoffPreferLeft or nil))
+    end
+    if _airfields.activeRunwayLanding then
+        self.atis[_airfields.name]:SetActiveRunwayLanding(_airfields.activeRunwayLanding, (_airfields.activeRunwayLandingPreferleft or nil))
+    end
+    if _airfields.ILS then
+        self.atis[_airfields.name]:AddILS(_airfields.ILSFreq, (_airfields.ILSName or nil))
+    end
+    self.atis[_airfields.name]:SetSubtitleDuration((_airfields.subtitleDuration or self.defaultSubtitleDuration))
+    if _airfields.TACAN then
+        self.atis[_airfields.name]:SetTACAN(_airfields.TACAN)
+    end
+    self.atis[_airfields.name]:SetTowerFrequencies(_airfields.towerFrequencies)
+    if _airfields.metricUnits then
+        self.atis[_airfields.name]:SetMetricUnits()
+    else
+        self.atis[_airfields.name]:SetReportmBar()
+    end
+    if _airfields.additionalInformation then
+        self.atis[_airfields.name]:SetAdditionalInformation(_airfields.additionalInformation)
+    end
+    self.atis[_airfields.name]:SetTransmitOnlyWithPlayers((_airfields.transmitOnlyWithPlayers or self.defaultTransmitOnlyWithPlayers))
+    self.atis[_airfields.name]:SetSubtitleDuration((_airfields.subtitleDuration or self.defaultSubtitleDuration))
+    self.atis[_airfields.name]:Start()
+
 end
---]]
 
--- Configure SRS
-local srsPath =  srsConfigFile.data[1]--"C:\\PROGRA~1\\DCS-SI~1" --Path to SRS install. No spaces 
-local srsPort =  srsConfigFile.data[2] -- 5002 --SRS server port
+MISSIONATIS:AddAtis(MISSIONATIS.airfields[1])
 
--- Nellis AFB
-atisNellis = ATIS:New("Nellis", 270.1)
-    :SetSRS(srsPath, "male", "en-US", nil, srsPort)
-    :SetActiveRunway("21L")
-    :SetTowerFrequencies({327.000, 132.550})
-    :SetTACAN(12)
-    :AddILS(109.1, "21")
-    :Start()
+-- nttrAtis = ATIS:New("Nellis", 327.3, 0)
+-- nttrAtis:SetSRS(MISSIONATIS.SRSPath,"male","en-GB",nil,MISSIONATIS.SRSPort)
+-- nttrAtis:SetActiveRunwayTakeoff("03L",true)
+-- nttrAtis:SetActiveRunwayLanding("21L",true)
+-- nttrAtis:AddILS(109.10,"21L")
+-- nttrAtis:SetSubtitleDuration(20)
+-- nttrAtis:SetTACAN(12)
+-- nttrAtis:SetTowerFrequencies({327.0, 132.6, 38.7})
+-- nttrAtis:SetImperialUnits()
+-- nttrAtis:SetReportmBar()
+-- nttrAtis:SetAdditionalInformation("Takeoff from runway zero three Lima.")
+-- nttrAtis:Start()   
 
---[[
-atisCreech=ATIS:New(AIRBASE.Nevada.Creech_AFB, 290.450, radio.modulation.AM)
-    :SetSRS(SRSPath, "male", "en-US", nil, nil, SRSPort)
-    :SetTowerFrequencies({360.6, 118.3, 38.55})
-    :SetTACAN(87)
-    :Start()
 
-atisGroom=ATIS:New(AIRBASE.Nevada.Groom_Lake_AFB, 123.500, radio.modulation.AM)
-    :SetSRS(SRSPath, "male", "en-US", nil, nil, SRSPort)
-    :SetTowerFrequencies({250.050, 118.0, 38.6})
-    :SetTACAN(18)
-    :AddILS(109.3, "32R")
-    :Start()
-
-atisHenderson=ATIS:New(AIRBASE.Nevada.Henderson_Executive_Airport, 120.775, radio.modulation.AM)
-    :SetSRS(SRSPath, "female", "en-US", nil, nil, SRSPort)
-    :SetTowerFrequencies({250.1, 125.1, 38.75})
-    :Start()
-
-atisLaughlin=ATIS:New(AIRBASE.Nevada.Laughlin_Airport, 119.825, radio.modulation.AM)
-    :SetSRS(SRSPath, "female", "en-US", nil, nil, SRSPort)
-    :SetTowerFrequencies({250.0, 123.9, 38.4})
-    :Start()
-
-atisMcCarran=ATIS:New(AIRBASE.Nevada.McCarran_International_Airport, 132.400, radio.modulation.AM)
-    :SetSRS(SRSPath, "female", "en-US", nil, nil, SRSPort)
-    :SetTowerFrequencies({257.8, 119.9, 118.750, 38.65})
-    :SetTACAN(116)
-    :AddILS(111.8, "25L")
-    :AddILS(110.3, "25R")
-    :Start()
-
-atisNLV=ATIS:New(AIRBASE.Nevada.North_Las_Vegas, 118.050, radio.modulation.AM)
-    :SetSRS(SRSPath, "female", "en-US", nil, nil, SRSPort)
-    :SetTowerFrequencies({360.750, 125.700, 38.45})
-    :AddILS(110.7, "12")
-    :Start()
-
-atisTonopahT=ATIS:New(AIRBASE.Nevada.Tonopah_Test_Range_Airfield, 113.000, radio.modulation.AM)
-    :SetSRS(SRSPath, "male", "en-US", nil, nil, SRSPort)
-    :SetTowerFrequencies({257.950, 124.750, 38.5})
-    :SetTACAN(77)
-    :AddILS(108.3, "14")
-    :AddILS(111.7, "32")
-    :Start()
-
---]]
-
-env.info( '[JTF-1] *** JTF-1 ATIS END ***' )
