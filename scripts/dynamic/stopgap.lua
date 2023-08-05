@@ -1,3 +1,5 @@
+env.info( "[JTF-1] stopgap" )
+
 stopGap = {}
 stopGap.version = "1.0.3 STANDALONE"
 stopGap.verbose = false 
