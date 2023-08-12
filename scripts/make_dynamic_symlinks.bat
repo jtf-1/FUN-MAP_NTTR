@@ -26,7 +26,7 @@ DIR  %dynamicscriptpath%*.*
 ECHO.
 
 :: Create library scripts folder if it doesn't exist
-if NOT EXIST lib\ md lib
+if NOT EXIST %dynamicscriptpath%lib\ md %dynamicscriptpath%lib
 
 :: Create symlinks to library files
 :: MOOSE
