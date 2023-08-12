@@ -4,6 +4,7 @@
 
 core/
 static/
+lib/
 
 #################
 ## Eclipse
