@@ -1,0 +1,1 @@
+C:/Users/rober/Saved Games/DCS.openbeta/LocalServerSettings.lua

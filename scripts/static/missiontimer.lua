@@ -12,29 +12,47 @@ env.info( "[JTF-1] missiontimer" )
 --
 
 MISSIONTIMER = {
-  durationHrs = 11, -- Mission run time in HOURS
-  msgSchedule = {60, 30, 10, 5}, -- Schedule for mission restart warning messages. Time in minutes.
   msgWarning = {}, -- schedule container
   missionRestart = ( JTF1.missionRestart and JTF1.missionRestart or "ADMIN9999" ), -- Message to trigger mission restart via jtf1-hooks
+  durationHrs = 11, -- Mission run time in HOURS
+  msgSchedule = {60, 30, 10, 5}, -- Schedule for mission restart warning messages. Time in minutes.
   restartDelay =  4, -- time in minutes to delay restart if active clients are present.
+  useSRS = true, -- default flag to determine if htis module should send messages through SRS.
 }
 
-MISSIONTIMER.durationSecs = MISSIONTIMER.durationHrs * 3600 -- Mission run time in seconds
+-- MISSIONTIMER.defaults = {
+--   durationHrs = 11, -- Mission run time in HOURS
+--   msgSchedule = {60, 30, 10, 5}, -- Schedule for mission restart warning messages. Time in minutes.
+--   restartDelay =  4, -- time in minutes to delay restart if active clients are present.
+--   useSRS = true, -- default flag to determine if htis module should send messages through SRS.
+-- }
 
-BASE:T({"[MISSIONTIMER]",{MISSIONTIMER}})
+local useSRS
+local _msg
 
---- add scheduled messages for mission restart warnings and restart at end of mission duration
+-- function to start the mission timer
+function MISSIONTIMER:Start()
+	self.useSRS = (JTF1.useSRS and self.useSRS) and MISSIONSRS.Radio.active -- default to not using SRS unless both the server AND the module request it AND MISSIONSRS.Radio.active is true
+	BASE:I({"[JTF-1 MISSIONTIMER] useSRS", self.useSRS})
+	self.durationSecs = self.durationHrs * 3600 -- Mission run time in seconds
+	BASE:T({"[JTF-1 MISSIONTIMER] settings",{self}})
+	self:AddSchedules()
+end
+
+--- function to add scheduled messages for mission restart warnings and restart at end of mission duration
 function MISSIONTIMER:AddSchedules()
   if self.msgSchedule ~= nil then
+    BASE:I({"[JTF-1 MISSIONTIMER] Schedule", self.msgSchedule})
     for i, msgTime in ipairs(self.msgSchedule) do
       self.msgWarning[i] = SCHEDULER:New( nil, 
         function()
-          BASE:T("[MISSIONTIMER] TIMER WARNING CALLED at " .. tostring(msgTime) .. " minutes remaining.")
-          local msg = "All players, mission is scheduled to restart in  " .. msgTime .. " minutes!"
-          if MISSIONSRS.Radio then -- if MISSIONSRS radio object has been created, send message via default broadcast.
-            MISSIONSRS:SendRadio(msg)
+          _msg = string.format("[JTF-1 MISSIONTIMER] TIMER WARNING CALLED at %d minutes remaining.", msgTime)
+          BASE:T(_msg)
+          _msg = string.format("All players, mission is scheduled to restart in %d minutes!", msgTime)
+          if self.useSRS then -- if MISSIONSRS radio object has been created, send message via default broadcast.
+            MISSIONSRS:SendRadio(_msg)
           else -- otherwise, send in-game text message
-            MESSAGE:New(msg):ToAll()
+            MESSAGE:New(_msg):ToAll()
           end
         end,
       {msgTime}, self.durationSecs - (msgTime * 60))
@@ -47,6 +65,8 @@ function MISSIONTIMER:AddSchedules()
     { }, self.durationSecs)
 end
 
+-- function to restart the mission after the end of the scheduled duration
+-- restart will be delayed until all pplayers have left the mission
 function MISSIONTIMER:Restart()
   if not self.clientList then
     self.clientList = SET_CLIENT:New()
@@ -56,7 +76,7 @@ function MISSIONTIMER:Restart()
   if self.clientList:CountAlive() > 0 then
     local delayTime = self.restartDelay
     local msg  = "All players, mission will restart when no active clients are present. Next check will be in " .. tostring(delayTime) .." minutes." 
-    if MISSIONSRS.Radio then -- if MISSIONSRS radio object has been created, send message via default broadcast.
+    if self.useSRS then -- if MISSIONSRS radio object has been created, send message via default broadcast.
       MISSIONSRS:SendRadio(msg)
     else -- otherwise, send in-game text message
       MESSAGE:New(msg):ToAll()
@@ -67,11 +87,9 @@ function MISSIONTIMER:Restart()
       end,
       { }, (self.restartDelay * 60))
   else
-    BASE:T("[MISSIONTIMER] RESTART MISSION")
+    BASE:I("[JTF-1 MISSIONTIMER] RESTART MISSION")
     MESSAGE:New(self.missionRestart):ToAll()
   end
 end
-
-MISSIONTIMER:AddSchedules()
 
 --- END MISSION TIMER

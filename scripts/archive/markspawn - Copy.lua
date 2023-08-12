@@ -93,7 +93,7 @@ local markEvent = EVENTHANDLER:New():HandleEvent(EVENTS.MarkChange)
 
 -- IF MARK IS A "CMD", SEND MARK DATA TO PARSER
 function markEvent:OnEventMarkChange( EventData )
-  env.info("[MARK_SPAWN] sanity check")
+  env.info("[JTF-1 MARK_SPAWN] sanity check")
   local text = EventData.text
   local x, _ = string.find(text, "CMD")
   if(x ~= nil) then
@@ -212,8 +212,8 @@ function parseMark (mark)
   local k, _, spawnValue = string.find(text, "RADIO: (%w+)")
 
   if(k ~= nil) then
-    env.info("[MARK_SPAWN] SpawnValue: " .. spawnValue)
-    env.info("[MARK_SPAWN] Other Text: " .. k)
+    env.info("[JTF-1 MARK_SPAWN] SpawnValue: " .. spawnValue)
+    env.info("[JTF-1 MARK_SPAWN] Other Text: " .. k)
     local _, _, freq = string.find(text, "FREQ: (%d+)")
     local _, _, band = string.find(text,"BAND: (%w+)")
     local _, _, power = string.find(text,"PWR: (%d+)")
@@ -225,11 +225,11 @@ function parseMark (mark)
       power = power, 
     }
 
-    env.info("[MARK_SPAWN] CANADIANS")
+    env.info("[JTF-1 MARK_SPAWN] CANADIANS")
     env.info(UTILS.OneLineSerialize(spawnTable))
     --MLRadioSpawn(spawnTable)
   else
-    env.info("[MARK_SPAWN] UDACHI, SPAYOO")
+    env.info("[JTF-1 MARK_SPAWN] UDACHI, SPAYOO")
   end
   
   -----------------
@@ -342,7 +342,7 @@ function MLAirSpawn(SpawnTable)
   if(base) then
     local airbase
     if(base == "NEAREST") then 
-      env.info("[MARK_SPAWN] learn 2 spell, scrub")
+      env.info("[JTF-1 MARK_SPAWN] learn 2 spell, scrub")
       local theater = env.mission.theatre
       local distance = 0
     else
@@ -412,7 +412,7 @@ function MLAirSpawn(SpawnTable)
     local route = {WP1, WP2}
     group:Route(route)
   else
-    env.info("[MARK_SPAWN] We Fucked Up")
+    env.info("[JTF-1 MARK_SPAWN] We Fucked Up")
   end
   local taskTable = {}
   if(task ~= "NOTHING") then
@@ -564,11 +564,11 @@ function MLRadioSpawn(SpawnTable)
     local pirateRadio = RADIO:New(radioPositionable)
     pirateRadio:NewGenericTransmission(song,freq,band,power,false)
     pirateRadio:Broadcast()
-    env.info("[MARK_SPAWN] boobs")
+    env.info("[JTF-1 MARK_SPAWN] boobs")
   else
     MLRadio:NewGenericTransmission(song,freq,band,power,false)
     MLRadio:Broadcast()
-    env.info("[MARK_SPAWN] tatas")
+    env.info("[JTF-1 MARK_SPAWN] tatas")
   end
   
 
@@ -577,8 +577,8 @@ end
 function comparator (type)
   for idx, val in pairs(spawnerOptions) do
     if string.upper(type) == string.upper(val.txt) then
-      env.info("[MARK_SPAWN] Type: " .. type)
-      env.info("[MARK_SPAWN] Value: " .. val.txt)
+      env.info("[JTF-1 MARK_SPAWN] Type: " .. type)
+      env.info("[JTF-1 MARK_SPAWN] Value: " .. val.txt)
       return val.spawn
     end
   end
@@ -719,7 +719,7 @@ function MLUnfuckMarkPos (pos)
 end
   
 function MLFindWaypoints(waypointNameList)
-  env.info("[MARK_SPAWN] WAYPOINTS MODE TURN ON")
+  env.info("[JTF-1 MARK_SPAWN] WAYPOINTS MODE TURN ON")
   local waypointNames={}
   local waypointCoords = {}
   --waypoints:gsub("%w*",function(name) table.insert(waypointNames,name) end)
@@ -731,8 +731,8 @@ function MLFindWaypoints(waypointNameList)
   local allMarks = world.getMarkPanels()
   for idx, name in pairs(waypointNames) do
     for idy, mark in pairs(allMarks) do
-      env.info("[MARK_SPAWN] name: " .. name)
-      env.info("[MARK_SPAWN] mark: " .. mark.text)
+      env.info("[JTF-1 MARK_SPAWN] name: " .. name)
+      env.info("[JTF-1 MARK_SPAWN] mark: " .. mark.text)
       if string.upper(name) == string.upper(mark.text) then
         waypointCoords[#waypointCoords + 1] = COORDINATE:NewFromVec3(mark.pos)
         break
@@ -780,7 +780,7 @@ end
   
 function MLDeleteGroup(spawnTable,mark)
   local deleteCMD = spawnTable.cmd:upper()
-  env.info("[MARK_SPAWN]" .. deleteCMD)
+  env.info("[JTF-1 MARK_SPAWN]" .. deleteCMD)
   local coal = spawnTable.side or "RED"
 
   local type = spawnTable.category or "ALL"
@@ -794,53 +794,53 @@ function MLDeleteGroup(spawnTable,mark)
     template = template:upper()
   end
   if(coal:upper() == "RED") then coal = 1 else coal = 2 end
-  env.info("[MARK_SPAWN] TITS! CMD: " .. deleteCMD .. " SIDE: " .. coal .. " Type: " .. type .. " Radius: " .. radius)
+  env.info("[JTF-1 MARK_SPAWN] TITS! CMD: " .. deleteCMD .. " SIDE: " .. coal .. " Type: " .. type .. " Radius: " .. radius)
 
 
   
   if(deleteCMD == "NAME") then
-    env.info("[MARK_SPAWN] DELETE GROUP")
+    env.info("[JTF-1 MARK_SPAWN] DELETE GROUP")
     local groupName = spawnTable.groupName --string.find(deleteCMD, "NAME: (%w+)")
-    env.info("[MARK_SPAWN] groupName: " .. groupName)
+    env.info("[JTF-1 MARK_SPAWN] groupName: " .. groupName)
     local victim = GROUP:FindByName(groupName) or nil
     if victim then
       victim:Destroy(false)
     else
-      env.info("[MARK_SPAWN] Delete groupName not found!")
+      env.info("[JTF-1 MARK_SPAWN] Delete groupName not found!")
     end
   
   elseif(deleteCMD == "AREA") then
-    env.info("[MARK_SPAWN] Doing Radius Stuff")
+    env.info("[JTF-1 MARK_SPAWN] Doing Radius Stuff")
     local deleteZone = ZONE_RADIUS:New("DeleteZone",COORDINATE:NewFromVec3(mark.pos):GetVec2(),radius)
-    env.info("[MARK_SPAWN] Marker Pos: " .. UTILS.OneLineSerialize(mark.pos) .. " Zone Pos: " .. UTILS.OneLineSerialize(deleteZone:GetVec2()) .. "Radius: " .. deleteZone:GetRadius())
+    env.info("[JTF-1 MARK_SPAWN] Marker Pos: " .. UTILS.OneLineSerialize(mark.pos) .. " Zone Pos: " .. UTILS.OneLineSerialize(deleteZone:GetVec2()) .. "Radius: " .. deleteZone:GetRadius())
     for idx, entry in pairs (MLSpawnedGroups) do
       if entry.group:IsAlive() then 
         local groupPos = entry.group:GetVec2()
         local zoneVec2 = deleteZone:GetVec2()
         local isThere = ((groupPos.x - zoneVec2.x )^2 + ( groupPos.y - zoneVec2.y ) ^2 ) ^ 0.5 <= tonumber(deleteZone:GetRadius())
-        env.info("[MARK_SPAWN] BREASTS: " .. ((groupPos.x - zoneVec2.x )^2 + ( groupPos.y - zoneVec2.y ) ^2 ) ^ 0.5)
+        env.info("[JTF-1 MARK_SPAWN] BREASTS: " .. ((groupPos.x - zoneVec2.x )^2 + ( groupPos.y - zoneVec2.y ) ^2 ) ^ 0.5)
         if(isThere) then
-          env.info("[MARK_SPAWN] Group in zone")
+          env.info("[JTF-1 MARK_SPAWN] Group in zone")
           if(type and (entry.category:upper() == type:upper() or type:upper() == "ALL")) then
-          env.info("[MARK_SPAWN] Type correct")
-          env.info("[MARK_SPAWN] Function Side: " .. coal .. "Group Side: " .. entry.side)
+          env.info("[JTF-1 MARK_SPAWN] Type correct")
+          env.info("[JTF-1 MARK_SPAWN] Function Side: " .. coal .. "Group Side: " .. entry.side)
             if(coal and (entry.side == coal)) then
-              env.info("[MARK_SPAWN] Side correct")
+              env.info("[JTF-1 MARK_SPAWN] Side correct")
               local victim = entry.group
               victim:Destroy(false)
               MLSpawnedGroups[idx] = nil
             end
           end
         else
-          env.info("[MARK_SPAWN] Group out of Zone")
+          env.info("[JTF-1 MARK_SPAWN] Group out of Zone")
         end
       else
-        env.info("[MARK_SPAWN] Group omae wa mo shindeiru")
+        env.info("[JTF-1 MARK_SPAWN] Group omae wa mo shindeiru")
         MLSpawnedGroups[idx] = nil
       end
     end
   elseif(deleteCMD == "NEAREST") then
-    env.info("[MARK_SPAWN] Close Stuff")
+    env.info("[JTF-1 MARK_SPAWN] Close Stuff")
   local minDistance = -1
   local closest = 1
   local markPos = COORDINATE:NewFromVec3(mark.pos):GetVec2()
@@ -856,16 +856,16 @@ function MLDeleteGroup(spawnTable,mark)
       closest = idx
     end
         else
-          env.info("[MARK_SPAWN] Group omae wa mo shindeiru")
+          env.info("[JTF-1 MARK_SPAWN] Group omae wa mo shindeiru")
           MLSpawnedGroups[idx] = nil
         end
       end
   local closestEntry = MLSpawnedGroups[closest]
   if(type and (closestEntry.category:upper() == type:upper() or type:upper() == "ALL")) then
-    env.info("[MARK_SPAWN] Type correct")
-    env.info("[MARK_SPAWN] Function Side: " .. coal .. "Group Side: " .. closestEntry.side)
+    env.info("[JTF-1 MARK_SPAWN] Type correct")
+    env.info("[JTF-1 MARK_SPAWN] Function Side: " .. coal .. "Group Side: " .. closestEntry.side)
     if(coal and (closestEntry.side == coal)) then
-      env.info("[MARK_SPAWN] Side correct")
+      env.info("[JTF-1 MARK_SPAWN] Side correct")
     local victim = closestEntry.group
     victim:Destroy(false)
     MLSpawnedGroups[closest] = nil
@@ -877,10 +877,10 @@ function MLDeleteGroup(spawnTable,mark)
       if entry.group:IsAlive() and template then 
     if(entry.template == template) then
       if(type and (entry.category:upper() == type:upper() or type:upper() == "ALL")) then
-        env.info("[MARK_SPAWN] Type correct")
-        env.info("[MARK_SPAWN] Function Side: " .. coal .. "Group Side: " .. entry.side)
+        env.info("[JTF-1 MARK_SPAWN] Type correct")
+        env.info("[JTF-1 MARK_SPAWN] Function Side: " .. coal .. "Group Side: " .. entry.side)
         if(coal and (entry.side == coal)) then
-          env.info("[MARK_SPAWN] Side correct")
+          env.info("[JTF-1 MARK_SPAWN] Side correct")
         local victim = entry.group
         victim:Destroy(false)
         MLSpawnedGroups[idx] = nil
@@ -888,14 +888,14 @@ function MLDeleteGroup(spawnTable,mark)
     end
         end
       else
-        env.info("[MARK_SPAWN] Group omae wa mo shindeiru")
+        env.info("[JTF-1 MARK_SPAWN] Group omae wa mo shindeiru")
         MLSpawnedGroups[idx] = nil
   end
     end
   elseif(deleteCMD == "ALL") then
     for idx, entry in pairs (MLSpawnedGroups) do
       if entry.group:IsAlive() then
-        env.info("[MARK_SPAWN] Side correct")
+        env.info("[JTF-1 MARK_SPAWN] Side correct")
         local victim = entry.group
         victim:Destroy(false)
         MLSpawnedGroups[idx] = nil
@@ -968,18 +968,18 @@ function deleteDeterminator(stringCompare, considerCoal, entry)
   if(stringCompare) then
     if(considerCoal) then
       if(considerCoal == entry.group:GetCoalition()) then
-        --env.info("[MARK_SPAWN] string/coal compare pass")
+        --env.info("[JTF-1 MARK_SPAWN] string/coal compare pass")
         return true
       else
-        --env.info("[MARK_SPAWN] Coal compare fail")
+        --env.info("[JTF-1 MARK_SPAWN] Coal compare fail")
         return false
       end
     else
-      --env.info("[MARK_SPAWN] String Compare, no coalition")
+      --env.info("[JTF-1 MARK_SPAWN] String Compare, no coalition")
       return true
     end
   else
-    -- env.info("[MARK_SPAWN] String Compare Fail")
+    -- env.info("[JTF-1 MARK_SPAWN] String Compare Fail")
     return false  
   end
 end

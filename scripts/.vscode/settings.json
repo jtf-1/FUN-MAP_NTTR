@@ -8,6 +8,15 @@
         "env",
         "coalition",
         "Group",
-        "trigger"
+        "trigger",
+        "BASE",
+        "EVENTS",
+        "UNIT",
+        "ZONE",
+        "COORDINATE",
+        "ZONE_POLYGON",
+        "AI",
+        "country",
+        "lfs"
     ]
 }

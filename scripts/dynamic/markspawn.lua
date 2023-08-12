@@ -1,4 +1,4 @@
-
+env.info( "[JTF-1] markspawn" )
 -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 --- BEGIN MARK SPAWN
 -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
@@ -6,11 +6,13 @@
 -- Sourced from Virtual 57th. Minor refactoring of original script
 --
 
-BASE:T("[MARK_SPAWN] VERSION 0.12")
+BASE:I("[JTF-1 MARK_SPAWN] VERSION 0.12")
 
-MARKSPAWN = {
+MARKSPAWN = {}
 
-  -- DEFAULT VALUES
+-- DEFAULT VALUES
+MARKSPAWN.default = {
+
   DEFAULT_BLUE_COUNTRY = 2, -- USA
   DEFAULT_RED_COUNTRY = 0, -- RUSSIA
   radioPresets = {},
@@ -26,19 +28,20 @@ MARKSPAWN = {
   MLDefaultAirSpeed = 425,
   MLTgtArray = {},
     
-  -- SPAWNABLE GROUP TYPES
-  spawnTypes = { -- types available for spawning
-    { spawn = "BVR_MIG23",  txt = "MIG23" ,   category = "air",     type = "CAP" },
-    { spawn = "BVR_SU25",   txt = "SU25" ,    category = "air",     type = "CAP" },
-    { spawn = "BVR_MIG29A", txt = "MIG29" ,   category = "air",     type = "CAP" },
-    { spawn = "BVR_SU27",   txt = "SU27" ,    category = "air",     type = "CAP" },
-    { spawn = "BVR_F4",     txt = "F4" ,      category = "air",     type = "CAP" },
-    { spawn = "SA6",    txt = "SA6BTY" ,  category = "ground",  type = "SAM" },
-    { spawn = "SA8",    txt = "SA8BTY" ,  category = "ground",  type = "SAM" },
-    { spawn = "SA10",   txt = "SA10BTY" , category = "ground",  type = "SAM" },
-    { spawn = "SA11",   txt = "SA11BTY" , category = "ground",  type = "SAM" },
-    { spawn = "SA15",   txt = "SA15BTY" , category = "ground",  type = "SAM" },
-  },
+}
+
+-- types available for spawning
+MARKSPAWN.spawnerOptions = {
+  { spawn = "BVR_MIG23",  txt = "MIG23" ,   category = "air",     type = "CAP" },
+  { spawn = "BVR_SU25",   txt = "SU25" ,    category = "air",     type = "CAP" },
+  { spawn = "BVR_MIG29A", txt = "MIG29" ,   category = "air",     type = "CAP" },
+  { spawn = "BVR_SU27",   txt = "SU27" ,    category = "air",     type = "CAP" },
+  { spawn = "BVR_F4",     txt = "F4" ,      category = "air",     type = "CAP" },
+  { spawn = "SA6",    txt = "SA6BTY" ,  category = "ground",  type = "SAM" },
+  { spawn = "SA8",    txt = "SA8BTY" ,  category = "ground",  type = "SAM" },
+  { spawn = "SA10",   txt = "SA10BTY" , category = "ground",  type = "SAM" },
+  { spawn = "SA11",   txt = "SA11BTY" , category = "ground",  type = "SAM" },
+  { spawn = "SA15",   txt = "SA15BTY" , category = "ground",  type = "SAM" },
 }
 
 --MARKSPAWN.markEvent = EVENTHANDLER:New()
@@ -119,7 +122,7 @@ markEvent:HandleEvent(EVENTS.MarkChange)
 
 -- IF MARK IS A "CMD", SEND MARK DATA TO PARSER
 function markEvent:OnEventMarkChange( EventData )
-  BASE:T("[MARK_SPAWN] MARK CHANGE EVENT")
+  BASE:T("[JTF-1 MARK_SPAWN] MARK CHANGE EVENT")
   local text = EventData.text
   local x, _ = string.find(text, "CMD")
   if(x ~= nil) then
@@ -132,7 +135,7 @@ end
 
  scheduler, schedulerID = SCHEDULER:New( nil,
    function(foo)
-    BASE:T("[MARK_SPAWN] scheduler:" .. UTILS.OneLineSerialize(markEvent))
+    BASE:T({"[JTF-1 MARK_SPAWN] scheduler:", markEvent} )
    end,
  {}, 300, 300)
 
@@ -142,7 +145,7 @@ end
 
 function parseMark (mark)
 
-  BASE:T("[MARK_SPAWN] mark: " .. UTILS.OneLineSerialize(mark))
+  BASE:T({"[JTF-1 MARK_SPAWN] mark: ", mark} )
 
   local cmdOption = false
   local text = mark.text
@@ -195,7 +198,8 @@ function parseMark (mark)
           rot = ROT,
         }
 
-        BASE:T("[MARK_SPAWN] spawnTable: " .. UTILS.OneLineSerialize(spawnTable))
+        BASE:T({"[JTF-1 MARK_SPAWN] spawnTable: ", spawnTable})
+
       MLAirSpawn(spawnTable)
     end
   end
@@ -239,7 +243,7 @@ function parseMark (mark)
           tgt = tgtName
         }
 
-        BASE:T("[SPAWN_MARK] GSPAWN: " .. UTILS.OneLineSerialize(spawnTable))
+        BASE:T({"[JTF-1 SPAWN_MARK] GSPAWN: ",  spawnTable})
       MLGroundSpawn(spawnTable)
     end
   end
@@ -251,8 +255,8 @@ function parseMark (mark)
   local k, _, spawnValue = string.find(text, "RADIO: (%w+)")
   if(k ~= nil) then
     cmdOption = true
-    BASE:T("[MARK_SPAWN] SpawnValue: " .. spawnValue)
-    BASE:T("[MARK_SPAWN] Other Text: " .. k)
+    BASE:T("[JTF-1 MARK_SPAWN] SpawnValue: " .. spawnValue)
+    BASE:T("[JTF-1 MARK_SPAWN] Other Text: " .. k)
     local _, _, freq = string.find(text, "FREQ: (%d+)")
     local _, _, band = string.find(text,"BAND: (%w+)")
     local _, _, power = string.find(text,"PWR: (%d+)")
@@ -264,7 +268,7 @@ function parseMark (mark)
       power = power, 
     }
 
-    BASE:T("[MARK_SPAWN] RADIO: " .. UTILS.OneLineSerialize(spawnTable))
+    BASE:T({"[JTF-1 MARK_SPAWN] RADIO: ", spawnTable})
     --MLRadioSpawn(spawnTable)
   end
   
@@ -308,7 +312,7 @@ function parseMark (mark)
           tgt = tgtName
         }
 
-      BASE:T("[MARK_SPAWN] NSPAWN: " .. UTILS.OneLineSerialize(spawnTable))
+      BASE:T({"[JTF-1 MARK_SPAWN] NSPAWN: ", spawnTable})
       MLNavalSpawn(spawnTable)
     end
   end
@@ -349,7 +353,7 @@ function parseMark (mark)
   end
 
   if not cmdOption then
-    BASE:E("[MARK_SPAWN] ERROR! CMD not found.")
+    BASE:E("[JTF-1 MARK_SPAWN] ERROR! CMD not found.")
   end
 
 end
@@ -397,7 +401,7 @@ function MLAirSpawn(SpawnTable)
   if(base) then
     local airbase
     if(base == "NEAREST") then 
-      BASE:T("[MARK_SPAWN] learn 2 spell, scrub")
+      BASE:T("[JTF-1 MARK_SPAWN] learn 2 spell, scrub")
       local theater = env.mission.theatre
       local distance = 0
     else
@@ -408,10 +412,10 @@ function MLAirSpawn(SpawnTable)
     end
     group = spawner:InitGrouping(num):InitSkill(skill):InitCoalition(coal):InitCountry(country):InitHeading(heading):SpawnAtAirbase(airbase,SPAWN.Takeoff.Cold,nil)
   else
-    BASE:T("[MARK_SPAWN] ASPAWN: " .. coal .. " " .. country)
+    BASE:T("[JTF-1 MARK_SPAWN] ASPAWN: " .. coal .. " " .. country)
     group = spawner:InitGrouping(num):InitSkill(skill):InitCoalition(coal):InitCountry(country):InitHeading(heading):SpawnFromVec3(spawnCoord:GetVec3())
     _groupName = group.GroupName
-    BASE:T("[MARK_SPAWN] ASPAWN: " .. _groupName)
+    BASE:T("[JTF-1 MARK_SPAWN] ASPAWN: " .. _groupName)
   end
   
   MLSpawnedGroups[#MLSpawnedGroups + 1] = {group = group, category = "air", side = coal}
@@ -469,7 +473,7 @@ function MLAirSpawn(SpawnTable)
     local route = {WP1, WP2}
     group:Route(route)
   else
-    BASE:T("[MARK_SPAWN] We Fucked Up")
+    BASE:T("[JTF-1 MARK_SPAWN] We Fucked Up")
   end
   local taskTable = {}
   if(task ~= "NOTHING") then
@@ -481,7 +485,7 @@ function MLAirSpawn(SpawnTable)
     if(freq <= 20) then
       freq = MLRadioPreset(freq)
     end
-    BASE:T("[MARK_SPAWN] freq:".. freq)
+    BASE:T("[JTF-1 MARK_SPAWN] freq:".. freq)
     freq = freq * 1000000
     local SetFrequency = { 
       id = 'SetFrequency', 
@@ -516,7 +520,7 @@ function MLGroundSpawn(SpawnTable)
   --local tgt = MLCreateTGT(SpawnTable.tgt,SpawnTable.pos)or nil
 
   if(spawner == nil) then
-    BASE:E("[MARK_SPAWN] ERROR! spawner not found in spawnOptions.")
+    BASE:E("[JTF-1 MARK_SPAWN] ERROR! spawner not found in spawnOptions.")
     return
   end
 
@@ -537,7 +541,7 @@ function MLGroundSpawn(SpawnTable)
   local group = spawner:InitSkill(skill):InitCoalition(coal):InitCountry(country):SpawnFromVec3(spawnCoord:GetVec3())
 
   local _group = group.GroupName
-  BASE:T("[MARK_SPAWN] GSPAWN: " .. _group)
+  BASE:T("[JTF-1 MARK_SPAWN] GSPAWN: " .. _group)
   
   MLSpawnedGroups[#MLSpawnedGroups + 1] = {group = group, category = "ground", side = coal}
   
@@ -622,7 +626,7 @@ function MLDeleteGroup(spawnTable,mark)
 
   local deleteCMD = spawnTable.cmd:upper()
   
-  BASE:T("[MARK_SPAWN] DELETE:" .. deleteCMD)
+  BASE:T("[JTF-1 MARK_SPAWN] DELETE:" .. deleteCMD)
 
   
   local coal = spawnTable.side or "RED"
@@ -643,51 +647,51 @@ function MLDeleteGroup(spawnTable,mark)
     coal = 1 else coal = 2 
   end
   
-  BASE:T("[MARK_SPAWN] DELETE OPTIONS CMD: " .. deleteCMD .. " SIDE: " .. coal .. " Type: " .. type .. " Radius: " .. radius)
+  BASE:T("[JTF-1 MARK_SPAWN] DELETE OPTIONS CMD: " .. deleteCMD .. " SIDE: " .. coal .. " Type: " .. type .. " Radius: " .. radius)
   
   if(deleteCMD == "GROUP") then
-    BASE:T("[MARK_SPAWN] DELETE GROUP")
+    BASE:T("[JTF-1 MARK_SPAWN] DELETE GROUP")
     local groupName = spawnTable.groupName --string.find(deleteCMD, "NAME: (%w+)")
-    BASE:T("[MARK_SPAWN] groupName: " .. groupName)
+    BASE:T("[JTF-1 MARK_SPAWN] groupName: " .. groupName)
     local victim = GROUP:FindByName(groupName) or nil
     if victim then
       victim:Destroy(false)
     else
-      BASE:T("[MARK_SPAWN] Delete groupName not found!")
+      BASE:T("[JTF-1 MARK_SPAWN] Delete groupName not found!")
     end
   
   elseif(deleteCMD == "AREA") then
-    BASE:T("[MARK_SPAWN] Doing Radius Stuff")
+    BASE:T("[JTF-1 MARK_SPAWN] Doing Radius Stuff")
     local deleteZone = ZONE_RADIUS:New("DeleteZone",COORDINATE:NewFromVec3(mark.pos):GetVec2(),radius)
-    BASE:T("[MARK_SPAWN] Marker Pos: " .. UTILS.OneLineSerialize(mark.pos) .. " Zone Pos: " .. UTILS.OneLineSerialize(deleteZone:GetVec2()) .. "Radius: " .. deleteZone:GetRadius())
+    BASE:T({"[JTF-1 MARK_SPAWN] Marker Pos: ", mark.pos, " Zone Pos: ", deleteZone:GetVec2(), "Radius: ", deleteZone:GetRadius()})
     for idx, entry in pairs (MLSpawnedGroups) do
       if entry.group:IsAlive() then 
         local groupPos = entry.group:GetVec2()
         local zoneVec2 = deleteZone:GetVec2()
         local isThere = ((groupPos.x - zoneVec2.x )^2 + ( groupPos.y - zoneVec2.y ) ^2 ) ^ 0.5 <= tonumber(deleteZone:GetRadius())
-        BASE:T("[MARK_SPAWN] BREASTS: " .. ((groupPos.x - zoneVec2.x )^2 + ( groupPos.y - zoneVec2.y ) ^2 ) ^ 0.5)
+        BASE:T("[JTF-1 MARK_SPAWN] BREASTS: " .. ((groupPos.x - zoneVec2.x )^2 + ( groupPos.y - zoneVec2.y ) ^2 ) ^ 0.5)
         if(isThere) then
-          BASE:T("[MARK_SPAWN] Group in zone")
+          BASE:T("[JTF-1 MARK_SPAWN] Group in zone")
           if(type and (entry.category:upper() == type:upper() or type:upper() == "ALL")) then
-          BASE:T("[MARK_SPAWN] Type correct")
-          BASE:T("[MARK_SPAWN] Function Side: " .. coal .. "Group Side: " .. entry.side)
+          BASE:T("[JTF-1 MARK_SPAWN] Type correct")
+          BASE:T("[JTF-1 MARK_SPAWN] Function Side: " .. coal .. "Group Side: " .. entry.side)
             if(coal and (entry.side == coal)) then
-              BASE:T("[MARK_SPAWN] Side correct")
+              BASE:T("[JTF-1 MARK_SPAWN] Side correct")
               local victim = entry.group
               victim:Destroy(false)
               MLSpawnedGroups[idx] = nil
             end
           end
         else
-          BASE:T("[MARK_SPAWN] Group out of Zone")
+          BASE:T("[JTF-1 MARK_SPAWN] Group out of Zone")
         end
       else
-        BASE:T("[MARK_SPAWN] Group omae wa mo shindeiru")
+        BASE:T("[JTF-1 MARK_SPAWN] Group omae wa mo shindeiru")
         MLSpawnedGroups[idx] = nil
       end
     end
   elseif(deleteCMD == "NEAREST") then
-    BASE:T("[MARK_SPAWN] Close Stuff")
+    BASE:T("[JTF-1 MARK_SPAWN] Close Stuff")
   local minDistance = -1
   local closest = 1
   local markPos = COORDINATE:NewFromVec3(mark.pos):GetVec2()
@@ -703,16 +707,16 @@ function MLDeleteGroup(spawnTable,mark)
       closest = idx
     end
         else
-          BASE:T("[MARK_SPAWN] Group omae wa mo shindeiru")
+          BASE:T("[JTF-1 MARK_SPAWN] Group omae wa mo shindeiru")
           MLSpawnedGroups[idx] = nil
         end
       end
   local closestEntry = MLSpawnedGroups[closest]
   if(type and (closestEntry.category:upper() == type:upper() or type:upper() == "ALL")) then
-    BASE:T("[MARK_SPAWN] Type correct")
-    BASE:T("[MARK_SPAWN] Function Side: " .. coal .. "Group Side: " .. closestEntry.side)
+    BASE:T("[JTF-1 MARK_SPAWN] Type correct")
+    BASE:T("[JTF-1 MARK_SPAWN] Function Side: " .. coal .. "Group Side: " .. closestEntry.side)
     if(coal and (closestEntry.side == coal)) then
-      BASE:T("[MARK_SPAWN] Side correct")
+      BASE:T("[JTF-1 MARK_SPAWN] Side correct")
     local victim = closestEntry.group
     victim:Destroy(false)
     MLSpawnedGroups[closest] = nil
@@ -724,10 +728,10 @@ function MLDeleteGroup(spawnTable,mark)
       if entry.group:IsAlive() and template then 
     if(entry.template == template) then
       if(type and (entry.category:upper() == type:upper() or type:upper() == "ALL")) then
-        BASE:T("[MARK_SPAWN] Type correct")
-        BASE:T("[MARK_SPAWN] Function Side: " .. coal .. "Group Side: " .. entry.side)
+        BASE:T("[JTF-1 MARK_SPAWN] Type correct")
+        BASE:T("[JTF-1 MARK_SPAWN] Function Side: " .. coal .. "Group Side: " .. entry.side)
         if(coal and (entry.side == coal)) then
-          BASE:T("[MARK_SPAWN] Side correct")
+          BASE:T("[JTF-1 MARK_SPAWN] Side correct")
         local victim = entry.group
         victim:Destroy(false)
         MLSpawnedGroups[idx] = nil
@@ -735,14 +739,14 @@ function MLDeleteGroup(spawnTable,mark)
     end
         end
       else
-        BASE:T("[MARK_SPAWN] Group omae wa mo shindeiru")
+        BASE:T("[JTF-1 MARK_SPAWN] Group omae wa mo shindeiru")
         MLSpawnedGroups[idx] = nil
   end
     end
   elseif(deleteCMD == "ALL") then
     for idx, entry in pairs (MLSpawnedGroups) do
       if entry.group:IsAlive() then
-        BASE:T("[MARK_SPAWN] Side correct")
+        BASE:T("[JTF-1 MARK_SPAWN] Side correct")
         local victim = entry.group
         victim:Destroy(false)
         MLSpawnedGroups[idx] = nil
@@ -761,7 +765,7 @@ function MLWxReport (repoString, mark)
   local qfe = false
   local metric = false
   local options = split(repoString, ",")
-  BASE:T(UTILS.OneLineSerialize(options))
+  BASE:T({options})
   for idx, option in pairs (options) do
     option = option:gsub("%s+", "")
     BASE:T(option)
@@ -785,7 +789,7 @@ function MLWxReport (repoString, mark)
     pressure_hPa = wxPos:GetPressure(0)
   end
   pressure_inHg = pressure_hPa * 0.0295299830714
-  BASE:T("[MARK_SPAWN] " .. pressure_hPa .. ", " .. pressure_inHg)
+  BASE:T("[JTF-1 MARK_SPAWN] " .. pressure_hPa .. ", " .. pressure_inHg)
   
   local coal
   if(mark.initiator) then
@@ -852,11 +856,11 @@ end
 --     local pirateRadio = RADIO:New(radioPositionable)
 --     pirateRadio:NewGenericTransmission(song,freq,band,power,false)
 --     pirateRadio:Broadcast()
---     BASE:T("[MARK_SPAWN] boobs")
+--     BASE:T("[JTF-1 MARK_SPAWN] boobs")
 --   else
 --     MLRadio:NewGenericTransmission(song,freq,band,power,false)
 --     MLRadio:Broadcast()
---     BASE:T("[MARK_SPAWN] tatas")
+--     BASE:T("[JTF-1 MARK_SPAWN] tatas")
 --   end
   
 
@@ -865,8 +869,8 @@ end
 function comparator (type)
   for idx, val in pairs(spawnerOptions) do
     if string.upper(type) == string.upper(val.txt) then
-      BASE:T("[MARK_SPAWN] Type: " .. val.type)
-      BASE:T("[MARK_SPAWN] Value: " .. val.txt)
+      BASE:T("[JTF-1 MARK_SPAWN] Type: " .. val.type)
+      BASE:T("[JTF-1 MARK_SPAWN] Value: " .. val.txt)
       return val.spawn
     end
   end
@@ -1014,7 +1018,7 @@ function MLConvertMarkPos (pos)
 end
   
 function MLFindWaypoints(waypointNameList)
-  BASE:T("[MARK_SPAWN] WAYPOINTS MODE TURN ON")
+  BASE:T("[JTF-1 MARK_SPAWN] WAYPOINTS MODE TURN ON")
   local waypointNames={}
   local waypointCoords = {}
   --waypoints:gsub("%w*",function(name) table.insert(waypointNames,name) end)
@@ -1026,8 +1030,8 @@ function MLFindWaypoints(waypointNameList)
   local allMarks = world.getMarkPanels()
   for idx, name in pairs(waypointNames) do
     for idy, mark in pairs(allMarks) do
-      BASE:T("[MARK_SPAWN] name: " .. name)
-      BASE:T("[MARK_SPAWN] mark: " .. mark.text)
+      BASE:T("[JTF-1 MARK_SPAWN] name: " .. name)
+      BASE:T("[JTF-1 MARK_SPAWN] mark: " .. mark.text)
       if string.upper(name) == string.upper(mark.text) then
         waypointCoords[#waypointCoords + 1] = COORDINATE:NewFromVec3(mark.pos)
         break
@@ -1059,7 +1063,7 @@ function MLListSpawnOptions(category, mark)
       messageString = messageString .. line 
     end
   end
-  BASE:T("[MARK_SPAWN] OPTIONS: " .. messageString)
+  BASE:T("[JTF-1 MARK_SPAWN] OPTIONS: " .. messageString)
   local DCSUnit = mark.initiator
   if(DCSUnit) then
     --local group = unit:GetGroup()
@@ -1114,18 +1118,18 @@ function deleteDeterminator(stringCompare, considerCoal, entry)
   if(stringCompare) then
     if(considerCoal) then
       if(considerCoal == entry.group:GetCoalition()) then
-        --BASE:T("[MARK_SPAWN] string/coal compare pass")
+        --BASE:T("[JTF-1 MARK_SPAWN] string/coal compare pass")
         return true
       else
-        --BASE:T("[MARK_SPAWN] Coal compare fail")
+        --BASE:T("[JTF-1 MARK_SPAWN] Coal compare fail")
         return false
       end
     else
-      --BASE:T("[MARK_SPAWN] String Compare, no coalition")
+      --BASE:T("[JTF-1 MARK_SPAWN] String Compare, no coalition")
       return true
     end
   else
-    -- BASE:T("[MARK_SPAWN] String Compare Fail")
+    -- BASE:T("[JTF-1 MARK_SPAWN] String Compare Fail")
     return false  
   end
 end
@@ -1166,7 +1170,7 @@ function MLPopulateTGT(tgt)
   local curratedUnits
   zone:scan(1)
   local units = zone:GetScannedUnits()
-  BASE:T(UTILS.OneLineSerialize(units))
+  BASE:T({units})
   for idx, unit in pairs(units) do
     local unitCategory = unit:GetDCSObject():GetCategory()
     if(unitCategory == "UNIT") then

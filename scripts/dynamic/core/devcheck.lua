@@ -9,27 +9,25 @@ local devFlag = 8888
 -- If missionflag is true, mission file will load from filesystem with an assert
 local devState = trigger.misc.getUserFlag(devFlag)
 
-if devState == 1 or JTF1.testServer then
+if devState == 1 or JTF1.trace then
   
-  local msgLog = "[JTF-1]"
+  local msgLog = "[JTF-1 DEVCHECK] "
   local msgText = ""
 
   if devState == 1 then
-    msgLog = msgLog .. " DEV flag is ON!"
-    msgText = msgText .. "Dev mode is ON!"
+    msgText = "Dynamic Loading is ON!"
   end
 
-  if JTF1.testServer then
-    msgLog = msgLog .. " TESING SERVER. TRACE mode set to ON!"
-    msgText = msgText .. "TRACE mode is ON!"
+  if JTF1.trace then
+    msgText = msgText .. " TRACE is ON!"
+    -- trace all events
+    BASE:TraceOnOff(true)
+    BASE:TraceAll(true)
   end
 
-  BASE:E(msgLog)
+  _msg = msgLog .. msgText
+  BASE:E(_msg)
   MESSAGE:New(msgText):ToAll()
-
-  -- trace all events
-  BASE:TraceOnOff(true)
-  BASE:TraceAll(true)
 
   DEV_MENU = {
     traceOn = true, -- default tracestate false == trace off, true == trace on.
@@ -43,7 +41,7 @@ if devState == 1 or JTF1.testServer then
     else
       BASE:TraceOn()
     end
-    _msg = string.format("[DEVCHECK] Trace toggled", tostring(BASE:IsTrace()))
+    _msg = string.format("[JTF-1 DEVCHECK] Trace toggled", tostring(BASE:IsTrace()))
     BASE:E(_msg)
   end
 

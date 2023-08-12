@@ -37,12 +37,18 @@ MISSIONSRS = {
   defaultCulture = "en-US",                                       -- default culture of sender
   defaultVoice = "",                                              -- default voice to use
 }
+local _msg
 
 function MISSIONSRS:LoadSettings()
+  local useSRS = JTF1.useSRS
+  if useSRS == false then
+    _msg = "[JTF-1 MISSIONSRS] Server SRS is OFF!"
+    BASE:E(_msg)
+  end
   self.SRS_DIRECTORY = JTF1.srsPath and JTF1.srsPath or self.defaultSrsPath
   self.SRS_PORT = JTF1.srsPort and JTF1.srsPort or self.defaultSrsPort
   self:AddRadio()
-  BASE:T({"[MISSIONSRS]",{self}})
+  BASE:T({"[JTF-1 MISSIONSRS]",{self}})
 end
 
 function MISSIONSRS:AddRadio()
@@ -55,11 +61,11 @@ end
 
 function MISSIONSRS:SendRadio(msgText, msgFreqs, msgModulations)
 
-  BASE:T({"[MISSIONSRS] SendRadio", {msgText}, {msgFreqs}, {msgModulations}})
+  BASE:T({"[JTF-1 MISSIONSRS] SendRadio", {msgText}, {msgFreqs}, {msgModulations}})
   if msgFreqs then
-    BASE:T("[MISSIONSRS] tx with freqs change.")
+    BASE:T("[JTF-1 MISSIONSRS] tx with freqs change.")
     if msgModulations then
-      BASE:T("[MISSIONSRS] tx with mods change.")
+      BASE:T("[JTF-1 MISSIONSRS] tx with mods change.")
     end
   end
   if msgText == (nil or "") then 
@@ -69,7 +75,7 @@ function MISSIONSRS:SendRadio(msgText, msgFreqs, msgModulations)
   local tempFreqs = (msgFreqs or self.defaultFreqs)
   local tempModulations = (msgModulations or self.defaultModulations)
   if not msgText.ClassName then
-    BASE:T("[MISSIONSRS] msgText NOT SoundText object.")
+    BASE:T("[JTF-1 MISSIONSRS] msgText NOT SoundText object.")
     text = SOUNDTEXT:New(msgText) -- convert msgText to SOundText object
   end
   self.Radio:SetFrequencies(tempFreqs)

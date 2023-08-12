@@ -23,7 +23,7 @@ env.info( "[JTF-1] bvrgci" )
 -- @field #table SubMenu BVRGCI submenus
 -- @field #number headingDefault Default heading for adversary spawns
 -- @field #boolean Destroy When set to true, spawned adversary groups will be removed
-local BVRGCI = {
+BVRGCI = {
     Menu            = {},
     SubMenu         = {},
     Spawn           = {},
@@ -32,7 +32,7 @@ local BVRGCI = {
     defaultRadio = "377.8",
   }
    
-BVRGCI.rangeRadio = (JTF1.rangeRadio and JTF1.rangeRadio or BVRGCI.defaultRadio)
+BVRGCI.rangeRadio = JTF1.rangeRadio or BVRGCI.defaultRadio
 
   --- ME Zone object for BVRGCI area boundary
   -- @field #string ZoneBvr 

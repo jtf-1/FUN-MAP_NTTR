@@ -1,4 +1,4 @@
-env.info( "[JTF-1] mission_init" )
+env.info( "*** [JTF-1] MISSION SCRIPTS START ***" )
 -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 --- BEGIN INIT
 -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
@@ -17,22 +17,22 @@ JTF1 = {
 }
 
 if not lfs then
-    BASE:E( "[JTF1] WARNING: lfs not desanitized. Loading will look into your DCS installation root directory rather than the \"Saved Games\\DCS\" folder.")
+    BASE:E( "[JTF-1] WARNING: lfs not desanitized. Loading will look into your DCS installation root directory rather than the \"Saved Games\\DCS\" folder.")
 else
 
     -- load local server settings file
     local settingsFile = lfs.writedir() .. JTF1.defaultServerConfigFile
 
     if UTILS.CheckFileExists(lfs.writedir(), JTF1.defaultServerConfigFile) then
-        BASE:E( "[JTF1] Mission INIT settingsFile = " .. settingsFile )
+        BASE:I( "[JTF-1] Mission INIT settingsFile = " .. settingsFile )
         dofile(settingsFile)
         for _name, _value in pairs(LOCALSERVER) do
             JTF1[_name] = _value
         end
-        BASE:E("[JTF1] Local server settings to follow...")
-        BASE:E(JTF1)
+        BASE:I("[JTF-1] Local server settings to follow...")
+        BASE:I(JTF1)
     else
-        BASE:E("[JTF1] Error! Server config file not found. Using mission defaults")
+        BASE:E("[JTF-1] Error! Server config file not found. Using mission defaults")
     end
 
 end
