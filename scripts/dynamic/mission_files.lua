@@ -11,7 +11,6 @@ __JTFLoader.Include( 'core/missiontimer.lua' )          -- core file
 __JTFLoader.Include( 'missiontimer_data.lua' )
 __JTFLoader.Include( 'core/missiletrainer.lua' )        -- core file
 __JTFLoader.Include( 'missiletrainer_data.lua' )
-__JTFLoader.Include( 'core/Hercules_Cargo.lua' )        -- core file
 __JTFLoader.Include( 'core/supportaircraft.lua' )       -- core file
 __JTFLoader.Include( 'supportaircraft_data.lua' )
 __JTFLoader.Include( 'core/staticranges.lua' )          -- core file
@@ -24,4 +23,5 @@ __JTFLoader.Include( 'core/bfmacm.lua' )                -- core file
 __JTFLoader.Include( 'bfmacm_data.lua' )
 __JTFLoader.Include( 'bvrgci.lua' )
 __JTFLoader.Include( 'markspawn.lua' )
+__JTFLoader.Include( 'core/Hercules_Cargo.lua' )        -- core file
 __JTFLoader.Include( 'core/mission_end.lua' )           -- core file
