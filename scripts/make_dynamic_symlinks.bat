@@ -12,6 +12,7 @@ SET parent=%~dp0
 
 :: location of JTF1-Core\Scripts
 SET jtf1corescripts=D:\GitHub\JTF1-Core\Scripts
+ECHO core path:           %jtf1corescripts%
 
 CD %parent%
 
