@@ -15,8 +15,11 @@ if not ACTIVERANGES then
 	ACTIVERANGES = {}
 end
 
+
+ACTIVERANGES.activeatstart = false -- if true, spawn targets with AI inactive
 ACTIVERANGES.useSRS = true -- set to false to disable use of SRS for this module in this miz
 --ACTIVERANGES.rangeRadio = "377.8" -- radio frequency over which to broadcast Active Range messages
+
 
 -- start the mission timer
 if ACTIVERANGES.Start then
