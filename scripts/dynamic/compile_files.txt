@@ -9,6 +9,7 @@ adminmenu_data.lua
 core\missiontimer.lua
 missiontimer_data.lua
 core\supportaircraft.lua
+core\supportaircraft_templates.lua
 supportaircraft_data.lua
 core\staticranges.lua
 staticranges_data.lua
@@ -20,7 +21,8 @@ bfmacm_data.lua
 bvrgci.lua
 core\missiletrainer.lua
 missiletrainer_data.lua
-markspawn.lua
+core\markspawn.lua
+core\markspawn_templates.lua
 movingtargets.lua
 core\Hercules_Cargo.lua
 core\mission_end.lua
