@@ -28,6 +28,8 @@ __JTFLoader.Include( 'core/missiletrainer.lua' )        -- core file
 __JTFLoader.Include( 'missiletrainer_data.lua' )
 __JTFLoader.Include( 'core/markspawn.lua' )             -- core file
 __JTFLoader.Include( 'core/markspawn_templates.lua' )   -- core file
+__JTFLoader.Include( 'missionatis.lua' )
+__JTFLoader.Include( 'missionatis_data.lua' )
 __JTFLoader.Include( 'movingtargets.lua' )
 __JTFLoader.Include( 'core/Hercules_Cargo.lua' )        -- core file
 __JTFLoader.Include( 'core/mission_end.lua' )           -- core file
