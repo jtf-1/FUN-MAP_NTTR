@@ -2,8 +2,8 @@
 ## JTF-1
 #################
 
-core/
-static/
+#core/
+#static/
 lib/
 archive/
 
