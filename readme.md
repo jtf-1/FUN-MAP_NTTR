@@ -125,6 +125,14 @@ Two activation options are available for each Active Target that also has a sepa
 
 Notifications relating to target activation, reset and deactivation will be broadcast on BLACKJACK.
 
+JTAC
+====
+
+JTAC control is available in the following ranges;
+
+R66 (LEACH LAKE)
+- FAC KILO, C/S HAMMER 1-1, 381.100: T66-03, T66-04, T66-05
+
 
 ELECTRONIC COMBAT SIMULATION RANGE
 ==================================
