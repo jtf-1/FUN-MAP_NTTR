@@ -16,7 +16,8 @@ if not ACTIVERANGES then
 end
 
 
-ACTIVERANGES.activeatstart = false -- if true, spawn targets with AI inactive
+--ACTIVERANGES.spawnatstart = false -- if false, do not spawn targets at mission start
+ACTIVERANGES.activeatstart = false -- if true, set AI on for targets spawned at mission start
 ACTIVERANGES.useSRS = true -- set to false to disable use of SRS for this module in this miz
 --ACTIVERANGES.rangeRadio = "377.8" -- radio frequency over which to broadcast Active Range messages
 
