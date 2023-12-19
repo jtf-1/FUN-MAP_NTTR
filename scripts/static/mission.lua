@@ -1,4 +1,4 @@
- env.info("[JTF-1] MISSION BUILD 2023-10-22T22:07:45.18")  
+ env.info("[JTF-1] MISSION BUILD 2023-12-01T 2:15:46.68")  
   
 --------------------------------[core\mission_init.lua]-------------------------------- 
  
@@ -166,24 +166,56 @@ end
  
 env.info( "[JTF-1] disableai" )
 -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
---- Disable AI for ground targets and FAC
+--- Disable AI for ground targets
 -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
-local setGroupGroundActive = SET_GROUP:New():FilterActive():FilterCategoryGround():FilterOnce()
+DISABLEAI = {}
+DISABLEAI.traceTitle = "[JTF-1 DISABLEAI] "
+DISABLEAI.setGroupGroundActive = SET_GROUP:New()
+  :FilterActive()
+  :FilterCategoryGround()
+  :FilterOnce()
+--local setGroupGroundActive = SET_GROUP:New():FilterActive():FilterCategoryGround():FilterOnce()
 
--- Prefix for groups for which AI should NOT be disabled
-local excludeAI = "BLUFOR"
+-- table of Prefixes for groups for which AI should NOT be disabled
+DISABLEAI.excludeAI = {"BLUFOR", "FAC", "JTAC", "66%-"}
+--local excludeAI = "BLUFOR"
 
-setGroupGroundActive:ForEachGroup(
+
+DISABLEAI.setGroupGroundActive:ForEachGroup(
   function(activeGroup)
-    if not string.find(activeGroup:GetName(), excludeAI) then
+    local _msg
+    -- name of the group we're checking
+    local activeGroupName = activeGroup:GetName()
+    -- list of group name prefixes to exclude
+    local excludeAI = DISABLEAI.excludeAI
+    -- flag to trigger disabling AI
+    local disableGroup = true
+
+    -- check if group name prefix is in exclusion list
+    for _, stringExclude in pairs(excludeAI) do
+
+      if string.find(activeGroupName, stringExclude) then
+        _msg = string.format("%sSkipping group: %s", DISABLEAI.traceTitle, activeGroupName)
+        disableGroup = false
+        break
+      end
+
+    end
+
+    -- Disable AI if group was not in exclusion list
+    if disableGroup then
+      local _msg = string.format("%sDisable group: %s", DISABLEAI.traceTitle, activeGroupName)
       activeGroup:SetAIOff()
-    end      
+    end
+
+    BASE:T(_msg)
+
   end
 )
 
 -- remove set object
-setGroupGroundActive = nil
+DISABLEAI.setGroupGroundActive = nil
 
 ---  END DISABLE AI  
 --------------------------------[core\missionsrs.lua]-------------------------------- 
@@ -225,8 +257,8 @@ MISSIONSRS = {
   srsPath = "C:/PROGRA~1/DCS-SimpleRadio-Standalone", -- default path to SRS install directory if setting file is not avaialable "C:/Program Files/DCS-SimpleRadio-Standalone"
   srsPort = 5002,                                          -- default SRS port to use if settings file is not available
   msg = "No Message Defined!",                             -- default message if text is nil
-  freqs = "243,251,327,377.8,30",                          -- transmit on guard, CTAF, NTTR TWR, NTTR BLACKJACK and 30FM as default frequencies
-  modulations = "AM,AM,AM,AM,FM",                          -- default modulation (count *must* match qty of freqs)
+  freqs = {243,251,327,377.8,30},                          -- transmit on guard, CTAF, NTTR TWR, NTTR BLACKJACK and 30FM as default frequencies
+  modulations = {AM,AM,AM,AM,FM},                          -- default modulation (count *must* match qty of freqs)
   vol = "1.0",                                             -- default to full volume
   name = "Server",                                         -- default to server as sender
   coalition = 0,                                           -- default to spectators
@@ -736,7 +768,7 @@ function SUPPORTAC:Start()
 			self:T(_msg)
 			_msg = string.format(self.traceTitle .. "start - Mission %s set to use %s as home base.", mission.name, missionHomeAirbase)
 			SUPPORTAC:T(_msg)
-		if missionHomeAirbase then -- CHECK HOME AIRBASE
+			if missionHomeAirbase then -- CHECK HOME AIRBASE
 				_msg = string.format(self.traceTitle .. "start - Mission %s using %s as home base.", mission.name, missionHomeAirbase)
 				SUPPORTAC:T(_msg)
 
@@ -759,6 +791,7 @@ function SUPPORTAC:Start()
 				if spawnAngle > 360 then 
 					spawnAngle = spawnHeading - 180
 				end
+				local spawnUnlimitedFuel = mission.unlimitedFuel or SUPPORTAC.missionDefault.unlimitedFuel
 
 				-- coordinate used for the AUFTRAG
 				local missionCoordinate = missionZone:GetCoordinate()
@@ -788,6 +821,11 @@ function SUPPORTAC:Start()
 					-- get template to use for spawn
 					local spawnTemplate = SUPPORTAC.template[missionSpawnType]
 
+					-- check "category" has been set in template
+					-- if not spawnTemplate["category"] then
+					-- 	spawnTemplate["category"] = Group.Category.AIRPLANE
+					-- end
+					
 					-- apply mission callsign to template (for correct display in F10 map)
 					local missionCallsignId = mission.callsign
 					local missionCallsignNumber = mission.callsignNumber or 1
@@ -856,6 +894,7 @@ function SUPPORTAC:Start()
 							_msg = string.format(SUPPORTAC.traceTitle .. "Spawned Group %s", spawnGroupName)
 							BASE:T(_msg)
 		
+							spawngroup:CommandSetUnlimitedFuel(spawnUnlimitedFuel)
 							spawngroup:CommandSetCallsign(mission.callsign, mission.callsignNumber) -- set the template callsign
 						end
 						,mission
@@ -1094,6 +1133,7 @@ SUPPORTAC.missionDefault = {
 	awacsLeg = 70, -- default awacs racetrack leg length
 	activateDelay = 10, -- delay, in seconds, after the previous ac has despawned before the new ac will be activated 
 	despawnDelay = 30, -- delay, in seconds, before the old ac will be despawned
+	unlimitedFuel = true, -- default unlimited fuel. Set to false in data if fuel RTB is desired
 	fuelLowThreshold = 30, -- default % fuel low level to trigger RTB
 	spawnDistance = 1, -- default distance in NM from the mission zone at which to spawn aircraft
 	countryid = country.id.USA, -- default country to be used for predfined templates
@@ -3730,6 +3770,8 @@ local useSRS
 ACTIVERANGES.menu = {}
 --ACTIVERANGES.rangeRadio = "377.8"
 ACTIVERANGES.menu.menuTop = MENU_COALITION:New(coalition.side.BLUE, "Active Ranges")
+ACTIVERANGES.spawnatstart = true -- default to spawn targets at mission start
+ACTIVERANGES.activeatstart = false -- default to inactive AI if spawned at mission start
   
 function ACTIVERANGES:Start()	
 	_msg = "[JTF-1 ACTIVERANGES] Start()."
@@ -3738,7 +3780,9 @@ function ACTIVERANGES:Start()
 	self.SetInitActiveRangeGroups = SET_GROUP:New():FilterPrefixes("ACTIVE_"):FilterOnce() -- create list of group objects with prefix "ACTIVE_"
 	self.SetInitActiveRangeGroups:ForEachGroup(
 	function(group)
-		ACTIVERANGES:initActiveRange(group, false)
+		if ACTIVERANGES.spawnatstart then
+			ACTIVERANGES:initActiveRange(group, ACTIVERANGES.activeatstart) -- [group] group object for target, [true/false] refresh or create
+		end
 	end
 	)
 end
@@ -3753,8 +3797,8 @@ function ACTIVERANGES:initActiveRange(rangeTemplateGroup, refreshRange)
 	BASE:T({_msg, initGroupName, refreshRange})
 	local rangeTemplate = rangeTemplateGroup.GroupName
 	local activeRange = SPAWN:New(rangeTemplate)
-	if refreshRange == false then -- turn off AI if initial
-	activeRange:InitAIOnOff(false)
+	if refreshRange == false then 
+		activeRange:InitAIOnOff(false) -- turn off AI if we're not resfreshing an already active target
 	end
 	activeRange:OnSpawnGroup(
 		function (spawnGroup)
@@ -3912,8 +3956,12 @@ if not ACTIVERANGES then
 	ACTIVERANGES = {}
 end
 
+
+--ACTIVERANGES.spawnatstart = false -- if false, do not spawn targets at mission start
+ACTIVERANGES.activeatstart = false -- if true, set AI on for targets spawned at mission start
 ACTIVERANGES.useSRS = true -- set to false to disable use of SRS for this module in this miz
 --ACTIVERANGES.rangeRadio = "377.8" -- radio frequency over which to broadcast Active Range messages
+
 
 -- start the mission timer
 if ACTIVERANGES.Start then
@@ -11179,6 +11227,260 @@ if MARKSPAWN.Start ~= nil then
 end
   
   
+--------------------------------[core\missionatis.lua]-------------------------------- 
+ 
+env.info( "[JTF-1] missionatis.lua" )
+-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+--- BEGIN ATIS SECTION
+-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+--
+-- NELLIS 270.100
+-- CREECH 290.450
+-- GROOM LAKE 123.500
+-- TONOPAH TEST RANGE 113.000
+MISSIONATIS = {}
+
+-- inherit methods,  properties etc from BASE for event handler, trace etc
+MISSIONATIS = BASE:Inherit( MISSIONATIS, BASE:New() )
+
+MISSIONATIS.ClassName = "MISSIONATIS"
+MISSIONATIS.version = "0.1"
+MISSIONATIS.traceTitle = "[JTF-1]"
+
+-- container for airfield ATIS
+MISSIONATIS.atis = {}
+
+-- default settings. Can be overwritten by values in missionatis_data.lua
+MISSIONATIS.default = {
+    srsPath = "C:/Program Files/DCS-SimpleRadio-Standalone",
+    srsPort = 5002,
+    sex = "male",
+    nationality = "en-US",
+    transmitOnlyWithPlayers = true,
+    transmitInterval = 60
+}
+
+
+function MISSIONATIS:Start()
+
+    _msg = string.format("%s Starting MISSIONATIS version %s", 
+        self.traceTitle,
+        self.version
+    )
+    self:T(_msg)
+
+    -- setup SRS
+    -- initialise SRS in standalone
+    self.srsPath = self.srsPath or self.default.srsPath
+    self.srsPort = self.srsPort or self.default.srsPort
+    if JTF1.useSRS then
+        -- MISSIONSRS module is active so override the intialisation
+        self.srsPath = JTF1.srsPath
+        self.srsPort = JTF1.srsPort
+    end
+
+    _msg = string.format("%s SRS Config:\nPath: %s\nPort: %d\n",
+        MISSIONATIS.traceTitle,
+        MISSIONATIS.srsPath, 
+        MISSIONATIS.srsPort
+    )
+    self:I(_msg)
+
+    -- set if ATIS should transmit only when players are present
+    self.transmitOnlyWithPlayers = self.transmitOnlyWithPlayers or self.default.transmitOnlyWithPlayers
+    -- set default transmit interval
+    self.transmitInterval = self.transmitInterval or self.default.transmitInterval
+
+    -- add ATIS for each airfield defined in MISSIONATIS.airfields
+    for index, airfield in ipairs(self.airfields) do
+        self:AddAtis(airfield)
+    end
+
+end
+
+-- add ATIS for the airfield
+function MISSIONATIS:AddAtis(airfield)
+
+    _msg = string.format("%s adding ATIS for airfield: %s.", 
+        self.traceTitle, 
+        airfield.name
+    )
+    self:T(_msg)
+
+    local atisSrsPath = self.srsPath
+    local atisSrsPort = self.srsPort
+    local atisSex = airfield.sex or self.default.sex
+    local atisNationality = airfield.nationality or self.default.nationality
+    local transmitInterval = airfield.transmitInterval or self.transmitInterval
+
+    -- create new ATIS object for airfield
+    self.atis[airfield.name] = ATIS:New(airfield.name, airfield.frequency, airfield.modulation)
+
+    -- add SRS to airfield
+    self.atis[airfield.name]:SetSRS(atisSrsPath,atisSex,atisNationality,nil,atisSrsPort)
+
+    -- set interval between ATIS transmissions
+    self.atis[airfield.name]:SetQueueUpdateTime(transmitInterval)
+    
+    -- set takeoff runway
+    if airfield.activeRunwayTakeoff then
+        local activeRunwayTakeoffPreferLeft = airfield.activeRunwayLandingPreferleft or nil
+        self.atis[airfield.name]:SetActiveRunwayTakeoff(airfield.activeRunwayTakeoff, activeRunwayTakeoffPreferLeft)
+    end
+    
+    -- set landing runway
+    if airfield.activeRunwayLanding then
+        local activeRunwayLandingPreferLeft = airfield.activeRunwayLandingPreferLeft or nil
+        self.atis[airfield.name]:SetActiveRunwayLanding(airfield.activeRunwayLanding, activeRunwayLandingPreferLeft)
+    end
+    
+    -- set ILS
+    if airfield.ILS then
+        local ILSName = airfield.ILSName or nil
+        self.atis[airfield.name]:AddILS(airfield.ILSFreq, ILSName)
+    end
+    
+    -- set TACAN
+    if airfield.TACAN then
+        self.atis[airfield.name]:SetTACAN(airfield.TACAN)
+    end
+    
+    -- set tower freq(s)
+    self.atis[airfield.name]:SetTowerFrequencies(airfield.towerFrequencies)
+    
+    -- report in metric units
+    if airfield.metricUnits then
+        self.atis[airfield.name]:SetMetricUnits()
+    end
+
+    -- report pressure mB
+    if airfield.reportmBar then
+        self.atis[airfield.name]:SetReportmBar()
+    end
+    
+    -- set additional information
+    if airfield.additionalInformation then
+        self.atis[airfield.name]:SetAdditionalInformation(airfield.additionalInformation)
+    end
+    
+    -- set whether to only transmit when players are present
+    self.atis[airfield.name]:SetTransmitOnlyWithPlayers(self.transmitOnlyWithPlayers)
+    
+    -- start the airfield ATIS
+    self.atis[airfield.name]:Start()
+
+end
+  
+--------------------------------[missionatis_data.lua]-------------------------------- 
+ 
+env.info( "[JTF-1] missionatis_data.lua" )
+-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+--- MISSIONATIS SETTINGS FOR MIZ
+-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+--
+-- This file MUST be loaded AFTER missionatis.lua
+--
+-- These values are specific to the miz and will override the default values in MISSIONATIS.default
+--
+--
+-- NELLIS 270.100
+-- CREECH 290.450
+-- GROOM LAKE 123.500
+-- TONOPAH TEST RANGE 113.000
+
+-- Error prevention. Create empty container if module core lua not loaded.
+if not MISSIONATIS then 
+	_msg = "[JTF-1 MISSIONATIS] CORE FILE NOT LOADED!"
+	BASE:E(_msg)
+	MISSIONATIS = {}
+end
+
+-- only transmit ATIS if players are present
+MISSIONATIS.transmitOnlyWithPlayers = true -- default value is true
+MISSIONATIS.transmitInterval = 55 -- interval, in seconds, between ATIS transmissions. From start of transmission to start of next
+
+MISSIONATIS.airfields = {
+    {
+        name = AIRBASE.Nevada.Nellis_AFB,
+        frequency = 327.3,
+        modulation = radio.modulation.AM,
+        sex = "male",
+        nationality = "en-US",
+        transmitInterval = 55,
+        activeRunwayTakeoff = "03",
+        activeRunwayTakeoffPreferLeft = true,
+        activeRunwayLanding = "21",
+        activeRunwayLandingPreferLeft = true,
+        ILSFreq = 109.10,
+        ILSName = "21L",
+        TACAN = 12,
+        towerFrequencies = 327.3, -- table of freqs. A single freq MUST be given as a plain number, NOT a atable.
+        metricUnits = false,
+        reportmBar = false,
+        additionalInformation = "All aircraft report hold-short.",
+    },
+    {
+        name = AIRBASE.Nevada.Creech_AFB,
+        frequency = 290.45,
+        modulation = radio.modulation.AM,
+        sex = "female",
+        nationality = "en-US",
+        TACAN = 87,
+        towerFrequencies = 360.6, -- table of freqs. A single freq MUST be given as a plain number, NOT a atable.
+        metricUnits = false,
+        reportmBar = false,
+        transmitInterval = 50,
+    },
+    {
+        name = AIRBASE.Nevada.Tonopah_Test_Range_Airfield,
+        frequency = 113,
+        modulation = radio.modulation.AM,
+        sex = "female",
+        nationality = "en-US",
+        TACAN = 77,
+        towerFrequencies = 257.95, -- table of freqs. A single freq MUST be given as a plain number, NOT a atable.
+        metricUnits = false,
+        reportmBar = false,
+        transmitInterval = 50,
+    },
+    {
+        name = AIRBASE.Nevada.Groom_Lake_AFB,
+        frequency = 123,
+        modulation = radio.modulation.AM,
+        sex = "male",
+        nationality = "en-US",
+        TACAN = 18,
+        towerFrequencies = 120.1, -- table of freqs. A single freq MUST be given as a plain number, NOT a atable.
+        metricUnits = false,
+        reportmBar = false,
+        transmitInterval = 50,
+    },
+    -- EXAMPLE AIRFIELD CONFIG
+    -- {
+    --     name = AIRBASE.Nevada.Nellis_AFB,
+    --     frequency = 327.3,
+    --     modulation = radio.modulation.AM,
+    --     sex = "male",
+    --     nationality = "en-US",
+    --     transmitInterval = 55,
+    --     activeRunwayTakeoff = "03",
+    --     activeRunwayTakeoffPreferLeft = true,
+    --     activeRunwayLanding = "21",
+    --     activeRunwayLandingPreferLeft = true,
+    --     ILSFreq = 109.10,
+    --     ILSName = "21L",
+    --     TACAN = 12,
+    --     towerFrequencies = 327.3, -- table of freqs. A single freq MUST be given as a plain number, NOT a atable.
+    --     metricUnits = false,
+    --     reportmBar = false,
+    --     additionalInformation = "All aircraft report hold-short.",
+    -- },
+}
+
+-- start the misison ATIS
+if MISSIONATIS.Start then
+	MISSIONATIS:Start()
+end  
 --------------------------------[movingtargets.lua]-------------------------------- 
  
 env.info( "[JTF-1] movingtargets" )
