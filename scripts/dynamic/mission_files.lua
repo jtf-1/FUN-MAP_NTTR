@@ -17,8 +17,8 @@ __JTFLoader.Include( 'supportaircraft_data.lua' )
 --__JTFLoader.Include( 'core/staticranges.lua' )        -- core file
 __JTFLoader.Include( 'test/staticranges.lua' )        -- core file
 __JTFLoader.Include( 'staticranges_data.lua' )
---__JTFLoader.Include( 'core/activeranges.lua' )          -- core file
-__JTFLoader.Include( 'test/activeranges.lua' )          -- core file
+__JTFLoader.Include( 'core/activeranges.lua' )          -- core file
+--__JTFLoader.Include( 'test/activeranges.lua' )          -- core file
 __JTFLoader.Include( 'activeranges_data.lua' )
 __JTFLoader.Include( 'ecs.lua' )
 __JTFLoader.Include( 'core/bfmacm.lua' )                -- core file
@@ -28,7 +28,7 @@ __JTFLoader.Include( 'core/missiletrainer.lua' )        -- core file
 __JTFLoader.Include( 'missiletrainer_data.lua' )
 __JTFLoader.Include( 'core/markspawn.lua' )             -- core file
 __JTFLoader.Include( 'core/markspawn_templates.lua' )   -- core file
-__JTFLoader.Include( 'missionatis.lua' )
+__JTFLoader.Include( 'core/missionatis.lua' )           -- core file
 __JTFLoader.Include( 'missionatis_data.lua' )
 __JTFLoader.Include( 'movingtargets.lua' )
 __JTFLoader.Include( 'core/Hercules_Cargo.lua' )        -- core file
