@@ -21,16 +21,17 @@ if not MISSIONATIS then
 end
 
 -- only transmit ATIS if players are present
-MISSIONATIS.transmitOnlyWithPlayers = false -- default value is true
+MISSIONATIS.transmitOnlyWithPlayers = false -- default value is false
 MISSIONATIS.transmitInterval = 55 -- interval, in seconds, between ATIS transmissions. From start of transmission to start of next
 
 MISSIONATIS.airfields = {
     {
         name = AIRBASE.Nevada.Nellis_AFB,
-        frequency = 327.3,
+        frequency = 270.1,
         modulation = radio.modulation.AM,
         sex = "male",
         nationality = "en-US",
+        transmitInterval = 55,
         activeRunwayTakeoff = "03",
         activeRunwayTakeoffPreferLeft = true,
         activeRunwayLanding = "21",
@@ -38,7 +39,7 @@ MISSIONATIS.airfields = {
         ILSFreq = 109.10,
         ILSName = "21L",
         TACAN = 12,
-        towerFrequencies = 327.3, -- table of freqs. A single freq MUST be given as a plain number, NOT a atable.
+        towerFrequencies = 327, -- table of freqs. A single freq MUST be given as a plain number, NOT a atable.
         metricUnits = false,
         reportmBar = false,
         additionalInformation = "All aircraft report hold-short.",
@@ -79,6 +80,26 @@ MISSIONATIS.airfields = {
         reportmBar = false,
         transmitInterval = 50,
     },
+    -- EXAMPLE AIRFIELD CONFIG
+    -- {
+    --     name = AIRBASE.Nevada.Nellis_AFB,
+    --     frequency = 327.3,
+    --     modulation = radio.modulation.AM,
+    --     sex = "male",
+    --     nationality = "en-US",
+    --     transmitInterval = 55,
+    --     activeRunwayTakeoff = "03",
+    --     activeRunwayTakeoffPreferLeft = true,
+    --     activeRunwayLanding = "21",
+    --     activeRunwayLandingPreferLeft = true,
+    --     ILSFreq = 109.10,
+    --     ILSName = "21L",
+    --     TACAN = 12,
+    --     towerFrequencies = 327.3, -- table of freqs. A single freq MUST be given as a plain number, NOT a atable.
+    --     metricUnits = false,
+    --     reportmBar = false,
+    --     additionalInformation = "All aircraft report hold-short.",
+    -- },
 }
 
 -- start the misison ATIS
