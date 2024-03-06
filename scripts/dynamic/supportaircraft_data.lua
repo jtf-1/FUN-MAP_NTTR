@@ -47,7 +47,7 @@ SUPPORTAC.mission = {
     {
     name = "AR641A", -- text name for this support mission. Combined with this block's index and the mission type to define the group name on F10 map
     category = SUPPORTAC.category.tanker, -- support mission category. Used to determine the auftrag type. Options are listed in SUPPORTAC.categories
-    type =  "KC-135-TEX1", --SUPPORTAC.type.tankerBoom, -- type defines the spawn template that will be used
+    type =  SUPPORTAC.type.tankerBoom, --"KC-135-TEX1", --SUPPORTAC.type.tankerBoom, -- type defines the spawn template that will be used
     zone = "AR641A", -- ME zone that defines the start waypoint for the spawned aircraft
     callsign = CALLSIGN.Tanker.Texaco, -- callsign under which the aircraft will operate
     callsignNumber = 1, -- primary callsign number that will be used for the aircraft
@@ -62,7 +62,7 @@ SUPPORTAC.mission = {
   {
     name = "AR641A",
     category = SUPPORTAC.category.tanker,
-    type = "KC-135MPRS-SHL1", --SUPPORTAC.type.tankerProbe,
+    type = SUPPORTAC.type.tankerProbe,--"KC-135MPRS-SHL1", --
     zone = "AR641A",
     callsign = CALLSIGN.Tanker.Shell,
     callsignNumber = 1,
@@ -77,7 +77,7 @@ SUPPORTAC.mission = {
   {
     name = "AR635",
     category = SUPPORTAC.category.tanker,
-    type = "KC-135-TEX2", --SUPPORTAC.type.tankerBoom,
+    type = SUPPORTAC.type.tankerBoom,--"KC-135-TEX2", --
     zone = "AR635",
     callsign = CALLSIGN.Tanker.Texaco,
     callsignNumber = 2,
@@ -92,7 +92,7 @@ SUPPORTAC.mission = {
   {
     name = "AR635",
     category = SUPPORTAC.category.tanker,
-    type = "KC-135MPRS-SHL2", -- SUPPORTAC.type.tankerProbe,
+    type = SUPPORTAC.type.tankerProbe,--"KC-135MPRS-SHL2", -- 
     zone = "AR635",
     callsign = CALLSIGN.Tanker.Shell,
     callsignNumber = 2,
@@ -107,7 +107,7 @@ SUPPORTAC.mission = {
   {
     name = "AR230V",
     category = SUPPORTAC.category.tanker,
-    type =  "KC-135-ARC1", --SUPPORTAC.type.tankerBoom,
+    type =  SUPPORTAC.type.tankerBoom,--"KC-135-ARC1", --
     zone = "AR230V",
     callsign = CALLSIGN.Tanker.Arco,
     callsignNumber = 1,
@@ -122,7 +122,7 @@ SUPPORTAC.mission = {
   {
     name = "AR230V",
     category = SUPPORTAC.category.tanker,
-    type = "KC-130-ARC3", --SUPPORTAC.type.tankerProbeC130,
+    type = SUPPORTAC.type.tankerProbeC130,--"KC-130-ARC3", --
     zone = "AR230V",
     callsign = CALLSIGN.Tanker.Arco,
     callsignNumber = 3,
@@ -137,7 +137,7 @@ SUPPORTAC.mission = {
   {
     name = "ARLNS",
     category = SUPPORTAC.category.tanker,
-    type = "KC-135-TEX3", --SUPPORTAC.type.tankerBoom,
+    type = SUPPORTAC.type.tankerBoom,--"KC-135-TEX3", --
     zone = "ARLNS",
     callsign = CALLSIGN.Tanker.Texaco,
     callsignNumber = 3,
@@ -152,7 +152,7 @@ SUPPORTAC.mission = {
   {
     name = "ARLNS",
     category = SUPPORTAC.category.tanker,
-    type = "KC-135MPRS-SHL3", --SUPPORTAC.type.tankerProbe,
+    type = SUPPORTAC.type.tankerProbe,--"KC-135MPRS-SHL3", --
     zone = "ARLNS",
     callsign = CALLSIGN.Tanker.Shell,
     callsignNumber = 3,
@@ -167,7 +167,7 @@ SUPPORTAC.mission = {
   {
     name = "AWACSEAST",
     category = SUPPORTAC.category.awacs,
-    type = "AWACS-E3A-DR1", --SUPPORTAC.type.awacsE3a,
+    type = SUPPORTAC.type.awacsE3a,--"AWACS-E3A-DR1", --
     zone = "AWACS-EAST",
     callsign = CALLSIGN.AWACS.Darkstar,
     callsignNumber = 1,
