@@ -219,7 +219,7 @@ MARKSPAWN.ClassName = "MARKSPAWN"
 --MARKSPAWN.MLTgtArray = {}
 MARKSPAWN.radioPresets = {}
 MARKSPAWN.MLSpawnedGroups = {}
-MARKSPAWN.templates = {}
+--MARKSPAWN.templates = {}
 
 MARKSPAWN.default = {
 	-- DEFAULT VALUES
@@ -251,10 +251,15 @@ MARKSPAWN.spawnTypes = { -- types available for spawning
     { template = "BVR_F4",     	msType = "F4",      	category = "air",     role = "CAP"},
     { template = "BVR_F16",    	msType = "F16",     	category = "air",     role = "CAP"},
     { template = "BVR_F18",    	msType = "F18",     	category = "air",     role = "CAP"},
+    ------------------------ CAS ------------------------
+    { template = "CAS_MQ9",    	msType = "MQ9",     	category = "air",     role = "CAS"},
+    { template = "CAS_WINGLOON",msType = "WINGLOON",    category = "air",     role = "CAS"},
     ------------------------ SEAD ------------------------
 	{ template = "SEAD_F16",    msType = "F16SEAD",	category = "air",     role = "SEAD"},
 	{ template = "SEAD_F18",    msType = "F18SEAD",	category = "air",     role = "SEAD"},
 	------------------------ SAM ------------------------
+    { template = "SA2",    		msType = "SA2",	  		category = "ground",  role = "SAM"},
+    { template = "SA3",    		msType = "SA3",	  		category = "ground",  role = "SAM"},
     { template = "SA6",    		msType = "SA6",	  		category = "ground",  role = "SAM"},
     { template = "SA8",    		msType = "SA8", 		category = "ground",  role = "SAM"},
     { template = "SA10",   		msType = "SA10", 		category = "ground",  role = "SAM"},
@@ -265,6 +270,7 @@ MARKSPAWN.spawnTypes = { -- types available for spawning
     { template = "ZSU23_Shilka",msType = "ZSU23",		category = "ground",  role = "AAA"},
     { template = "ZU23_Emp",	msType = "ZU23EMP",		category = "ground",  role = "AAA"},
     { template = "ZU23_Ural",	msType = "ZU23URAL",	category = "ground",  role = "AAA"},
+    { template = "ZU23_Closed",	msType = "ZU23CLOSED",	category = "ground",  role = "AAA"},
 	------------------------ CONVOY ------------------------
     { template = "CON_light",	msType = "CONLIGHT",	category = "ground",  role = "CON"},
     { template = "CON_heavy",	msType = "CONHEAVY",	category = "ground",  role = "CON"},
@@ -309,25 +315,14 @@ function MARKSPAWN:Start()
 			local spawnTemplate
 	
 			-- look in MARKSPAWN templates
-			if self.templates[templateName] then
-				_msg = string.format("%sUse spawn template from MARKSPAWN.templates for %s.",
+			if SPAWNTEMPLATES.templates[templateName] then
+				_msg = string.format("%sUse spawn template from SPAWNTEMPLATES.templates for %s.",
 					self.traceTitle,
 					templateName
 				)
 				self:T(_msg)
 
-				spawnTemplate = self.templates[templateName]
-	
-			-- look in MISSIONSPAWN templates
-			elseif MISSIONSPAWN and MISSIONSPAWN.templates[templateName] then
-				_msg = string.format("%sUse spawn template from MISSIONSPAWN.templates for %s.",
-					self.traceTitle,
-					templateName
-				)
-				self:T(_msg)
-
-				spawnTemplate = MISSIONSPAWN.templates[templateName]
-
+				spawnTemplate = SPAWNTEMPLATES.templates[templateName]
 			end
 
 			-- If we have a template, generate the SPAWN object
@@ -360,7 +355,7 @@ function MARKSPAWN:Start()
 				)
 				spawn:Spawn()
 			
-			-- Template cannot be found in miz, MARKSPAWN.templates or MISSIONSPAWN.templates
+			-- Template cannot be found in miz or SPAWNTEMPLATES.templates
 			else
 				_msg = string.format("%sError! Could not find template %s.",
 					self.traceTitle,
