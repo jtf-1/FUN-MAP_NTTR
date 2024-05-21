@@ -1,4 +1,4 @@
-env.info( "[JTF-1] disableai" )
+env.info( "[JTF-1] disableai.lua" )
 -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 --- Disable AI for ground targets
 -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
@@ -15,10 +15,13 @@ DISABLEAI.setGroupGroundActive = SET_GROUP:New()
 DISABLEAI.excludeAI = {"BLUFOR", "FAC", "JTAC", "66%-"}
 --local excludeAI = "BLUFOR"
 
+_msg = string.format("%sStart Disable AI.", DISABLEAI.traceTitle)
+BASE:T({_msg, Exclude_List = DISABLEAI.excludeAI})
+
 
 DISABLEAI.setGroupGroundActive:ForEachGroup(
   function(activeGroup)
-    local _msg
+
     -- name of the group we're checking
     local activeGroupName = activeGroup:GetName()
     -- list of group name prefixes to exclude
@@ -28,19 +31,17 @@ DISABLEAI.setGroupGroundActive:ForEachGroup(
 
     -- check if group name prefix is in exclusion list
     for _, stringExclude in pairs(excludeAI) do
-
-      if string.find(activeGroupName, stringExclude) then
-        _msg = string.format("%sSkipping group: %s", DISABLEAI.traceTitle, activeGroupName)
+      if string.find(activeGroupName, stringExclude) ~= nil then
         disableGroup = false
+        _msg = string.format("%sSkip group: %s", DISABLEAI.traceTitle, activeGroupName)
         break
       end
-
     end
 
     -- Disable AI if group was not in exclusion list
-    if disableGroup then
-      local _msg = string.format("%sDisable group: %s", DISABLEAI.traceTitle, activeGroupName)
-      activeGroup:SetAIOff()
+    if disableGroup == true then
+      activeGroup:SetAIOnOff(false)
+      _msg = string.format("%sDisable group: %s", DISABLEAI.traceTitle, activeGroupName)
     end
 
     BASE:T(_msg)
