@@ -1,4 +1,4 @@
- env.info("[JTF-1] MISSION BUILD 2023-12-01T 2:15:46.68")  
+ env.info("[JTF-1] MISSION BUILD 2024-04-29T18:16:03.91")  
   
 --------------------------------[core\mission_init.lua]-------------------------------- 
  
@@ -27,14 +27,19 @@ function JTF1:Start()
 		local settingsFile = lfs.writedir() .. JTF1.defaultServerConfigFile
 
 		if UTILS.CheckFileExists(lfs.writedir(), JTF1.defaultServerConfigFile) then
-			_msg = string.format("%sMission INIT settingsFile = %s", JTF1.traceTitle, settingsFile) 
+			_msg = string.format("%sServer Settings File = %s", JTF1.traceTitle, settingsFile) 
 			BASE:I(_msg)
+			local msgServerSettings = ""
 			dofile(settingsFile)
 			for _name, _value in pairs(LOCALSERVER) do
 				JTF1[_name] = _value
+				msgServerSettings = msgServerSettings .. _name .. " = " .. tostring(_value) .. "\n"
 			end
-			_msg = JTF1.traceTitle .. "Local server settings"
-			BASE:I({_msg, JTF1})
+			_msg = string.format("%sServer Settings follow;\n\n%s\n",
+				JTF1.traceTitle,
+				msgServerSettings
+			)
+			BASE:I(_msg)
 		else
 			_msg = JTF1.traceTitle .. "Error! Server config file not found. Using mission defaults"
 			BASE:E(_msg)
@@ -162,62 +167,6 @@ else
 end
 
 --- END DEVCHECK  
---------------------------------[disableai.lua]-------------------------------- 
- 
-env.info( "[JTF-1] disableai" )
--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
---- Disable AI for ground targets
--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-
-DISABLEAI = {}
-DISABLEAI.traceTitle = "[JTF-1 DISABLEAI] "
-DISABLEAI.setGroupGroundActive = SET_GROUP:New()
-  :FilterActive()
-  :FilterCategoryGround()
-  :FilterOnce()
---local setGroupGroundActive = SET_GROUP:New():FilterActive():FilterCategoryGround():FilterOnce()
-
--- table of Prefixes for groups for which AI should NOT be disabled
-DISABLEAI.excludeAI = {"BLUFOR", "FAC", "JTAC", "66%-"}
---local excludeAI = "BLUFOR"
-
-
-DISABLEAI.setGroupGroundActive:ForEachGroup(
-  function(activeGroup)
-    local _msg
-    -- name of the group we're checking
-    local activeGroupName = activeGroup:GetName()
-    -- list of group name prefixes to exclude
-    local excludeAI = DISABLEAI.excludeAI
-    -- flag to trigger disabling AI
-    local disableGroup = true
-
-    -- check if group name prefix is in exclusion list
-    for _, stringExclude in pairs(excludeAI) do
-
-      if string.find(activeGroupName, stringExclude) then
-        _msg = string.format("%sSkipping group: %s", DISABLEAI.traceTitle, activeGroupName)
-        disableGroup = false
-        break
-      end
-
-    end
-
-    -- Disable AI if group was not in exclusion list
-    if disableGroup then
-      local _msg = string.format("%sDisable group: %s", DISABLEAI.traceTitle, activeGroupName)
-      activeGroup:SetAIOff()
-    end
-
-    BASE:T(_msg)
-
-  end
-)
-
--- remove set object
-DISABLEAI.setGroupGroundActive = nil
-
----  END DISABLE AI  
 --------------------------------[core\missionsrs.lua]-------------------------------- 
  
 env.info( "[JTF-1] missionsrs.lua" )
@@ -321,43 +270,6 @@ end
 
 --MISSIONSRS:Start() -- uncomment if missionsrs_data.lua is not used
   
---------------------------------[missionsrs_data.lua]-------------------------------- 
- 
-env.info( "[JTF-1] missionsrs_data" )
--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
---- MISSION TIMER SETTINGS FOR MIZ
--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
---
--- This file MUST be loaded AFTER missionsrs.lua
---
--- These values are specific to the miz and will override the default values in MISSIONSRS.default
---
-
--- Error prevention. Create empty container if module core lua not loaded.
-if not MISSIONSRS then 
-	_msg = "[JTF-1 MISSIONSRS] CORE FILE NOT LOADED!"
-	BASE:E(_msg)
-	MISSIONSRS = {}
-end
-
--- table of values for missionsrs to use this miz. Overrides default values.
--- MISSIONSRS.srsPath = "C:/Program Files/DCS-SimpleRadio-Standalone" -- default path to SRS install directory if setting file is not avaialable "C:/Program Files/DCS-SimpleRadio-Standalone"
--- MISSIONSRS.srsPort = 5002                                          -- default SRS port to use if settings file is not available
--- MISSIONSRS.msg = "No Message Defined!"                             -- default message if text is nil
-MISSIONSRS.freqs = "243,251,327,377.8,30"                          -- transmit on guard, CTAF, NTTR TWR, NTTR BLACKJACK and 30FM as default frequencies
--- MISSIONSRS.modulations = "AM,AM,AM,AM,FM"                          -- default modulation (count *must* match qty of freqs)
--- MISSIONSRS.vol = "1.0"                                             -- default to full volume
--- MISSIONSRS.name = "Server"                                         -- default to server as sender
--- MISSIONSRS.coalition = 0                                           -- default to spectators
--- MISSIONSRS.vec3 = nil                                              -- point from which transmission originates
--- MISSIONSRS.speed = 2                                               -- speed at which message should be played
--- MISSIONSRS.gender = "female"                                       -- default gender of sender
--- MISSIONSRS.culture = "en-US"                                       -- default culture of sender
--- MISSIONSRS.voice = ""                                              -- default voice to use
-
-if MISSIONSRS.Start then
-	MISSIONSRS:Start()
-end  
 --------------------------------[core\adminmenu.lua]-------------------------------- 
  
 env.info( "[JTF-1] adminmenu.lua" )
@@ -527,36 +439,6 @@ function ADMIN:BuildAdminMenu(unit,playername)
 end
 
 --- END ADMIN MENU SECTION  
---------------------------------[adminmenu_data.lua]-------------------------------- 
- 
-env.info( "[JTF-1] adminmenu_data" )
-
---- MISSION ADMIN MENU SETTINGS FOR MIZ
---
--- This file MUST be loaded AFTER adminmenu.lua
---
--- These values are specific to the miz and will override the default values in ADMIN
---
-
--- Error prevention. Create empty container if module core lua not loaded.
-if not ADMIN then 
-	ADMIN = {}
-	ADMIN.traceTitle = "[JTF-1 ADMIN] "
-	_msg = ADMIN.traceTitle .. "CORE FILE NOT LOADED!"
-	BASE:E(_msg)
-end
-
--- table of values to override default ADMIN values for this miz
-ADMIN.menuAllSlots = false
-ADMIN.jtfmenu = false
-
--- start the mission timer
-if ADMIN.Start then
-	_msg = ADMIN.traceTitle .. "Call Start()"
-	BASE:T(_msg)
-	ADMIN:Start()  
-end
-  
 --------------------------------[core\missiontimer.lua]-------------------------------- 
  
 env.info( "[JTF-1] missiontimer.lua" )
@@ -648,36 +530,6 @@ function MISSIONTIMER:Restart()
 end
 
 --- END MISSION TIMER  
---------------------------------[missiontimer_data.lua]-------------------------------- 
- 
-env.info( "[JTF-1] missiontimer_data" )
--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
---- MISSION TIMER SETTINGS FOR MIZ
--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
---
--- This file MUST be loaded AFTER missiontimer.lua
---
--- These values are specific to the miz and will override the default values in missiontimer.lua
---
-
--- Error prevention. Create empty container if module core lua not loaded.
-if not MISSIONTIMER then 
-	_msg = "[JTF-1 MISSIONTIMER] CORE FILE NOT LOADED!"
-	BASE:E(_msg)
-	MISSIONTIMER = {}
-end
-
--- table of values for timer shedule in this miz
-MISSIONTIMER.durationHrs = 11 -- Mission run time in HOURS. Default 24
---MISSIONTIMER.msgSchedule = {60, 30, 10, 5} -- Schedule for mission restart warning messages prior to the mission restart. Time in minutes. Default {60, 30, 10, 5}
---MISSIONTIMER.restartDelay =  4 -- time in minutes to delay restart if active clients are present. Dewfault 10.
---MISSIONTIMER.useSRS = true -- set to false to disable use of SRS for this module in this miz
-
--- start the mission timer
-if MISSIONTIMER.Start then
-	MISSIONTIMER:Start()  
-end
-  
 --------------------------------[core\supportaircraft.lua]-------------------------------- 
  
 env.info( "[JTF-1] supportaircraft.lua" )
@@ -728,16 +580,27 @@ SUPPORTAC = {}
 SUPPORTAC.traceTitle = "[JTF-1 SUPPORTAC] "
 SUPPORTAC.ClassName = "SUPPORTAC"
 SUPPORTAC.useSRS = true -- if true, messages will be sent over SRS using the MISSIONSRS module. If false, messages will be sent as in-game text.
-
+SUPPORTAC.trace = false -- tracing off by default if false
 SUPPORTAC = BASE:Inherit(SUPPORTAC, BASE:New())
 
 local _msg -- used for debug messages only
 local useSRS
 
+if JTF1 then
+	SUPPORTAC.trace = JTF1.trace
+end
+
 -- function to start the SUPPORTAC module.
 function SUPPORTAC:Start()
 	_msg = string.format(self.traceTitle .. "Start()")
 	self:T(_msg)
+
+	-- set tracing on or off
+	self:TraceOnOff(self.trace)
+	self:TraceAll(self.trace)
+	local traceState = tostring(self.trace)
+	_msg = string.format("%sModule Tracing is %s.", self.traceTitle, traceState)
+	self:I(_msg)
 
 	-- default to not using SRS unless both the server AND the module request it AND MISSIONSRS.Radio.active is true
 	useSRS = (JTF1.useSRS and self.useSRS) and MISSIONSRS.Radio.active 
@@ -745,7 +608,7 @@ function SUPPORTAC:Start()
 
 	for index, mission in ipairs(SUPPORTAC.mission) do -- FOR-DO LOOP
 		_msg = string.format(self.traceTitle .. "Start - mission %s", mission.name)
-		SUPPORTAC:T({_msg, mission})
+		SUPPORTAC:T(_msg)
 
 		local skip = false -- check value to exit early from the current for/do iteration
 
@@ -754,7 +617,7 @@ function SUPPORTAC:Start()
 		if missionZone then -- CHECK MISSION ZONE
 		
 			-- if trace is on, draw the zone on the map
-			if BASE:IsTrace() then 
+			if self:IsTrace() then 
 				-- draw mission zone on map
 				missionZone:DrawZone()
 			end
@@ -763,7 +626,7 @@ function SUPPORTAC:Start()
 			local missionTheatre = env.mission.theatre
 			_msg = SUPPORTAC.traceTitle .. tostring(missionTheatre)
 			self:T(_msg)
-			local missionHomeAirbase = mission.homeAirbase or SUPPORTAC.homeAirbase[missionTheatre]
+			local missionHomeAirbase = SUPPORTAC.homeAirbase["Nevada"]--mission.homeAirbase or SUPPORTAC.homeAirbase[missionTheatre]
 			_msg = SUPPORTAC.traceTitle .. tostring(missionHomeAirbase)
 			self:T(_msg)
 			_msg = string.format(self.traceTitle .. "start - Mission %s set to use %s as home base.", mission.name, missionHomeAirbase)
@@ -858,8 +721,6 @@ function SUPPORTAC:Start()
 						missionUnit["callsign"][1] = missionCallsignId
 						missionUnit["callsign"][2] = missionCallsignNumber
 						missionUnit["callsign"][3] = 1
-						_msg = string.format(self.traceTitle .. "Callsign for mission %s is %s", mission.name, spawnTemplate.units[1]["callsign"]["name"])
-						SUPPORTAC:T(_msg)
 					elseif type(missionUnit["callsign"]) == "number" then
 						missionUnit["callsign"] = tonumber(missionCallsignId)
 					else
@@ -891,8 +752,8 @@ function SUPPORTAC:Start()
 					mission.missionSpawnTemplate:OnSpawnGroup(
 						function(spawngroup)
 							local spawnGroupName = spawngroup:GetName()
-							_msg = string.format(SUPPORTAC.traceTitle .. "Spawned Group %s", spawnGroupName)
-							BASE:T(_msg)
+							-- _msg = string.format(SUPPORTAC.traceTitle .. "Spawned Group %s", spawnGroupName)
+							-- self:T(_msg)
 		
 							spawngroup:CommandSetUnlimitedFuel(spawnUnlimitedFuel)
 							spawngroup:CommandSetCallsign(mission.callsign, mission.callsignNumber) -- set the template callsign
@@ -901,7 +762,7 @@ function SUPPORTAC:Start()
 					)
 
 					_msg = string.format(self.traceTitle .. "New late activated mission spawn template added for %s", missionSpawnAlias)
-					SUPPORTAC:T({_msg, mission.missionSpawnTemplate})
+					SUPPORTAC:T(_msg)
 					
 					-- call NewMission() to create the initial mission for the support aircraft
 					-- subsequent mission restarts will be called after the mission's AUFTRAG is cancelled
@@ -982,7 +843,7 @@ function SUPPORTAC:NewMission(mission, initDelay)
 	-- spawn new group
 	local spawnGroup = mission.missionSpawnTemplate:SpawnFromCoordinate(mission.spawnCoordinate)
 	_msg = string.format(self.traceTitle .. "New late activated group %s spawned.", spawnGroup:GetName())
-	SUPPORTAC:T({_msg, spawnGroup})
+	SUPPORTAC:T(_msg)
 
 	-- create new flightGroup
 	local flightGroup = FLIGHTGROUP:New(spawnGroup)
@@ -1108,7 +969,7 @@ SUPPORTAC.type = {
 -- Default home airbase. Added to the mission spawn template if not defined in
 -- the mission data block
 SUPPORTAC.homeAirbase = {
-	["Nevada"] = AIRBASE.Nevada.Nellis_AFB,
+	["Nevada"] = AIRBASE.Nevada.Nellis,
 	["Caucasus"] = AIRBASE.Caucasus.Tbilisi_Lochini,
 	["PersianGulf"] = AIRBASE.PersianGulf.Al_Dhafra_AB,
 	["Syria"] = AIRBASE.Syria.Incirlik,
@@ -1142,2307 +1003,8 @@ SUPPORTAC.missionDefault = {
 	despawn = true, -- default deSpawn option. if false or nil the aircraft will fly to hom base on RTB
 } -- end SUPPORTAC.missionDefault
 
--- TEMPLATES DEFINED IN SUPPORTAIRCRAFT_TEMPLATES.LUA
--- pre-defined spawn templates to be used as an alternative to placing late activated templates in the miz
---[[ SUPPORTAC.template = {
-	["KC-135"] = {
-		["category"] = Group.Category.AIRPLANE,
-		["lateActivation"] = true,
-		["tasks"] = 
-		{
-		}, -- end of ["tasks"]
-		["radioSet"] = true,
-		["task"] = "Refueling",
-		["uncontrolled"] = false,
-		["route"] = 
-		{
-			["routeRelativeTOT"] = true,
-			["points"] = 
-			{
-				[1] = 
-				{
-					["alt"] = 6096,
-					["action"] = "Fly Over Point",
-					["alt_type"] = "BARO",
-					["speed"] = 164.44444444444,
-					["task"] = 
-					{
-						["id"] = "ComboTask",
-						["params"] = 
-						{
-							["tasks"] = 
-							{
-								[1] = 
-								{
-									["enabled"] = true,
-									["auto"] = true,
-									["id"] = "Tanker",
-									["number"] = 1,
-									["params"] = 
-									{
-									}, -- end of ["params"]
-								}, -- end of [1]
-								[2] = 
-								{
-									["enabled"] = true,
-									["auto"] = true,
-									["id"] = "WrappedAction",
-									["number"] = 2,
-									["params"] = 
-									{
-										["action"] = 
-										{
-											["id"] = "ActivateBeacon",
-											["params"] = 
-											{
-												["type"] = 4,
-												["AA"] = false,
-												["callsign"] = "RTB",
-												["modeChannel"] = "Y",
-												["channel"] = 60,
-												["system"] = 5,
-												["unitId"] = 20564,
-												["bearing"] = true,
-												["frequency"] = 1147000000,
-											}, -- end of ["params"]
-										}, -- end of ["action"]
-									}, -- end of ["params"]
-								}, -- end of [2]
-								[3] = 
-								{
-									["number"] = 3,
-									["auto"] = false,
-									["id"] = "WrappedAction",
-									["enabled"] = true,
-									["params"] = 
-									{
-										["action"] = 
-										{
-											["id"] = "SetInvisible",
-											["params"] = 
-											{
-												["value"] = true,
-											}, -- end of ["params"]
-										}, -- end of ["action"]
-									}, -- end of ["params"]
-								}, -- end of [3]
-								[4] = 
-								{
-									["number"] = 4,
-									["auto"] = false,
-									["id"] = "WrappedAction",
-									["enabled"] = true,
-									["params"] = 
-									{
-										["action"] = 
-										{
-											["id"] = "Option",
-											["params"] = 
-											{
-												["value"] = true,
-												["name"] = 6,
-											}, -- end of ["params"]
-										}, -- end of ["action"]
-									}, -- end of ["params"]
-								}, -- end of [4]
-							}, -- end of ["tasks"]
-						}, -- end of ["params"]
-					}, -- end of ["task"]
-					["type"] = "Turning Point",
-					["ETA"] = 0,
-					["ETA_locked"] = true,
-					["y"] = -88072.492518417,
-					["x"] = -129287.90747937,
-					["name"] = "",
-					["formation_template"] = "",
-					["speed_locked"] = true,
-				}, -- end of [1]
-			}, -- end of ["points"]
-		}, -- end of ["route"]
-		["groupId"] = 1,
-		["hidden"] = false,
-		["units"] = 
-		{
-			[1] = 
-			{
-				["alt"] = 6096,
-				["alt_type"] = "BARO",
-				["livery_id"] = "standard usaf",
-				["skill"] = "Excellent",
-				["speed"] = 164.44444444444,
-				["type"] = "KC-135",
-				["unitId"] = 1,
-				["psi"] = 1.0956711527151,
-				["y"] = -88072.492518417,
-				["x"] = -129287.90747937,
-				["name"] = "KC-135",
-				["payload"] = 
-				{
-					["pylons"] = 
-					{
-					}, -- end of ["pylons"]
-					["fuel"] = 90700,
-					["flare"] = 0,
-					["chaff"] = 0,
-					["gun"] = 100,
-				}, -- end of ["payload"]
-				["heading"] = -1.0960185021449,
-				["callsign"] = 
-				{
-					[1] = 1,
-					[2] = 1,
-					["name"] = "Texaco11",
-					[3] = 1,
-				}, -- end of ["callsign"]
-				["onboard_num"] = "088",
-			}, -- end of [1]
-		}, -- end of ["units"]
-		["y"] = -88072.492518417,
-		["x"] = -129287.90747937,
-		["name"] = "KC-135",
-		["communication"] = true,
-		["start_time"] = 0,
-		["modulation"] = 0,
-		["frequency"] = 251,
-	}, -- end of [KC-135]
-	["KC-135MPRS"] = {
-		["category"] = Group.Category.AIRPLANE,
-		["lateActivation"] = true,
-		["tasks"] = 
-		{
-		}, -- end of ["tasks"]
-		["radioSet"] = true,
-		["task"] = "Refueling",
-		["uncontrolled"] = false,
-		["route"] = 
-		{
-			["routeRelativeTOT"] = true,
-			["points"] = 
-			{
-				[1] = 
-				{
-					["alt"] = 6096,
-					["action"] = "Fly Over Point",
-					["alt_type"] = "BARO",
-					["speed"] = 164.44444444444,
-					["task"] = 
-					{
-						["id"] = "ComboTask",
-						["params"] = 
-						{
-							["tasks"] = 
-							{
-								[1] = 
-								{
-									["enabled"] = true,
-									["auto"] = true,
-									["id"] = "Tanker",
-									["number"] = 1,
-									["params"] = 
-									{
-									}, -- end of ["params"]
-								}, -- end of [1]
-								[2] = 
-								{
-									["enabled"] = true,
-									["auto"] = true,
-									["id"] = "WrappedAction",
-									["number"] = 2,
-									["params"] = 
-									{
-										["action"] = 
-										{
-											["id"] = "ActivateBeacon",
-											["params"] = 
-											{
-												["type"] = 4,
-												["AA"] = false,
-												["callsign"] = "RTB",
-												["modeChannel"] = "Y",
-												["channel"] = 60,
-												["system"] = 5,
-												["unitId"] = 20565,
-												["bearing"] = true,
-												["frequency"] = 1147000000,
-											}, -- end of ["params"]
-										}, -- end of ["action"]
-									}, -- end of ["params"]
-								}, -- end of [2]
-								[3] = 
-								{
-									["number"] = 3,
-									["auto"] = false,
-									["id"] = "WrappedAction",
-									["enabled"] = true,
-									["params"] = 
-									{
-										["action"] = 
-										{
-											["id"] = "SetInvisible",
-											["params"] = 
-											{
-												["value"] = true,
-											}, -- end of ["params"]
-										}, -- end of ["action"]
-									}, -- end of ["params"]
-								}, -- end of [3]
-								[4] = 
-								{
-									["number"] = 4,
-									["auto"] = false,
-									["id"] = "WrappedAction",
-									["enabled"] = true,
-									["params"] = 
-									{
-										["action"] = 
-										{
-											["id"] = "Option",
-											["params"] = 
-											{
-												["value"] = true,
-												["name"] = 6,
-											}, -- end of ["params"]
-										}, -- end of ["action"]
-									}, -- end of ["params"]
-								}, -- end of [4]
-							}, -- end of ["tasks"]
-						}, -- end of ["params"]
-					}, -- end of ["task"]
-					["type"] = "Turning Point",
-					["ETA"] = 0,
-					["ETA_locked"] = true,
-					["y"] = -87560.730212787,
-					["x"] = -129296.58141675,
-					["name"] = "",
-					["formation_template"] = "",
-					["speed_locked"] = true,
-				}, -- end of [1]
-			}, -- end of ["points"]
-		}, -- end of ["route"]
-		["groupId"] = 1,
-		["hidden"] = false,
-		["units"] = 
-		{
-			[1] = 
-			{
-				["alt"] = 6096,
-				["alt_type"] = "BARO",
-				["livery_id"] = "22nd ARW",
-				["skill"] = "Excellent",
-				["speed"] = 164.44444444444,
-				["type"] = "KC135MPRS",
-				["unitId"] = 1,
-				["psi"] = 1.0660373467781,
-				["y"] = -87560.730212787,
-				["x"] = -129296.58141675,
-				["name"] = "KC-135MPRS",
-				["payload"] = 
-				{
-					["pylons"] = 
-					{
-					}, -- end of ["pylons"]
-					["fuel"] = 90700,
-					["flare"] = 60,
-					["chaff"] = 120,
-					["gun"] = 100,
-				}, -- end of ["payload"]
-				["heading"] = -1.0660373467782,
-				["callsign"] = 
-				{
-					[1] = 3,
-					[2] = 1,
-					["name"] = "Shell11",
-					[3] = 1,
-				}, -- end of ["callsign"]
-				["onboard_num"] = "089",
-			}, -- end of [1]
-		}, -- end of ["units"]
-		["y"] = -87560.730212787,
-		["x"] = -129296.58141675,
-		["name"] = "KC-135MPRS",
-		["communication"] = true,
-		["start_time"] = 0,
-		["modulation"] = 0,
-		["frequency"] = 251,
-	}, -- end of [KC-135MPRS]
-	["KC-130"] = {
-		["category"] = Group.Category.AIRPLANE,
-		["lateActivation"] = true,
-		["tasks"] = 
-		{
-		}, -- end of ["tasks"]
-		["radioSet"] = true,
-		["task"] = "Refueling",
-		["uncontrolled"] = false,
-		["route"] = 
-		{
-			["routeRelativeTOT"] = true,
-			["points"] = 
-			{
-				[1] = 
-				{
-					["alt"] = 2438.4,
-					["action"] = "Turning Point",
-					["alt_type"] = "BARO",
-					["speed"] = 172.5,
-					["task"] = 
-					{
-						["id"] = "ComboTask",
-						["params"] = 
-						{
-							["tasks"] = 
-							{
-								[1] = 
-								{
-									["number"] = 1,
-									["auto"] = true,
-									["id"] = "Tanker",
-									["enabled"] = true,
-									["params"] = 
-									{
-									}, -- end of ["params"]
-								}, -- end of [1]
-								[2] = 
-								{
-									["number"] = 2,
-									["auto"] = true,
-									["id"] = "WrappedAction",
-									["enabled"] = true,
-									["params"] = 
-									{
-										["action"] = 
-										{
-											["id"] = "ActivateBeacon",
-											["params"] = 
-											{
-												["type"] = 4,
-												["AA"] = false,
-												["unitId"] = 16683,
-												["modeChannel"] = "Y",
-												["channel"] = 60,
-												["system"] = 5,
-												["callsign"] = "ARC",
-												["bearing"] = true,
-												["frequency"] = 1147000000,
-											}, -- end of ["params"]
-										}, -- end of ["action"]
-									}, -- end of ["params"]
-								}, -- end of [2]
-								[3] = 
-								{
-									["enabled"] = true,
-									["auto"] = false,
-									["id"] = "WrappedAction",
-									["number"] = 3,
-									["params"] = 
-									{
-										["action"] = 
-										{
-											["id"] = "SetInvisible",
-											["params"] = 
-											{
-												["value"] = true,
-											}, -- end of ["params"]
-										}, -- end of ["action"]
-									}, -- end of ["params"]
-								}, -- end of [3]
-							}, -- end of ["tasks"]
-						}, -- end of ["params"]
-					}, -- end of ["task"]
-					["type"] = "Turning Point",
-					["ETA"] = 0,
-					["ETA_locked"] = true,
-					["y"] = -11585.313345172,
-					["x"] = -399323.02717468,
-					["name"] = "",
-					["formation_template"] = "",
-					["speed_locked"] = true,
-				}, -- end of [1]
-			}, -- end of ["points"]
-		}, -- end of ["route"]
-		["groupId"] = 2447,
-		["hidden"] = false,
-		["units"] = 
-		{
-			[1] = 
-			{
-				["alt"] = 2438.4,
-				["alt_type"] = "BARO",
-				["livery_id"] = "default",
-				["skill"] = "Excellent",
-				["speed"] = 172.5,
-				["type"] = "KC130",
-				["unitId"] = 16683,
-				["psi"] = 1.4236457627903,
-				["y"] = -11585.313345172,
-				["x"] = -399323.02717468,
-				["name"] = "KC-130",
-				["payload"] = 
-				{
-					["pylons"] = 
-					{
-					}, -- end of ["pylons"]
-					["fuel"] = 30000,
-					["flare"] = 60,
-					["chaff"] = 120,
-					["gun"] = 100,
-				}, -- end of ["payload"]
-				["heading"] = -1.4236457627903,
-				["callsign"] = 
-				{
-					[1] = 2,
-					[2] = 1,
-					["name"] = "Arco11",
-					[3] = 1,
-				}, -- end of ["callsign"]
-				["onboard_num"] = "139",
-			}, -- end of [1]
-		}, -- end of ["units"]
-		["y"] = -11585.313345172,
-		["x"] = -399323.02717468,
-		["name"] = "KC-130",
-		["communication"] = true,
-		["start_time"] = 0,
-		["modulation"] = 0,
-		["frequency"] = 251,		
-	}, -- end of ["KC-130"]
-	["AWACS-E3A"] = {
-		["category"] = Group.Category.AIRPLANE,
-		["lateActivation"] = true,
-		["tasks"] = 
-		{
-		}, -- end of ["tasks"]
-		["radioSet"] = true,
-		["task"] = "AWACS",
-		["uncontrolled"] = false,
-		["route"] = 
-		{
-			["routeRelativeTOT"] = true,
-			["points"] = 
-			{
-				[1] = 
-				{
-					["alt"] = 6096,
-					["action"] = "Fly Over Point",
-					["alt_type"] = "BARO",
-					["speed"] = 164.44444444444,
-					["task"] = 
-					{
-						["id"] = "ComboTask",
-						["params"] = 
-						{
-							["tasks"] = 
-							{
-								[1] = 
-								{
-									["number"] = 1,
-									["auto"] = true,
-									["id"] = "AWACS",
-									["enabled"] = true,
-									["params"] = 
-									{
-									}, -- end of ["params"]
-								}, -- end of [1]
-								[2] = 
-								{
-									["enabled"] = true,
-									["auto"] = false,
-									["id"] = "WrappedAction",
-									["number"] = 2,
-									["params"] = 
-									{
-										["action"] = 
-										{
-											["id"] = "SetInvisible",
-											["params"] = 
-											{
-												["value"] = true,
-											}, -- end of ["params"]
-										}, -- end of ["action"]
-									}, -- end of ["params"]
-								}, -- end of [2]
-								[3] = 
-								{
-									["number"] = 3,
-									["auto"] = false,
-									["id"] = "WrappedAction",
-									["enabled"] = true,
-									["params"] = 
-									{
-										["action"] = 
-										{
-											["id"] = "EPLRS",
-											["params"] = 
-											{
-												["value"] = true,
-												["groupId"] = 46,
-											}, -- end of ["params"]
-										}, -- end of ["action"]
-									}, -- end of ["params"]
-								}, -- end of [3]
-							}, -- end of ["tasks"]
-						}, -- end of ["params"]
-					}, -- end of ["task"]
-					["type"] = "Turning Point",
-					["ETA"] = 0,
-					["ETA_locked"] = true,
-					["y"] = -88627.624510964,
-					["x"] = -129296.58141675,
-					["name"] = "",
-					["formation_template"] = "",
-					["speed_locked"] = true,
-				}, -- end of [1]
-			}, -- end of ["points"]
-		}, -- end of ["route"]
-		["groupId"] = 17446,
-		["hidden"] = false,
-		["units"] = 
-		{
-			[1] = 
-			{
-				["alt"] = 6096,
-				["alt_type"] = "BARO",
-				["livery_id"] = "nato",
-				["skill"] = "Excellent",
-				["speed"] = 164.44444444444,
-				["type"] = "E-3A",
-				["unitId"] = 20566,
-				["psi"] = 1.1124120783257,
-				["y"] = -88627.624510964,
-				["x"] = -129296.58141675,
-				["name"] = "AWACS-E3A",
-				["payload"] = 
-				{
-					["pylons"] = 
-					{
-					}, -- end of ["pylons"]
-					["fuel"] = 65000,
-					["flare"] = 60,
-					["chaff"] = 120,
-					["gun"] = 100,
-				}, -- end of ["payload"]
-				["heading"] = -1.1124120783257,
-				["callsign"] = 
-				{
-					[1] = 1,
-					[2] = 1,
-					["name"] = "Overlord11",
-					[3] = 1,
-				}, -- end of ["callsign"]
-				["onboard_num"] = "090",
-			}, -- end of [1]
-		}, -- end of ["units"]
-		["y"] = -88627.624510964,
-		["x"] = -129296.58141675,
-		["name"] = "AWACS-E3A",
-		["communication"] = true,
-		["start_time"] = 0,
-		["modulation"] = 0,
-		["frequency"] = 251,
-	}, -- end of [AWACS-E3A]
-  	["AWACS-E2D"] = {
-		["category"] = Group.Category.AIRPLANE,
-		["lateActivation"] = true,
-		["tasks"] = 
-		{
-		}, -- end of ["tasks"]
-		["radioSet"] = true,
-		["task"] = "AWACS",
-		["uncontrolled"] = false,
-		["route"] = 
-		{
-			["routeRelativeTOT"] = true,
-			["points"] = 
-			{
-				[1] = 
-				{
-					["alt"] = 9144,
-					["action"] = "Turning Point",
-					["alt_type"] = "BARO",
-					["speed"] = 133.61111111111,
-					["task"] = 
-					{
-						["id"] = "ComboTask",
-						["params"] = 
-						{
-							["tasks"] = 
-							{
-								[1] = 
-								{
-									["enabled"] = true,
-									["auto"] = true,
-									["id"] = "AWACS",
-									["number"] = 1,
-									["params"] = 
-									{
-									}, -- end of ["params"]
-								}, -- end of [1]
-								[2] = 
-								{
-									["enabled"] = true,
-									["auto"] = true,
-									["id"] = "WrappedAction",
-									["number"] = 2,
-									["params"] = 
-									{
-										["action"] = 
-										{
-											["id"] = "EPLRS",
-											["params"] = 
-											{
-												["value"] = true,
-												["groupId"] = 38,
-											}, -- end of ["params"]
-										}, -- end of ["action"]
-									}, -- end of ["params"]
-								}, -- end of [2]
-								[3] = 
-								{
-									["enabled"] = true,
-									["auto"] = false,
-									["id"] = "WrappedAction",
-									["number"] = 3,
-									["params"] = 
-									{
-										["action"] = 
-										{
-											["id"] = "SetInvisible",
-											["params"] = 
-											{
-												["value"] = true,
-											}, -- end of ["params"]
-										}, -- end of ["action"]
-									}, -- end of ["params"]
-								}, -- end of [3]
-							}, -- end of ["tasks"]
-						}, -- end of ["params"]
-					}, -- end of ["task"]
-					["type"] = "Turning Point",
-					["ETA"] = 0,
-					["ETA_locked"] = true,
-					["y"] = -12187.736469214,
-					["x"] = -399320.85899169,
-					["name"] = "",
-					["formation_template"] = "",
-					["speed_locked"] = true,
-				}, -- end of [1]
-			}, -- end of ["points"]
-		}, -- end of ["route"]
-		["groupId"] = 2452,
-		["hidden"] = false,
-		["units"] = 
-		{
-			[1] = 
-			{
-				["alt"] = 9144,
-				["alt_type"] = "BARO",
-				["livery_id"] = "E-2D Demo",
-				["skill"] = "High",
-				["speed"] = 133.61111111111,
-				["type"] = "E-2C",
-				["unitId"] = 16697,
-				["psi"] = 1.3887207292845,
-				["y"] = -12187.736469214,
-				["x"] = -399320.85899169,
-				["name"] = "AWACS-E2D-1",
-				["payload"] = 
-				{
-					["pylons"] = 
-					{
-					}, -- end of ["pylons"]
-					["fuel"] = "5624",
-					["flare"] = 60,
-					["chaff"] = 120,
-					["gun"] = 100,
-				}, -- end of ["payload"]
-				["heading"] = -1.3887207292845,
-				["callsign"] = 
-				{
-					[1] = 1,
-					[2] = 1,
-					["name"] = "Overlord11",
-					[3] = 1,
-				}, -- end of ["callsign"]
-				["onboard_num"] = "143",
-			}, -- end of [1]
-		}, -- end of ["units"]
-		["y"] = -12187.736469214,
-		["x"] = -399320.85899169,
-		["name"] = "AWACS-E2D",
-		["communication"] = true,
-		["start_time"] = 0,
-		["modulation"] = 0,
-		["frequency"] = 251,		
-	}, -- end of ["AWACS-E2D"]
-	["AWACS-A50"] = {
-		["category"] = Group.Category.AIRPLANE,
-		["lateActivation"] = true,
-		["tasks"] = 
-		{
-		}, -- end of ["tasks"]
-		["radioSet"] = false,
-		["task"] = "AWACS",
-		["uncontrolled"] = false,
-		["taskSelected"] = true,
-		["route"] = 
-		{
-			["routeRelativeTOT"] = true,
-			["points"] = 
-			{
-				[1] = 
-				{
-					["alt"] = 10972.8,
-					["action"] = "Turning Point",
-					["alt_type"] = "BARO",
-					["speed"] = 220.97222222222,
-					["task"] = 
-					{
-						["id"] = "ComboTask",
-						["params"] = 
-						{
-							["tasks"] = 
-							{
-								[1] = 
-								{
-									["enabled"] = true,
-									["auto"] = true,
-									["id"] = "AWACS",
-									["number"] = 1,
-									["params"] = 
-									{
-									}, -- end of ["params"]
-								}, -- end of [1]
-								[2] = 
-								{
-									["enabled"] = true,
-									["auto"] = false,
-									["id"] = "WrappedAction",
-									["number"] = 2,
-									["params"] = 
-									{
-										["action"] = 
-										{
-											["id"] = "SetInvisible",
-											["params"] = 
-											{
-												["value"] = true,
-											}, -- end of ["params"]
-										}, -- end of ["action"]
-									}, -- end of ["params"]
-								}, -- end of [2]
-								[3] = 
-								{
-									["enabled"] = true,
-									["auto"] = false,
-									["id"] = "WrappedAction",
-									["number"] = 3,
-									["params"] = 
-									{
-										["action"] = 
-										{
-											["id"] = "Option",
-											["params"] = 
-											{
-												["value"] = 0,
-												["name"] = 1,
-											}, -- end of ["params"]
-										}, -- end of ["action"]
-									}, -- end of ["params"]
-								}, -- end of [3]
-								[4] = 
-								{
-									["enabled"] = true,
-									["auto"] = false,
-									["id"] = "WrappedAction",
-									["number"] = 4,
-									["params"] = 
-									{
-										["action"] = 
-										{
-											["id"] = "Option",
-											["params"] = 
-											{
-												["value"] = false,
-												["name"] = 19,
-											}, -- end of ["params"]
-										}, -- end of ["action"]
-									}, -- end of ["params"]
-								}, -- end of [4]
-							}, -- end of ["tasks"]
-						}, -- end of ["params"]
-					}, -- end of ["task"]
-					["type"] = "Turning Point",
-					["ETA"] = 0,
-					["ETA_locked"] = true,
-					["y"] = 315953.41096792,
-					["x"] = 63905.857563882,
-					["name"] = "",
-					["formation_template"] = "",
-					["speed_locked"] = true,
-				}, -- end of [1]
-			}, -- end of ["points"]
-		}, -- end of ["route"]
-		["groupId"] = 588,
-		["hidden"] = false,
-		["units"] = 
-		{
-			[1] = 
-			{
-				["alt"] = 10972.8,
-				["alt_type"] = "BARO",
-				["livery_id"] = "RF Air Force new",
-				["skill"] = "High",
-				["speed"] = 220.97222222222,
-				["AddPropAircraft"] = 
-				{
-					["PropellorType"] = 0,
-					["SoloFlight"] = false,
-				}, -- end of ["AddPropAircraft"]
-				["type"] = "A-50",
-				["unitId"] = 1595,
-				["psi"] = -1.7947587772958,
-				["y"] = 315953.41096792,
-				["x"] = 63905.857563882,
-				["name"] = "RED_AWACS",
-				["payload"] = 
-				{
-					["pylons"] = 
-					{
-					}, -- end of ["pylons"]
-					["fuel"] = "70000",
-					["flare"] = 192,
-					["chaff"] = 192,
-					["gun"] = 100,
-				}, -- end of ["payload"]
-				["heading"] = 1.7947587772958,
-				["callsign"] = 666,
-				["onboard_num"] = "027",
-			}, -- end of [1]
-		}, -- end of ["units"]
-		["y"] = 315953.41096792,
-		["x"] = 63905.857563882,
-		["name"] = "RED_AWACS",
-		["communication"] = true,
-		["start_time"] = 0,
-		["modulation"] = 0,
-		["frequency"] = 251,
-	}, -- end of ["AWACS-RED"]
-	["S3BTANKER"] = {
-		["category"] = Group.Category.AIRPLANE,
-		["lateActivation"] = true,
-		["tasks"] = 
-		{
-		}, -- end of ["tasks"]
-		["radioSet"] = false,
-		["task"] = "Refueling",
-		["uncontrolled"] = false,
-		["route"] = 
-		{
-			["routeRelativeTOT"] = true,
-			["points"] = 
-			{
-				[1] = 
-				{
-					["alt"] = 1828.8,
-					["action"] = "Turning Point",
-					["alt_type"] = "BARO",
-					["speed"] = 141.31944444444,
-					["task"] = 
-					{
-						["id"] = "ComboTask",
-						["params"] = 
-						{
-							["tasks"] = 
-							{
-								[1] = 
-								{
-									["number"] = 1,
-									["auto"] = true,
-									["id"] = "Tanker",
-									["enabled"] = true,
-									["params"] = 
-									{
-									}, -- end of ["params"]
-								}, -- end of [1]
-								[2] = 
-								{
-									["number"] = 2,
-									["auto"] = true,
-									["id"] = "WrappedAction",
-									["enabled"] = true,
-									["params"] = 
-									{
-										["action"] = 
-										{
-											["id"] = "ActivateBeacon",
-											["params"] = 
-											{
-												["type"] = 4,
-												["AA"] = false,
-												["callsign"] = "TKR",
-												["system"] = 4,
-												["channel"] = 1,
-												["modeChannel"] = "X",
-												["bearing"] = true,
-												["frequency"] = 962000000,
-											}, -- end of ["params"]
-										}, -- end of ["action"]
-									}, -- end of ["params"]
-								}, -- end of [2]
-								[3] = 
-								{
-									["number"] = 3,
-									["auto"] = false,
-									["id"] = "WrappedAction",
-									["enabled"] = true,
-									["params"] = 
-									{
-										["action"] = 
-										{
-											["id"] = "SetInvisible",
-											["params"] = 
-											{
-												["value"] = true,
-											}, -- end of ["params"]
-										}, -- end of ["action"]
-									}, -- end of ["params"]
-								}, -- end of [3]
-							}, -- end of ["tasks"]
-						}, -- end of ["params"]
-					}, -- end of ["task"]
-					["type"] = "Turning Point",
-					["ETA"] = 0,
-					["ETA_locked"] = true,
-					["y"] = 606748.96393416,
-					["x"] = -358539.84033849,
-					["formation_template"] = "",
-					["speed_locked"] = true,
-				}, -- end of [1]
-			}, -- end of ["points"]
-		}, -- end of ["route"]
-		["groupId"] = 1,
-		["hidden"] = false,
-		["units"] = 
-		{
-			[1] = 
-			{
-				["alt"] = 1828.8,
-				["alt_type"] = "BARO",
-				["livery_id"] = "usaf standard",
-				["skill"] = "High",
-				["speed"] = 141.31944444444,
-				["type"] = "S-3B Tanker",
-				["unitId"] = 1,
-				["psi"] = 0,
-				["y"] = 606748.96393416,
-				["x"] = -358539.84033849,
-				["name"] = "Aerial-1-1",
-				["payload"] = 
-				{
-					["pylons"] = 
-					{
-					}, -- end of ["pylons"]
-					["fuel"] = "7813",
-					["flare"] = 30,
-					["chaff"] = 30,
-					["gun"] = 100,
-				}, -- end of ["payload"]
-				["heading"] = 0,
-				["callsign"] = 
-				{
-					[1] = 1,
-					[2] = 1,
-					["name"] = "Texaco11",
-					[3] = 1,
-				}, -- end of ["callsign"]
-				["onboard_num"] = "010",
-			}, -- end of [1]
-		}, -- end of ["units"]
-		["y"] = 606748.96393416,
-		["x"] = -358539.84033849,
-		["name"] = "S3BTANKER",
-		["communication"] = true,
-		["start_time"] = 0,
-		["modulation"] = 0,
-		["frequency"] = 251,
-	}, -- end of ["S3BTANKER"]
-} -- end SUPPORTAC.template
--- ]]
 
--- END SUPPORT AIRCRAFT SECTION  
---------------------------------[core\supportaircraft_templates.lua]-------------------------------- 
- 
-env.info( "[JTF-1] supportaircraft_templates" )
---------------------------------------------
---- SUPPORTAIRCRAFT Spawn Spawn Templates Defined in this file
---------------------------------------------
---
--- **NOTE**
--- SUPPORTAIRCRAFT.LUA MUST BE LOADED *BEFORE* THIS FILE IS LOADED!
--- THIS FILE MUST BE LOADED *BEFORE* SUPPORTAIRCRAFT_DATA.LUA IS LOADED!
---
--- This file contains the built-in templates used for spawning support aircraft 
---
--- All functions and key values are in SUPPORTAIRCRAFT.LUA, which should be loaded first.
---
--- Load order in miz MUST be;
---     1. supportaircraft.lua
---     2. supportaircraft_templates.lua
---     3. supportaircraft_data.lua
---
-
--- Error prevention. Create empty container if SUPPORTAIRCRAFT.LUA is not loaded or has failed.
-if not SUPPORTAC then 
-	SUPPORTAC = {}
-	SUPPORTAC.traceTitle = "[JTF-1 SUPPORTAC] "
-	_msg = SUPPORTAC.traceTitle .. "CORE FILE NOT LOADED!"
-	BASE:E(_msg)
-end
-
--- pre-defined spawn templates to be used as an alternative to placing late activated templates in the miz
-SUPPORTAC.template = {
-	["KC-135"] = {
-		["category"] = Group.Category.AIRPLANE,
-		["lateActivation"] = true,
-		["tasks"] = 
-		{
-		}, -- end of ["tasks"]
-		["radioSet"] = false,
-		["task"] = "Refueling",
-		["uncontrolled"] = false,
-		["route"] = 
-		{
-			["routeRelativeTOT"] = true,
-			["points"] = 
-			{
-				[1] = 
-				{
-					["alt"] = 2000,
-					["action"] = "Turning Point",
-					["alt_type"] = "BARO",
-					["speed"] = 220.97222222222,
-					["task"] = 
-					{
-						["id"] = "ComboTask",
-						["params"] = 
-						{
-							["tasks"] = 
-							{
-								[1] = 
-								{
-									["enabled"] = true,
-									["auto"] = false,
-									["id"] = "WrappedAction",
-									["number"] = 1,
-									["params"] = 
-									{
-										["action"] = 
-										{
-											["id"] = "SetUnlimitedFuel",
-											["params"] = 
-											{
-												["value"] = true,
-											}, -- end of ["params"]
-										}, -- end of ["action"]
-									}, -- end of ["params"]
-								}, -- end of [1]
-								[2] = 
-								{
-									["enabled"] = true,
-									["auto"] = false,
-									["id"] = "WrappedAction",
-									["number"] = 2,
-									["params"] = 
-									{
-										["action"] = 
-										{
-											["id"] = "SetInvisible",
-											["params"] = 
-											{
-												["value"] = true,
-											}, -- end of ["params"]
-										}, -- end of ["action"]
-									}, -- end of ["params"]
-								}, -- end of [2]
-								[3] = 
-								{
-									["number"] = 3,
-									["auto"] = true,
-									["id"] = "Tanker",
-									["enabled"] = true,
-									["params"] = 
-									{
-									}, -- end of ["params"]
-								}, -- end of [3]
-								[4] = 
-								{
-									["number"] = 4,
-									["auto"] = true,
-									["id"] = "WrappedAction",
-									["enabled"] = true,
-									["params"] = 
-									{
-										["action"] = 
-										{
-											["id"] = "ActivateBeacon",
-											["params"] = 
-											{
-												["type"] = 4,
-												["AA"] = false,
-												["callsign"] = "TKR",
-												["system"] = 4,
-												["channel"] = 1,
-												["modeChannel"] = "X",
-												["bearing"] = true,
-												["frequency"] = 962000000,
-											}, -- end of ["params"]
-										}, -- end of ["action"]
-									}, -- end of ["params"]
-								}, -- end of [4]
-								[5] = 
-								{
-									["number"] = 5,
-									["auto"] = true,
-									["id"] = "WrappedAction",
-									["enabled"] = true,
-									["params"] = 
-									{
-										["action"] = 
-										{
-											["id"] = "EPLRS",
-											["params"] = 
-											{
-												["value"] = true,
-												["groupId"] = 1,
-											}, -- end of ["params"]
-										}, -- end of ["action"]
-									}, -- end of ["params"]
-								}, -- end of [5]
-							}, -- end of ["tasks"]
-						}, -- end of ["params"]
-					}, -- end of ["task"]
-					["type"] = "Turning Point",
-					["ETA"] = 0,
-					["ETA_locked"] = true,
-					["y"] = -8563.6832781353,
-					["x"] = -395281.46534495,
-					["speed_locked"] = true,
-					["formation_template"] = "",
-				}, -- end of [1]
-			}, -- end of ["points"]
-		}, -- end of ["route"]
-		["groupId"] = 1,
-		["hidden"] = false,
-		["units"] = 
-		{
-			[1] = 
-			{
-				["alt"] = 2000,
-				["alt_type"] = "BARO",
-				["livery_id"] = "Standard USAF",
-				["skill"] = "High",
-				["speed"] = 220.97222222222,
-				["AddPropAircraft"] = 
-				{
-					["VoiceCallsignLabel"] = "TO",
-					["VoiceCallsignNumber"] = "11",
-					["STN_L16"] = "07101",
-				}, -- end of ["AddPropAircraft"]
-				["type"] = "KC-135",
-				["unitId"] = 1,
-				["psi"] = 0,
-				["onboard_num"] = "010",
-				["y"] = -8563.6832781353,
-				["x"] = -395281.46534495,
-				["name"] = "KC-135-1",
-				["payload"] = 
-				{
-					["pylons"] = 
-					{
-					}, -- end of ["pylons"]
-					["fuel"] = 90700,
-					["flare"] = 0,
-					["chaff"] = 0,
-					["gun"] = 100,
-				}, -- end of ["payload"]
-				["heading"] = 0,
-				["callsign"] = 
-				{
-					[1] = 1,
-					[2] = 1,
-					["name"] = "Texaco11",
-					[3] = 1,
-				}, -- end of ["callsign"]
-			}, -- end of [1]
-		}, -- end of ["units"]
-		["y"] = -8563.6832781353,
-		["x"] = -395281.46534495,
-		["name"] = "KC-135",
-		["communication"] = true,
-		["start_time"] = 0,
-		["modulation"] = 0,
-		["frequency"] = 251,
-	}, -- end of [KC-135]
-	["KC-135MPRS"] = {
-		["category"] = Group.Category.AIRPLANE,
-		["lateActivation"] = true,
-		["tasks"] = 
-		{
-		}, -- end of ["tasks"]
-		["radioSet"] = true,
-		["task"] = "Refueling",
-		["uncontrolled"] = false,
-		["route"] = 
-		{
-			["routeRelativeTOT"] = true,
-			["points"] = 
-			{
-				[1] = 
-				{
-					["alt"] = 6096,
-					["action"] = "Fly Over Point",
-					["alt_type"] = "BARO",
-					["speed"] = 164.44444444444,
-					["task"] = 
-					{
-						["id"] = "ComboTask",
-						["params"] = 
-						{
-							["tasks"] = 
-							{
-								[1] = 
-								{
-									["enabled"] = true,
-									["auto"] = true,
-									["id"] = "Tanker",
-									["number"] = 1,
-									["params"] = 
-									{
-									}, -- end of ["params"]
-								}, -- end of [1]
-								[2] = 
-								{
-									["enabled"] = true,
-									["auto"] = true,
-									["id"] = "WrappedAction",
-									["number"] = 2,
-									["params"] = 
-									{
-										["action"] = 
-										{
-											["id"] = "ActivateBeacon",
-											["params"] = 
-											{
-												["type"] = 4,
-												["AA"] = false,
-												["callsign"] = "RTB",
-												["modeChannel"] = "Y",
-												["channel"] = 60,
-												["system"] = 5,
-												["unitId"] = 20565,
-												["bearing"] = true,
-												["frequency"] = 1147000000,
-											}, -- end of ["params"]
-										}, -- end of ["action"]
-									}, -- end of ["params"]
-								}, -- end of [2]
-								[3] = 
-								{
-									["number"] = 3,
-									["auto"] = false,
-									["id"] = "WrappedAction",
-									["enabled"] = true,
-									["params"] = 
-									{
-										["action"] = 
-										{
-											["id"] = "SetInvisible",
-											["params"] = 
-											{
-												["value"] = true,
-											}, -- end of ["params"]
-										}, -- end of ["action"]
-									}, -- end of ["params"]
-								}, -- end of [3]
-								[4] = 
-								{
-									["number"] = 4,
-									["auto"] = false,
-									["id"] = "WrappedAction",
-									["enabled"] = true,
-									["params"] = 
-									{
-										["action"] = 
-										{
-											["id"] = "Option",
-											["params"] = 
-											{
-												["value"] = true,
-												["name"] = 6,
-											}, -- end of ["params"]
-										}, -- end of ["action"]
-									}, -- end of ["params"]
-								}, -- end of [4]
-							}, -- end of ["tasks"]
-						}, -- end of ["params"]
-					}, -- end of ["task"]
-					["type"] = "Turning Point",
-					["ETA"] = 0,
-					["ETA_locked"] = true,
-					["y"] = -87560.730212787,
-					["x"] = -129296.58141675,
-					["name"] = "",
-					["formation_template"] = "",
-					["speed_locked"] = true,
-				}, -- end of [1]
-			}, -- end of ["points"]
-		}, -- end of ["route"]
-		["groupId"] = 1,
-		["hidden"] = false,
-		["units"] = 
-		{
-			[1] = 
-			{
-				["alt"] = 6096,
-				["alt_type"] = "BARO",
-				["livery_id"] = "22nd ARW",
-				["skill"] = "Excellent",
-				["speed"] = 164.44444444444,
-				["type"] = "KC135MPRS",
-				["unitId"] = 1,
-				["psi"] = 1.0660373467781,
-				["y"] = -87560.730212787,
-				["x"] = -129296.58141675,
-				["name"] = "KC-135MPRS",
-				["payload"] = 
-				{
-					["pylons"] = 
-					{
-					}, -- end of ["pylons"]
-					["fuel"] = 90700,
-					["flare"] = 60,
-					["chaff"] = 120,
-					["gun"] = 100,
-				}, -- end of ["payload"]
-				["heading"] = -1.0660373467782,
-				["callsign"] = 
-				{
-					[1] = 3,
-					[2] = 1,
-					["name"] = "Shell11",
-					[3] = 1,
-				}, -- end of ["callsign"]
-				["onboard_num"] = "089",
-			}, -- end of [1]
-		}, -- end of ["units"]
-		["y"] = -87560.730212787,
-		["x"] = -129296.58141675,
-		["name"] = "KC-135MPRS",
-		["communication"] = true,
-		["start_time"] = 0,
-		["modulation"] = 0,
-		["frequency"] = 251,
-	}, -- end of [KC-135MPRS]
-	["KC-130"] = {
-		["category"] = Group.Category.AIRPLANE,
-		["lateActivation"] = true,
-		["tasks"] = 
-		{
-		}, -- end of ["tasks"]
-		["radioSet"] = true,
-		["task"] = "Refueling",
-		["uncontrolled"] = false,
-		["route"] = 
-		{
-			["routeRelativeTOT"] = true,
-			["points"] = 
-			{
-				[1] = 
-				{
-					["alt"] = 2438.4,
-					["action"] = "Turning Point",
-					["alt_type"] = "BARO",
-					["speed"] = 172.5,
-					["task"] = 
-					{
-						["id"] = "ComboTask",
-						["params"] = 
-						{
-							["tasks"] = 
-							{
-								[1] = 
-								{
-									["number"] = 1,
-									["auto"] = true,
-									["id"] = "Tanker",
-									["enabled"] = true,
-									["params"] = 
-									{
-									}, -- end of ["params"]
-								}, -- end of [1]
-								[2] = 
-								{
-									["number"] = 2,
-									["auto"] = true,
-									["id"] = "WrappedAction",
-									["enabled"] = true,
-									["params"] = 
-									{
-										["action"] = 
-										{
-											["id"] = "ActivateBeacon",
-											["params"] = 
-											{
-												["type"] = 4,
-												["AA"] = false,
-												["unitId"] = 16683,
-												["modeChannel"] = "Y",
-												["channel"] = 60,
-												["system"] = 5,
-												["callsign"] = "ARC",
-												["bearing"] = true,
-												["frequency"] = 1147000000,
-											}, -- end of ["params"]
-										}, -- end of ["action"]
-									}, -- end of ["params"]
-								}, -- end of [2]
-								[3] = 
-								{
-									["enabled"] = true,
-									["auto"] = false,
-									["id"] = "WrappedAction",
-									["number"] = 3,
-									["params"] = 
-									{
-										["action"] = 
-										{
-											["id"] = "SetInvisible",
-											["params"] = 
-											{
-												["value"] = true,
-											}, -- end of ["params"]
-										}, -- end of ["action"]
-									}, -- end of ["params"]
-								}, -- end of [3]
-							}, -- end of ["tasks"]
-						}, -- end of ["params"]
-					}, -- end of ["task"]
-					["type"] = "Turning Point",
-					["ETA"] = 0,
-					["ETA_locked"] = true,
-					["y"] = -11585.313345172,
-					["x"] = -399323.02717468,
-					["name"] = "",
-					["formation_template"] = "",
-					["speed_locked"] = true,
-				}, -- end of [1]
-			}, -- end of ["points"]
-		}, -- end of ["route"]
-		["groupId"] = 2447,
-		["hidden"] = false,
-		["units"] = 
-		{
-			[1] = 
-			{
-				["alt"] = 2438.4,
-				["alt_type"] = "BARO",
-				["livery_id"] = "default",
-				["skill"] = "Excellent",
-				["speed"] = 172.5,
-				["type"] = "KC130",
-				["unitId"] = 16683,
-				["psi"] = 1.4236457627903,
-				["y"] = -11585.313345172,
-				["x"] = -399323.02717468,
-				["name"] = "KC-130",
-				["payload"] = 
-				{
-					["pylons"] = 
-					{
-					}, -- end of ["pylons"]
-					["fuel"] = 30000,
-					["flare"] = 60,
-					["chaff"] = 120,
-					["gun"] = 100,
-				}, -- end of ["payload"]
-				["heading"] = -1.4236457627903,
-				["callsign"] = 
-				{
-					[1] = 2,
-					[2] = 1,
-					["name"] = "Arco11",
-					[3] = 1,
-				}, -- end of ["callsign"]
-				["onboard_num"] = "139",
-			}, -- end of [1]
-		}, -- end of ["units"]
-		["y"] = -11585.313345172,
-		["x"] = -399323.02717468,
-		["name"] = "KC-130",
-		["communication"] = true,
-		["start_time"] = 0,
-		["modulation"] = 0,
-		["frequency"] = 251,		
-	}, -- end of ["KC-130"]
-	["AWACS-E3A"] = {
-		["category"] = Group.Category.AIRPLANE,
-		["lateActivation"] = true,
-		["tasks"] = 
-		{
-		}, -- end of ["tasks"]
-		["radioSet"] = true,
-		["task"] = "AWACS",
-		["uncontrolled"] = false,
-		["route"] = 
-		{
-			["routeRelativeTOT"] = true,
-			["points"] = 
-			{
-				[1] = 
-				{
-					["alt"] = 6096,
-					["action"] = "Fly Over Point",
-					["alt_type"] = "BARO",
-					["speed"] = 164.44444444444,
-					["task"] = 
-					{
-						["id"] = "ComboTask",
-						["params"] = 
-						{
-							["tasks"] = 
-							{
-								[1] = 
-								{
-									["number"] = 1,
-									["auto"] = true,
-									["id"] = "AWACS",
-									["enabled"] = true,
-									["params"] = 
-									{
-									}, -- end of ["params"]
-								}, -- end of [1]
-								[2] = 
-								{
-									["enabled"] = true,
-									["auto"] = false,
-									["id"] = "WrappedAction",
-									["number"] = 2,
-									["params"] = 
-									{
-										["action"] = 
-										{
-											["id"] = "SetInvisible",
-											["params"] = 
-											{
-												["value"] = true,
-											}, -- end of ["params"]
-										}, -- end of ["action"]
-									}, -- end of ["params"]
-								}, -- end of [2]
-								[3] = 
-								{
-									["number"] = 3,
-									["auto"] = false,
-									["id"] = "WrappedAction",
-									["enabled"] = true,
-									["params"] = 
-									{
-										["action"] = 
-										{
-											["id"] = "EPLRS",
-											["params"] = 
-											{
-												["value"] = true,
-												["groupId"] = 46,
-											}, -- end of ["params"]
-										}, -- end of ["action"]
-									}, -- end of ["params"]
-								}, -- end of [3]
-							}, -- end of ["tasks"]
-						}, -- end of ["params"]
-					}, -- end of ["task"]
-					["type"] = "Turning Point",
-					["ETA"] = 0,
-					["ETA_locked"] = true,
-					["y"] = -88627.624510964,
-					["x"] = -129296.58141675,
-					["name"] = "",
-					["formation_template"] = "",
-					["speed_locked"] = true,
-				}, -- end of [1]
-			}, -- end of ["points"]
-		}, -- end of ["route"]
-		["groupId"] = 17446,
-		["hidden"] = false,
-		["units"] = 
-		{
-			[1] = 
-			{
-				["alt"] = 6096,
-				["alt_type"] = "BARO",
-				["livery_id"] = "nato",
-				["skill"] = "Excellent",
-				["speed"] = 164.44444444444,
-				["type"] = "E-3A",
-				["unitId"] = 20566,
-				["psi"] = 1.1124120783257,
-				["y"] = -88627.624510964,
-				["x"] = -129296.58141675,
-				["name"] = "AWACS-E3A",
-				["payload"] = 
-				{
-					["pylons"] = 
-					{
-					}, -- end of ["pylons"]
-					["fuel"] = 65000,
-					["flare"] = 60,
-					["chaff"] = 120,
-					["gun"] = 100,
-				}, -- end of ["payload"]
-				["heading"] = -1.1124120783257,
-				["callsign"] = 
-				{
-					[1] = 1,
-					[2] = 1,
-					["name"] = "Overlord11",
-					[3] = 1,
-				}, -- end of ["callsign"]
-				["onboard_num"] = "090",
-			}, -- end of [1]
-		}, -- end of ["units"]
-		["y"] = -88627.624510964,
-		["x"] = -129296.58141675,
-		["name"] = "AWACS-E3A",
-		["communication"] = true,
-		["start_time"] = 0,
-		["modulation"] = 0,
-		["frequency"] = 251,
-	}, -- end of [AWACS-E3A]
-  	["AWACS-E2D"] = {
-		["category"] = Group.Category.AIRPLANE,
-		["lateActivation"] = true,
-		["tasks"] = 
-		{
-		}, -- end of ["tasks"]
-		["radioSet"] = true,
-		["task"] = "AWACS",
-		["uncontrolled"] = false,
-		["route"] = 
-		{
-			["routeRelativeTOT"] = true,
-			["points"] = 
-			{
-				[1] = 
-				{
-					["alt"] = 9144,
-					["action"] = "Turning Point",
-					["alt_type"] = "BARO",
-					["speed"] = 133.61111111111,
-					["task"] = 
-					{
-						["id"] = "ComboTask",
-						["params"] = 
-						{
-							["tasks"] = 
-							{
-								[1] = 
-								{
-									["enabled"] = true,
-									["auto"] = true,
-									["id"] = "AWACS",
-									["number"] = 1,
-									["params"] = 
-									{
-									}, -- end of ["params"]
-								}, -- end of [1]
-								[2] = 
-								{
-									["enabled"] = true,
-									["auto"] = true,
-									["id"] = "WrappedAction",
-									["number"] = 2,
-									["params"] = 
-									{
-										["action"] = 
-										{
-											["id"] = "EPLRS",
-											["params"] = 
-											{
-												["value"] = true,
-												["groupId"] = 38,
-											}, -- end of ["params"]
-										}, -- end of ["action"]
-									}, -- end of ["params"]
-								}, -- end of [2]
-								[3] = 
-								{
-									["enabled"] = true,
-									["auto"] = false,
-									["id"] = "WrappedAction",
-									["number"] = 3,
-									["params"] = 
-									{
-										["action"] = 
-										{
-											["id"] = "SetInvisible",
-											["params"] = 
-											{
-												["value"] = true,
-											}, -- end of ["params"]
-										}, -- end of ["action"]
-									}, -- end of ["params"]
-								}, -- end of [3]
-							}, -- end of ["tasks"]
-						}, -- end of ["params"]
-					}, -- end of ["task"]
-					["type"] = "Turning Point",
-					["ETA"] = 0,
-					["ETA_locked"] = true,
-					["y"] = -12187.736469214,
-					["x"] = -399320.85899169,
-					["name"] = "",
-					["formation_template"] = "",
-					["speed_locked"] = true,
-				}, -- end of [1]
-			}, -- end of ["points"]
-		}, -- end of ["route"]
-		["groupId"] = 2452,
-		["hidden"] = false,
-		["units"] = 
-		{
-			[1] = 
-			{
-				["alt"] = 9144,
-				["alt_type"] = "BARO",
-				["livery_id"] = "E-2D Demo",
-				["skill"] = "High",
-				["speed"] = 133.61111111111,
-				["type"] = "E-2C",
-				["unitId"] = 16697,
-				["psi"] = 1.3887207292845,
-				["y"] = -12187.736469214,
-				["x"] = -399320.85899169,
-				["name"] = "AWACS-E2D-1",
-				["payload"] = 
-				{
-					["pylons"] = 
-					{
-					}, -- end of ["pylons"]
-					["fuel"] = "5624",
-					["flare"] = 60,
-					["chaff"] = 120,
-					["gun"] = 100,
-				}, -- end of ["payload"]
-				["heading"] = -1.3887207292845,
-				["callsign"] = 
-				{
-					[1] = 1,
-					[2] = 1,
-					["name"] = "Overlord11",
-					[3] = 1,
-				}, -- end of ["callsign"]
-				["onboard_num"] = "143",
-			}, -- end of [1]
-		}, -- end of ["units"]
-		["y"] = -12187.736469214,
-		["x"] = -399320.85899169,
-		["name"] = "AWACS-E2D",
-		["communication"] = true,
-		["start_time"] = 0,
-		["modulation"] = 0,
-		["frequency"] = 251,		
-	}, -- end of ["AWACS-E2D"]
-	["AWACS-A50"] = {
-		["category"] = Group.Category.AIRPLANE,
-		["lateActivation"] = true,
-		["tasks"] = 
-		{
-		}, -- end of ["tasks"]
-		["radioSet"] = false,
-		["task"] = "AWACS",
-		["uncontrolled"] = false,
-		["taskSelected"] = true,
-		["route"] = 
-		{
-			["routeRelativeTOT"] = true,
-			["points"] = 
-			{
-				[1] = 
-				{
-					["alt"] = 10972.8,
-					["action"] = "Turning Point",
-					["alt_type"] = "BARO",
-					["speed"] = 220.97222222222,
-					["task"] = 
-					{
-						["id"] = "ComboTask",
-						["params"] = 
-						{
-							["tasks"] = 
-							{
-								[1] = 
-								{
-									["enabled"] = true,
-									["auto"] = true,
-									["id"] = "AWACS",
-									["number"] = 1,
-									["params"] = 
-									{
-									}, -- end of ["params"]
-								}, -- end of [1]
-								[2] = 
-								{
-									["enabled"] = true,
-									["auto"] = false,
-									["id"] = "WrappedAction",
-									["number"] = 2,
-									["params"] = 
-									{
-										["action"] = 
-										{
-											["id"] = "SetInvisible",
-											["params"] = 
-											{
-												["value"] = true,
-											}, -- end of ["params"]
-										}, -- end of ["action"]
-									}, -- end of ["params"]
-								}, -- end of [2]
-								[3] = 
-								{
-									["enabled"] = true,
-									["auto"] = false,
-									["id"] = "WrappedAction",
-									["number"] = 3,
-									["params"] = 
-									{
-										["action"] = 
-										{
-											["id"] = "Option",
-											["params"] = 
-											{
-												["value"] = 0,
-												["name"] = 1,
-											}, -- end of ["params"]
-										}, -- end of ["action"]
-									}, -- end of ["params"]
-								}, -- end of [3]
-								[4] = 
-								{
-									["enabled"] = true,
-									["auto"] = false,
-									["id"] = "WrappedAction",
-									["number"] = 4,
-									["params"] = 
-									{
-										["action"] = 
-										{
-											["id"] = "Option",
-											["params"] = 
-											{
-												["value"] = false,
-												["name"] = 19,
-											}, -- end of ["params"]
-										}, -- end of ["action"]
-									}, -- end of ["params"]
-								}, -- end of [4]
-							}, -- end of ["tasks"]
-						}, -- end of ["params"]
-					}, -- end of ["task"]
-					["type"] = "Turning Point",
-					["ETA"] = 0,
-					["ETA_locked"] = true,
-					["y"] = 315953.41096792,
-					["x"] = 63905.857563882,
-					["name"] = "",
-					["formation_template"] = "",
-					["speed_locked"] = true,
-				}, -- end of [1]
-			}, -- end of ["points"]
-		}, -- end of ["route"]
-		["groupId"] = 588,
-		["hidden"] = false,
-		["units"] = 
-		{
-			[1] = 
-			{
-				["alt"] = 10972.8,
-				["alt_type"] = "BARO",
-				["livery_id"] = "RF Air Force new",
-				["skill"] = "High",
-				["speed"] = 220.97222222222,
-				["AddPropAircraft"] = 
-				{
-					["PropellorType"] = 0,
-					["SoloFlight"] = false,
-				}, -- end of ["AddPropAircraft"]
-				["type"] = "A-50",
-				["unitId"] = 1595,
-				["psi"] = -1.7947587772958,
-				["y"] = 315953.41096792,
-				["x"] = 63905.857563882,
-				["name"] = "RED_AWACS",
-				["payload"] = 
-				{
-					["pylons"] = 
-					{
-					}, -- end of ["pylons"]
-					["fuel"] = "70000",
-					["flare"] = 192,
-					["chaff"] = 192,
-					["gun"] = 100,
-				}, -- end of ["payload"]
-				["heading"] = 1.7947587772958,
-				["callsign"] = 666,
-				["onboard_num"] = "027",
-			}, -- end of [1]
-		}, -- end of ["units"]
-		["y"] = 315953.41096792,
-		["x"] = 63905.857563882,
-		["name"] = "RED_AWACS",
-		["communication"] = true,
-		["start_time"] = 0,
-		["modulation"] = 0,
-		["frequency"] = 251,
-	}, -- end of ["AWACS-RED"]
-	["S3BTANKER"] = {
-		["category"] = Group.Category.AIRPLANE,
-		["lateActivation"] = true,
-		["tasks"] = 
-		{
-		}, -- end of ["tasks"]
-		["radioSet"] = false,
-		["task"] = "Refueling",
-		["uncontrolled"] = false,
-		["route"] = 
-		{
-			["routeRelativeTOT"] = true,
-			["points"] = 
-			{
-				[1] = 
-				{
-					["alt"] = 1828.8,
-					["action"] = "Turning Point",
-					["alt_type"] = "BARO",
-					["speed"] = 141.31944444444,
-					["task"] = 
-					{
-						["id"] = "ComboTask",
-						["params"] = 
-						{
-							["tasks"] = 
-							{
-								[1] = 
-								{
-									["number"] = 1,
-									["auto"] = true,
-									["id"] = "Tanker",
-									["enabled"] = true,
-									["params"] = 
-									{
-									}, -- end of ["params"]
-								}, -- end of [1]
-								[2] = 
-								{
-									["number"] = 2,
-									["auto"] = true,
-									["id"] = "WrappedAction",
-									["enabled"] = true,
-									["params"] = 
-									{
-										["action"] = 
-										{
-											["id"] = "ActivateBeacon",
-											["params"] = 
-											{
-												["type"] = 4,
-												["AA"] = false,
-												["callsign"] = "TKR",
-												["system"] = 4,
-												["channel"] = 1,
-												["modeChannel"] = "X",
-												["bearing"] = true,
-												["frequency"] = 962000000,
-											}, -- end of ["params"]
-										}, -- end of ["action"]
-									}, -- end of ["params"]
-								}, -- end of [2]
-								[3] = 
-								{
-									["number"] = 3,
-									["auto"] = false,
-									["id"] = "WrappedAction",
-									["enabled"] = true,
-									["params"] = 
-									{
-										["action"] = 
-										{
-											["id"] = "SetInvisible",
-											["params"] = 
-											{
-												["value"] = true,
-											}, -- end of ["params"]
-										}, -- end of ["action"]
-									}, -- end of ["params"]
-								}, -- end of [3]
-							}, -- end of ["tasks"]
-						}, -- end of ["params"]
-					}, -- end of ["task"]
-					["type"] = "Turning Point",
-					["ETA"] = 0,
-					["ETA_locked"] = true,
-					["y"] = 606748.96393416,
-					["x"] = -358539.84033849,
-					["formation_template"] = "",
-					["speed_locked"] = true,
-				}, -- end of [1]
-			}, -- end of ["points"]
-		}, -- end of ["route"]
-		["groupId"] = 1,
-		["hidden"] = false,
-		["units"] = 
-		{
-			[1] = 
-			{
-				["alt"] = 1828.8,
-				["alt_type"] = "BARO",
-				["livery_id"] = "usaf standard",
-				["skill"] = "High",
-				["speed"] = 141.31944444444,
-				["type"] = "S-3B Tanker",
-				["unitId"] = 1,
-				["psi"] = 0,
-				["y"] = 606748.96393416,
-				["x"] = -358539.84033849,
-				["name"] = "Aerial-1-1",
-				["payload"] = 
-				{
-					["pylons"] = 
-					{
-					}, -- end of ["pylons"]
-					["fuel"] = "7813",
-					["flare"] = 30,
-					["chaff"] = 30,
-					["gun"] = 100,
-				}, -- end of ["payload"]
-				["heading"] = 0,
-				["callsign"] = 
-				{
-					[1] = 1,
-					[2] = 1,
-					["name"] = "Texaco11",
-					[3] = 1,
-				}, -- end of ["callsign"]
-				["onboard_num"] = "010",
-			}, -- end of [1]
-		}, -- end of ["units"]
-		["y"] = 606748.96393416,
-		["x"] = -358539.84033849,
-		["name"] = "S3BTANKER",
-		["communication"] = true,
-		["start_time"] = 0,
-		["modulation"] = 0,
-		["frequency"] = 251,
-	}, -- end of ["S3BTANKER"]
-} -- end SUPPORTAC.template
-  
---------------------------------[supportaircraft_data.lua]-------------------------------- 
- 
-env.info( "[JTF-1] supportaircraft_data" )
---------------------------------------------
---- Support Aircraft Defined in this file
---------------------------------------------
---
--- **NOTE**: SUPPORTAIRCRAFT.LUA MUST BE LOADED BEFORE THIS FILE IS LOADED!
---
--- This file contains the config data specific to the miz in which it will be used.
--- All functions and key values are in SUPPORTAIRCRAFT.LUA, which should be loaded first
---
--- Load order in miz MUST be;
---     1. supportaircraft.lua
---     2. supportaircraft_data.lua
---
-
--- Error prevention. Create empty container if SUPPORTAIRCRAFT.LUA is not loaded or has failed.
-if not SUPPORTAC then 
-  _msg = "[JTF-1 SUPPORTAC] CORE FILE NOT LOADED!"
-  BASE:E(_msg)
-  SUPPORTAC = {}
-end
-
-SUPPORTAC.useSRS = true
-
--- Support aircraft missions. Each mission block defines a support aircraft mission. Each block is processed
--- and an aircraft will be spawned for the mission. When the mission is cancelled, eg after RTB or if it is destroyed,
--- a new aircraft will be spawned and a fresh AUFTRAG created.
-SUPPORTAC.mission = {
-    -- {
-    --   name = "ARWK", -- text name for this support mission. Combined with this block's index and the mission type to define the group name on F10 map
-    --   category = SUPPORTAC.category.tanker, -- support mission category. Used to determine the auftrag type. Options are listed in SUPPORTAC.category
-    --   type = SUPPORTAC.type.tankerBoom, -- type defines the spawn template that will be used
-    --   zone = "ARWK", -- ME zone that defines the start waypoint for the spawned aircraft
-    --   callsign = CALLSIGN.Tanker.Arco, -- callsign under which the aircraft will operate
-    --   callsignNumber = 1, -- primary callsign number that will be used for the aircraft
-    --   tacan = 35, -- TACAN channel the ac will use
-    --   tacanid = "ARC", -- TACAN ID the ac will use. Also used for the morse ID
-    --   radio = 276.5, -- freq the ac will use when on mission
-    --   flightLevel = 160, -- flight level at which to spwqan aircraft and at which track will be flown
-    --   speed = 315, -- IAS when on mission
-    --   heading = 94, -- mission outbound leg in degrees
-    --   leg = 40, -- mission leg length in NM
-    --   fuelLowThreshold = 30, -- lowest fuel threshold at which RTB is triggered
-    --   activateDelay = 5, -- delay, after this aircraft has been despawned, before new aircraft is spawned
-    --   despawnDelay = 10, -- delay before this aircraft is despawned
-    -- },
-    {
-    name = "AR641A", -- text name for this support mission. Combined with this block's index and the mission type to define the group name on F10 map
-    category = SUPPORTAC.category.tanker, -- support mission category. Used to determine the auftrag type. Options are listed in SUPPORTAC.categories
-    type =  "KC-135-TEX1", --SUPPORTAC.type.tankerBoom, -- type defines the spawn template that will be used
-    zone = "AR641A", -- ME zone that defines the start waypoint for the spawned aircraft
-    callsign = CALLSIGN.Tanker.Texaco, -- callsign under which the aircraft will operate
-    callsignNumber = 1, -- primary callsign number that will be used for the aircraft
-    tacan = 31, -- TACAN channel the ac will use
-    tacanid = "TEX", -- TACAN ID the ac will use. Also used for the morse ID
-    radio = 295.4, -- freq the ac will use when on mission
-    flightLevel = 240,
-    speed = 315, -- IAS when on mission
-    heading = 71, -- mission outbound leg in degrees
-    leg = 30, -- mission leg length in NM
-  },
-  {
-    name = "AR641A",
-    category = SUPPORTAC.category.tanker,
-    type = "KC-135MPRS-SHL1", --SUPPORTAC.type.tankerProbe,
-    zone = "AR641A",
-    callsign = CALLSIGN.Tanker.Shell,
-    callsignNumber = 1,
-    tacan = 35,
-    tacanid = "SHL",
-    radio = 276.1,
-    flightLevel = 200,
-    speed = 315,
-    heading = 71,
-    leg = 30,
-  },
-  {
-    name = "AR635",
-    category = SUPPORTAC.category.tanker,
-    type = "KC-135-TEX2", --SUPPORTAC.type.tankerBoom,
-    zone = "AR635",
-    callsign = CALLSIGN.Tanker.Texaco,
-    callsignNumber = 2,
-    tacan = 52,
-    tacanid = "TEX",
-    radio = 352.6,
-    flightLevel = 240,
-    speed = 315,
-    heading = 92,
-    leg = 50,
-  },
-  {
-    name = "AR635",
-    category = SUPPORTAC.category.tanker,
-    type = "KC-135MPRS-SHL2", -- SUPPORTAC.type.tankerProbe,
-    zone = "AR635",
-    callsign = CALLSIGN.Tanker.Shell,
-    callsignNumber = 2,
-    tacan = 34,
-    tacanid = "SHL",
-    radio = 317.775,
-    flightLevel = 200,
-    speed = 315,
-    heading = 92,
-    leg = 50,
-  },
-  {
-    name = "AR230V",
-    category = SUPPORTAC.category.tanker,
-    type =  "KC-135-ARC1", --SUPPORTAC.type.tankerBoom,
-    zone = "AR230V",
-    callsign = CALLSIGN.Tanker.Arco,
-    callsignNumber = 1,
-    tacan = 30,
-    tacanid = "ARC",
-    radio = 343.6,
-    flightLevel = 150,
-    speed = 215,
-    heading = 41,
-    leg = 30,
-  },
-  {
-    name = "AR230V",
-    category = SUPPORTAC.category.tanker,
-    type = "KC-130-ARC3", --SUPPORTAC.type.tankerProbeC130,
-    zone = "AR230V",
-    callsign = CALLSIGN.Tanker.Arco,
-    callsignNumber = 3,
-    tacan = 29,
-    tacanid = "ARC",
-    radio = 323.2,
-    flightLevel = 100,
-    speed = 315,
-    heading = 41,
-    leg = 30,
-  },
-  {
-    name = "ARLNS",
-    category = SUPPORTAC.category.tanker,
-    type = "KC-135-TEX3", --SUPPORTAC.type.tankerBoom,
-    zone = "ARLNS",
-    callsign = CALLSIGN.Tanker.Texaco,
-    callsignNumber = 3,
-    tacan = 51,
-    tacanid = "TEX",
-    radio = 324.05,
-    flightLevel = 240,
-    speed = 315,
-    heading = 331,
-    leg = 20,
-  },
-  {
-    name = "ARLNS",
-    category = SUPPORTAC.category.tanker,
-    type = "KC-135MPRS-SHL3", --SUPPORTAC.type.tankerProbe,
-    zone = "ARLNS",
-    callsign = CALLSIGN.Tanker.Shell,
-    callsignNumber = 3,
-    tacan = 33,
-    tacanid = "SHL",
-    radio = 319.8,
-    flightLevel = 200,
-    speed = 315,
-    heading = 331,
-    leg = 20,
-  },
-  {
-    name = "AWACSEAST",
-    category = SUPPORTAC.category.awacs,
-    type = "AWACS-E3A-DR1", --SUPPORTAC.type.awacsE3a,
-    zone = "AWACS-EAST",
-    callsign = CALLSIGN.AWACS.Darkstar,
-    callsignNumber = 1,
-    tacan = nil,
-    tacanid = nil,
-    radio = 282.025,
-    flightLevel = 300,
-    speed = 400,
-    heading = 210,
-    leg = 43,
-    activateDelay = 5,
-    despawnDelay = 10,
-    fuelLowThreshold = 15,
-  },
-}
-
--- call the function that initialises the SUPPORTAC module
-if SUPPORTAC.Start ~= nil then
-  _msg = "[JTF-1 SUPPORTAC] SUPPORTAIRCRAFT_DATA - call SUPPORTAC:Start()."
-  BASE:I(_msg)
-  SUPPORTAC:Start()
-end
-
-
-  
+-- END SUPPORT AIRCRAFT SECTION    
 --------------------------------[core\staticranges.lua]-------------------------------- 
  
 env.info( "[JTF-1] staticranges.lua" )
@@ -3472,10 +1034,10 @@ STATICRANGES.traceTitle = "[JTF-1 STATICRANGES] "
 local _msg
 
 STATICRANGES.default = {
-	strafeMaxAlt             = 1530, -- [5000ft] in metres. Height of strafe box.
-	strafeBoxLength          = 3000, -- [10000ft] in metres. Length of strafe box.
-	strafeBoxWidth           = 300, -- [1000ft] in metres. Width of Strafe pit box (from 1st listed lane).
-	strafeFoullineDistance   = 610, -- [2000ft] in metres. Min distance for from target for rounds to be counted.
+	strafeMaxAlt             = 1525, -- [5000ft] in metres. Height of strafe box.
+	strafeBoxLength          = 3050, -- [10000ft] in metres. Length of strafe box.
+	strafeBoxWidth           = 366, -- [1200ft] in metres. Width of Strafe pit box (from 1st listed lane).
+	strafeFoullineDistance   = 305, -- [1000ft] in metres. Min distance for from target for rounds to be counted.
 	strafeGoodPass           = 20, -- Min hits for a good pass.
 	--rangeSoundFilesPath      = "Range Soundfiles/" -- Range sound files path in miz
 }
@@ -3561,172 +1123,6 @@ function STATICRANGES:AddStaticRanges(ranges)
 end
 
 --- END STATIC RANGES  
---------------------------------[staticranges_data.lua]-------------------------------- 
- 
-env.info( "[JTF-1] staticranges_data" )
--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
---- STATIC RANGES SETTINGS FOR MIZ
--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
---
--- This file MUST be loaded AFTER staticranges.lua
---
--- These values are specific to the miz and will override the default values in STATICRANGES.default
---
-
--- Error prevention. Create empty container if module core lua not loaded.
-if not STATICRANGES then 
-	_msg = "[JTF-1 STATICRANGES] CORE FILE NOT LOADED!"
-	BASE:E(_msg)
-	STATICRANGES = {}
-end
-
--- These values will overrides the default values in staticranges.lua
-STATICRANGES.strafeMaxAlt             = 1530 -- [5000ft] in metres. Height of strafe box.
-STATICRANGES.strafeBoxLength          = 3000 -- [10000ft] in metres. Length of strafe box.
-STATICRANGES.strafeBoxWidth           = 300 -- [1000ft] in metres. Width of Strafe pit box (from 1st listed lane).
-STATICRANGES.strafeFoullineDistance   = 610 -- [2000ft] in metres. Min distance for from target for rounds to be counted.
-STATICRANGES.strafeGoodPass           = 20 -- Min hits for a good pass.
-
--- Range targets table
-STATICRANGES.Ranges = {
-    -- { -- SAMPLE RANGE DATA
-    --   rangeId               = "R63", -- unique ID for the range
-    --   rangeName             = "Range 63", -- text used for messages
-    --   rangeZone             = "R63", -- zone object in which range objects are placed
-    --   rangeControlFrequency = 361.6, -- TAC radio frequency for the range
-    --   groups = { -- group objects used as bombing targets
-    --     "63-01", "63-02", "63-03", "63-05", 
-    --     "63-10", "63-12", "63-15", "R-63B Class A Range-01", 
-    --     "R-63B Class A Range-02",    
-    --   },
-    --   units = { -- unit objects used as bombing targets
-    --     "R63BWC", "R63BEC",
-    --   },
-    --   strafepits = { -- unit objects used as strafepits 
-    --     { --West strafepit -- use sub groups for multiple strafepits
-    --       "R63B Strafe Lane L2", 
-    --       "R63B Strafe Lane L1", 
-    --       "R63B Strafe Lane L3",
-    --     },
-    --     { --East strafepit 
-    --       "R63B Strafe Lane R2", 
-    --       "R63B Strafe Lane R1", 
-    --       "R63B Strafe Lane R3",
-    --     },
-    --   },
-    -- },
-    { --R61
-      rangeId               = "R61",
-      rangeName             = "Range 61",
-      rangeZone             = "R61",
-      rangeControlFrequency = 341.925,
-      groups = {
-        "61-01", "61-03",
-      },
-      units = {
-        "61-01 Aircraft #001", "61-01 Aircraft #002", 
-      },
-      strafepits = {
-      },
-    },--R61 END
-    { --R62
-      rangeId               = "R62",
-      rangeName             = "Range 62",
-      rangeZone             = "R62",
-      rangeControlFrequency = 234.250,
-      groups = {
-        "62-01", "62-02", "62-04",
-        "62-03", "62-08", "62-09", "62-11", 
-        "62-12", "62-13", "62-14", "62-21", 
-        "62-21-01", "62-22", "62-31", "62-32",
-        "62-41", "62-42", "62-43", "62-44", 
-        "62-45", "62-51", "62-52", "62-53", 
-        "62-54", "62-55", "62-56", "62-61", 
-        "62-62", "62-63", "62-71", "62-72", 
-        "62-73", "62-74", "62-75", "62-76", 
-        "62-77", "62-78", "62-79", "62-81", 
-        "62-83", "62-91", "62-92", "62-93",
-      },
-      units = {
-        "62-32-01", "62-32-02", "62-32-03", "62-99",  
-      },
-      strafepits = {
-      },
-    },--R62 END
-    { --R63
-      rangeId               = "R63",
-      rangeName             = "Range 63",
-      rangeZone             = "R63",
-      rangeControlFrequency = 361.6,
-      groups = {
-        "63-01", "63-02", "63-03", "63-05", 
-        "63-10", "63-12", "63-15", "R-63B Class A Range-01", 
-        "R-63B Class A Range-02",    
-      },
-      units = {
-        "R63BWC", "R63BEC",
-      },
-      strafepits = {
-        { --West strafepit
-          "R63B Strafe Lane L2", 
-          "R63B Strafe Lane L1", 
-          "R63B Strafe Lane L3",
-        },
-        { --East strafepit 
-          "R63B Strafe Lane R2", 
-          "R63B Strafe Lane R1", 
-          "R63B Strafe Lane R3",
-        },
-      },
-    },--R63 END
-    { --R64
-      rangeId               = "R64",
-      rangeName             = "Range 64",
-      rangeZone             = "R64",
-      rangeControlFrequency = 288.8,
-      groups = {
-        "64-10", "64-11", "64-13", "64-14", 
-        "64-17", "64-19", "64-15", "64-05", 
-        "64-08", "64-09",
-      },
-      units = {
-        "64-12-05", "R64CWC", "R64CEC", "R-64C Class A Range-01", 
-        "R-64C Class A Range-02", 
-      },
-      strafepits = {
-        {-- West strafepit
-          "R64C Strafe Lane L2", 
-          "R64C Strafe Lane L1", 
-          "R64C Strafe Lane L3",
-        },
-        {-- East strafepit
-          "R64C Strafe Lane R2", 
-          "R64C Strafe Lane R1", 
-          "R64C Strafe Lane R3",
-        },
-      },
-    },--R64 END
-    { --R65
-      rangeId               = "R65",
-      rangeName             = "Range 65",
-      rangeZone             = "R65",
-      rangeControlFrequency = 225.450,
-      groups = {
-        "65-01", "65-02", "65-03", "65-04", 
-        "65-05", "65-06", "65-07", "65-08", 
-        "65-11",
-      },
-      units = {
-      },
-      strafepits = {
-      },
-    },--R65 END
-}
-  
--- Start the STATICRANGES module
-if STATICRANGES.Start then
-	STATICRANGES:Start()
-end  
 --------------------------------[core\activeranges.lua]-------------------------------- 
  
 env.info( "[JTF-1] activeranges.lua" )
@@ -3937,704 +1333,6 @@ end
 ACTIVERANGES:Start()
 
 --- END ACTIVE RANGES  
---------------------------------[activeranges_data.lua]-------------------------------- 
- 
-env.info( "[JTF-1] activeranges_data" )
--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
---- ACTIVE RANGES SETTINGS FOR MIZ
--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
---
--- This file MUST be loaded AFTER activeranges.lua
---
--- These values are specific to the miz and will override the default values in ACTIVERANGES.default
---
-
--- Error prevention. Create empty container if module core lua not loaded.
-if not ACTIVERANGES then 
-	_msg = "[JTF-1 ACTIVERANGES] CORE FILE NOT LOADED!"
-	BASE:E(_msg)
-	ACTIVERANGES = {}
-end
-
-
---ACTIVERANGES.spawnatstart = false -- if false, do not spawn targets at mission start
-ACTIVERANGES.activeatstart = false -- if true, set AI on for targets spawned at mission start
-ACTIVERANGES.useSRS = true -- set to false to disable use of SRS for this module in this miz
---ACTIVERANGES.rangeRadio = "377.8" -- radio frequency over which to broadcast Active Range messages
-
-
--- start the mission timer
-if ACTIVERANGES.Start then
-	ACTIVERANGES:Start()
-end  
---------------------------------[ecs.lua]-------------------------------- 
- 
-env.info( "[JTF-1] ecs" )
--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
---- BEGIN ELECTRONIC COMBAT SIMULATOR RANGE
--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-
---- IADS
--- REQUIRES MIST
-
-local ECS = {}
-ECS.ActiveSite = {}
-ECS.rIADS = nil
-
-ECS.menuEscTop = MENU_COALITION:New(coalition.side.BLUE, "EC South")
-
--- SAM spawn emplates
-ECS.templates = {
-  {templateName = "ECS_SA11", threatName = "SA-11"},
-  {templateName = "ECS_SA10", threatName = "SA-10"},
-  {templateName = "ECS_SA2",  threatName = "SA-2"},
-  {templateName = "ECS_SA3",  threatName = "SA-3"},
-  {templateName = "ECS_SA6",  threatName = "SA-6"},
-  {templateName = "ECS_SA8",  threatName = "SA-8"},
-  {templateName = "ECS_SA15", threatName = "SA-15"},
-}
--- Zone in which threat will be spawned
-ECS.zoneEcs7769 = ZONE:FindByName("ECS_ZONE_7769")
-
-
-function activateEcsThreat(samTemplate, samZone, activeThreat, isReset)
-
-  -- remove threat selection menu options
-  if not isReset then
-    ECS.menuEscTop:RemoveSubMenus()
-  end
-  
-  -- spawn threat in ECS zone
-  local ecsSpawn = SPAWN:New(samTemplate)
-  ecsSpawn:OnSpawnGroup(
-      function (spawnGroup)
-        MENU_COALITION_COMMAND:New(coalition.side.BLUE, "Deactivate 77-69", ECS.menuEscTop, resetEcsThreat, spawnGroup, ecsSpawn, activeThreat, false)
-        MENU_COALITION_COMMAND:New(coalition.side.BLUE, "Reset 77-69", ECS.menuEscTop, resetEcsThreat, spawnGroup, ecsSpawn, activeThreat, true, samZone)
-        local msg = "All players, EC South is active with " .. activeThreat
-        if MISSIONSRS.Radio then -- if MISSIONSRS radio object has been created, send message via default broadcast.
-          MISSIONSRS:SendRadio(msg)
-        else -- otherwise, send in-game text message
-          MESSAGE:New(msg):ToAll()
-        end
-        --MESSAGE:New("EC South is active with " .. activeThreat):ToAll()
-        ECS.rIADS = SkynetIADS:create("ECSOUTH")
-        ECS.rIADS:setUpdateInterval(5)
-        --ECS.rIADS:addEarlyWarningRadar("GCI2")
-        ECS.rIADS:addSAMSite(spawnGroup.GroupName)
-        ECS.rIADS:getSAMSiteByGroupName(spawnGroup.GroupName):setGoLiveRangeInPercent(80)
-        ECS.rIADS:activate()        
-      end
-      , ECS.menuEscTop, ecsSpawn, activeThreat, samZone --, rangePrefix
-    )
-    :SpawnInZone(samZone, true)
-end
-
-function resetEcsThreat(spawnGroup, ecsSpawn, activeThreat, refreshEcs, samZone)
-
-  ECS.menuEscTop:RemoveSubMenus()
-  
-  if ECS.rIADS ~= nil then
-    ECS.rIADS:deactivate()
-    ECS.rIADS = nil
-  end
-
-  if spawnGroup:IsAlive() then
-    spawnGroup:Destroy()
-  end
-
-  if refreshEcs then
-    ecsSpawn:SpawnInZone(samZone, true)
-  else
-    addEcsThreatMenu()
-    local msg = "All players, EC South "  .. activeThreat .." has been deactivated."
-    if MISSIONSRS.Radio then -- if MISSIONSRS radio object has been created, send message via default broadcast.
-      MISSIONSRS:SendRadio(msg)
-    else -- otherwise, send in-game text message
-      MESSAGE:New(msg):ToAll()
-    end
-    --MESSAGE:New("EC South "  .. activeThreat .." has been deactived."):ToAll()
-  end    
-
-end
-
-function addEcsThreatMenu()
-
-  for i, template in ipairs(ECS.templates) do
-    MENU_COALITION_COMMAND:New(coalition.side.BLUE, "Activate " .. template.threatName, ECS.menuEscTop, activateEcsThreat, template.templateName, ECS.zoneEcs7769, template.threatName)
-  end
-
-end
-
-addEcsThreatMenu()
-
---- END ELECTRONIC COMBAT SIMULATOR RANGE  
---------------------------------[core\bfmacm.lua]-------------------------------- 
- 
-env.info( "[JTF-1] bfmacm" )
---
--- ZONES: if zones are MOOSE polygon zones, zone name in mission editor MUST be suffixed with ~ZONE_POLYGON
--- 
-
-BFMACM = {
-	ClassName = "BFMACM",
-	version = "1.0",
-	traceTitle = "[JTF-1] ",
-	menuAdded = {},
-	menuF10 = {},
-	useSRS = true,
-}
-
--- BFMACM.zoneBfmAcmName = "COYOTEABC" -- The BFM/ACM Zone
--- BFMACM.zonesNoSpawnName = { -- zones inside BFM/ACM zone within which adversaries may NOT be spawned.
--- 	"zone_box",
--- } 
-
-BFMACM.adversary = {
-	menu = { -- Adversary menu
-		{template = "ADV_F4", menuText = "Adversary A-4"},
-		{template = "ADV_MiG28", menuText = "Adversary MiG-28"},
-		{template = "ADV_Su27", menuText = "Adversary MiG-23"},
-		{template = "ADV_MiG23", menuText = "Adversary Su-27"},
-		{template = "ADV_F16", menuText = "Adversary F-16"},
-		{template = "ADV_F18", menuText = "Adversary F-18"},
-	},
-	range = {5, 10, 20}, -- ranges at which to spawn adversaries in nautical miles
-	spawn = {}, -- container for aversary spawn objects
-	defaultRadio = "377.8",
-}
-
--- set frequency to use if messages are to be sent using SRS
-BFMACM.rangeRadio = JTF1.rangeRadio or BFMACM.defaultRadio
-
--- Inherit from BASE
-BFMACM = BASE:Inherit( BFMACM, BASE:New() )
--- Add eventhandler
-BFMACM:HandleEvent(EVENTS.PlayerEnterAircraft)
-BFMACM:HandleEvent(EVENTS.PlayerLeaveUnit)
-
-local _msg
-local useSRS
-
-function BFMACM:Start() -- start BFMACM module
-	useSRS = (JTF1.useSRS and BFMACM.useSRS) and MISSIONSRS.Radio.active -- default to not using SRS unless both the server AND the module request it and MISSIONSRS.Radio is true
-	_msg = string.format("[JTF-1 BFMACM] useSRS: %s", tostring(useSRS))
-	-- if useSRS then
-	-- 	_msg = _msg .. "TRUE"
-	-- else
-	-- 	_msg = _msg .. "FALSE"
-	-- end 
-	self:T(_msg)
-
-	-- Add main BFMACM zone
-	if self.zoneBfmAcmName ~= nil then
-		_zone = ZONE:FindByName(self.zoneBfmAcmName) or ZONE_POLYGON:FindByName(self.zoneBfmAcmName)
-		if _zone == nil then
-			_msg = string.format("[JTF-1 BFMACM] ERROR: BFM/ACM Zone: %s not found!", self.zoneBfmAcmName)
-			self:E(_msg)
-		else
-			self.zoneBfmAcm = _zone
-			_msg = string.format("[JTF-1 BFMACM] BFM/ACM Zone: %s added.", self.zoneBfmAcmName)
-			self:T(_msg)
-		end
-	else
-		-- no zone defined, whole map will be active
-		_msg = "[JTF-1 BFMACM] No zone defined. Whole map is active."
-		self:T(_msg)
-		self.zoneBfmAcm = false
-
-	end
-
-	-- Add spawn exclusion zone(s)
-	if self.zonesNoSpawnName then
-		self.zonesNoSpawn = {}
-		for i, zoneNoSpawnName in ipairs(self.zonesNoSpawnName) do
-			_zone = (ZONE:FindByName(zoneNoSpawnName) and ZONE:FindByName(zoneNoSpawnName) or ZONE_POLYGON:FindByName(zoneNoSpawnName))
-			if _zone == nil then
-			_msg = "[JTF-1 BFMACM] ERROR: Exclusion zone: " .. tostring(zoneNoSpawnName) .. " not found!"
-			self:E(_msg)
-			else
-				self.zonesNoSpawn[i] = _zone
-			_msg = "[JTF-1 BFMACM] Exclusion zone: " .. tostring(zoneNoSpawnName) .. " added."
-			self:T(_msg)
-			end
-		end
-	else
-		self:T("[JTF-1 BFMACM] No exclusion zones defined.")
-	end
-
-	-- Add spawn objects
-	for i, adversaryMenu in ipairs(BFMACM.adversary.menu) do
-		_adv = GROUP:FindByName(adversaryMenu.template)
-		if _adv then
-			self.adversary.spawn[adversaryMenu.template] = SPAWN:New(adversaryMenu.template)
-		else
-			_msg = "[JTF-1 BFMACM] ERROR: spawn template: " .. tostring(adversaryMenu.template) .. " not found!" .. tostring(zoneNoSpawnName) .. " not found!"
-			self:E(_msg)
-		end
-	end
-
-end
-
--- check player is present and unit is alive
-function BFMACM:GetPlayerUnitAndName(unitname)
-	if unitname ~= nil then
-		local DCSunit = Unit.getByName(unitname)
-		if DCSunit then
-		local playername=DCSunit:getPlayerName()
-		local unit = UNIT:Find(DCSunit)
-		if DCSunit and unit and playername then
-			return unit, playername
-		end
-		end
-	end
-	-- Return nil if we could not find a player.
-	return nil,nil
-end
-
--- Spawn adversaries
-function BFMACM:SpawnAdv(adv,qty,group,rng,unit)
-	local playerName = (unit:GetPlayerName() and unit:GetPlayerName() or "Unknown") 
-	local range = rng * 1852
-	local hdg = unit:GetHeading()
-	local pos = unit:GetPointVec2()
-	local spawnPt = pos:Translate(range, hdg, true)
-	local spawnVec3 = spawnPt:GetVec3()
-	local spawnAllowed, msgNoSpawn
-
-	-- check player is in BFM ACM zone.
-	if self.zoneBfmAcm then
-		_msg = "[JTF-1 BFMACM] SpawnAdv(). Allowed Spawn Zone is defined."
-		self:T(_msg)
-		spawnAllowed = unit:IsInZone(self.zoneBfmAcm)
-		msgNoSpawn = ", Cannot spawn adversary aircraft if you are outside the BFM/ACM zone!"
-	else
-		_msg = "[JTF-1 BFMACM] SpawnAdv(). No Allowed Spawn Zone defined."
-		self:T(_msg)
-		-- no allowed spawn zone defined. Whole map active.
-		spawnAllowed = true
-	end
-
-	-- Check spawn location is not in an exclusion zone
-	if spawnAllowed then
-		if self.zonesNoSpawn then
-		for i, zoneExclusion in ipairs(self.zonesNoSpawn) do
-			spawnAllowed = not zoneExclusion:IsVec3InZone(spawnVec3)
-		end
-		msgNoSpawn = ", Cannot spawn adversary aircraft in an exclusion zone. Change course, or increase your range from the zone, and try again."
-		end
-	end
-
-	-- Check spawn location is inside the BFM/ACM zone
-	if spawnAllowed and self.zoneBfmAcm then
-		spawnAllowed = self.zoneBfmAcm:IsVec3InZone(spawnVec3)
-		msgNoSpawn = ", Cannot spawn adversary aircraft outside the BFM/ACM zone. Change course and try again."
-	end
-
-	-- Spawn the adversary, if not in an exclusion zone or outside the BFM/ACM zone.
-	if spawnAllowed then
-		self.adversary.spawn[adv]:InitGrouping(qty)
-		:InitHeading(hdg + 180)
-		:OnSpawnGroup(
-		function ( SpawnGroup )
-			local CheckAdversary = SCHEDULER:New( SpawnGroup, 
-			function (CheckAdversary)
-				if SpawnGroup and BFMACM.zoneBfmAcm then
-					if SpawnGroup:IsNotInZone( BFMACM.zoneBfmAcm ) then
-						local msg = "All players, BFM Adversary left BFM Zone and was removed!"
-						if useSRS then -- if MISSIONSRS radio object has been created, send message via default broadcast.
-							MISSIONSRS:SendRadio(msg,BFMACM.rangeRadio)
-						else -- otherwise, send in-game text message
-							MESSAGE:New(msg):ToAll()
-						end
-						--MESSAGE:New("Adversary left BFM Zone and was removed!"):ToAll()
-						SpawnGroup:Destroy()
-						SpawnGroup = nil
-					end
-				end
-			end,
-			{}, 0, 5 )
-		end
-		)
-		:SpawnFromVec3(spawnVec3)
-		local msg = "All players, " .. playerName .. " has spawned BFM Adversary."
-		if useSRS then -- if MISSIONSRS radio object has been created, send message via default broadcast.
-			MISSIONSRS:SendRadio(msg,self.rangeRadio)
-		else -- otherwise, send in-game text message
-			MESSAGE:New(msg):ToAll()
-		end
-		--MESSAGE:New(playerName .. " has spawned Adversary."):ToGroup(group)
-	else
-		local msg = playerName .. msgNoSpawn
-		if useSRS then -- if MISSIONSRS radio object has been created, send message via default broadcast.
-			MISSIONSRS:SendRadio(msg,BFMACM.rangeRadio)
-		else -- otherwise, send in-game text message
-			MESSAGE:New(msg):ToAll()
-		end
-		--MESSAGE:New(playerName .. msgNoSpawn):ToGroup(group)
-	end
-end
-
-function BFMACM:AddMenu(unitname)
-	self:T("[JTF-1 BFMACM] AddMenu called.")
-  local unit, playername = self:GetPlayerUnitAndName(unitname)
-  if unit and playername then
-    local group = unit:GetGroup()
-    local gid = group:GetID()
-    local uid = unit:GetID()
-    if group and gid then
-      -- only add menu once!
-      if self.menuAdded[uid] == nil then
-        -- add GROUP menu if not already present
-        if self.menuF10[gid] == nil then
-			self:T("[JTF-1 BFMACM] Adding menu for group: " .. group:GetName())
-			self.menuF10[gid] = MENU_GROUP:New(group, "AI BFM/ACM")
-        end
-        if self.menuF10[gid][uid] == nil then
-          -- add playername submenu
-          self:T("[JTF-1 BFMACM] Add submenu for player: " .. playername)
-          self.menuF10[gid][uid] = MENU_GROUP:New(group, playername, BFMACM.menuF10[gid])
-          -- add adversary submenus and range selectors
-          self:T("[JTF-1 BFMACM] Add submenus and range selectors for player: " .. playername)
-          for iMenu, adversary in ipairs(self.adversary.menu) do
-            -- Add adversary type menu
-            self.menuF10[gid][uid][iMenu] = MENU_GROUP:New(group, adversary.menuText, BFMACM.menuF10[gid][uid])
-            -- Add single or pair selection for adversary type
-            self.menuF10[gid][uid][iMenu].single = MENU_GROUP:New(group, "Single", BFMACM.menuF10[gid][uid][iMenu])
-            self.menuF10[gid][uid][iMenu].pair = MENU_GROUP:New(group, "Pair", BFMACM.menuF10[gid][uid][iMenu])
-            -- select range at which to spawn adversary
-            for iCommand, range in ipairs(BFMACM.adversary.range) do
-                MENU_GROUP_COMMAND:New(group, tostring(range) .. " nm", BFMACM.menuF10[gid][uid][iMenu].single, BFMACM.SpawnAdv, BFMACM, adversary.template, 1, group, range, unit)
-                MENU_GROUP_COMMAND:New(group, tostring(range) .. " nm", BFMACM.menuF10[gid][uid][iMenu].pair, BFMACM.SpawnAdv, BFMACM, adversary.template, 2, group, range, unit)
-            end
-          end
-        end
-        BFMACM.menuAdded[uid] = true
-      end
-    else
-		self:T(string.format("[JTF-1 BFMACM] ERROR: Could not find group or group ID in AddMenu() function. Unit name: %s.", unitname))
-    end
-  else
-    self:T(string.format("[JTF-1 BFMACM] ERROR: Player unit does not exist in AddMenu() function. Unit name: %s.", unitname))
-  end
-end
-  
--- handler for PlayEnterAircraft event.
--- call function to add GROUP:UNIT menu.
-function BFMACM:OnEventPlayerEnterAircraft(EventData)
-	self:T("[JTF-1 BFMACM] PlayerEnterAircraft called.")
-	local unitname = EventData.IniUnitName
-	local unit, playername = BFMACM:GetPlayerUnitAndName(unitname)
-	if unit and playername then
-		self:T("[JTF-1 BFMACM] Player entered Aircraft: " .. playername)
-		SCHEDULER:New(nil, BFMACM.AddMenu, {BFMACM, unitname},0.1)
-	end
-end
-
--- handler for PlayerLeaveUnit event.
--- remove GROUP:UNIT menu.
-function BFMACM:OnEventPlayerLeaveUnit(EventData)
-	local playername = EventData.IniPlayerName
-	local unit = EventData.IniUnit
-	local gid = EventData.IniGroup:GetID()
-	local uid = EventData.IniUnit:GetID()
-	self:T("[JTF-1 BFMACM] " .. playername .. " left unit:" .. unit:GetName() .. " UID: " .. uid)
-	if gid and uid then
-		if self.menuF10[gid] then
-			self:T("[JTF-1 BFMACM] Removing menu for unit UID:" .. uid)
-			self.menuF10[gid][uid]:Remove()
-			self.menuF10[gid][uid] = nil
-			self.menuAdded[uid] = nil
-		end
-	end
-end
-
--- pre-defined spawn templates to be used as an alternative to placing late activated templates in the miz
-BFMACM.template = {
-
-}
---BFMACM:Start()
-
---- END ACMBFM SECTION  
---------------------------------[bfmacm_data.lua]-------------------------------- 
- 
-env.info( "[JTF-1] bfmacm_data" )
-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
---- ACM/BFM
--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
---
--- This file MUST be loaded AFTER missiletrainer.lua
---
--- These values are specific to the miz and will override the default values in missiletrainer.lua
---
-
--- Error prevention. Create empty container if module core lua not loaded.
-if not BFMACM then 
-	_msg = "[JTF-1 BFMACM] CORE FILE NOT LOADED!"
-	BASE:E(_msg)
-	BFMACM = {}
-end
-
-BFMACM.zoneBfmAcmName = "COYOTEABC" -- The BFM/ACM Zone
-BFMACM.zonesNoSpawnName = { -- zones inside BFM/ACM zone within which adversaries may NOT be spawned.
-	"zone_box",
-} 
-
-BFMACM.adversary = {
-	menu = { -- Adversary menu
-		{template = "ADV_F4", menuText = "Adversary A-4"},
-		{template = "ADV_MiG28", menuText = "Adversary MiG-28"},
-		{template = "ADV_Su27", menuText = "Adversary MiG-23"},
-		{template = "ADV_MiG23", menuText = "Adversary Su-27"},
-		{template = "ADV_F16", menuText = "Adversary F-16"},
-		{template = "ADV_F18", menuText = "Adversary F-18"},
-	},
-	range = {5, 10, 20}, -- ranges at which to spawn adversaries in nautical miles
-	spawn = {}, -- container for aversary spawn objects
-	defaultRadio = "377.8",
-}
-
-
-if BFMACM.Start then
-	BFMACM:Start()
-end  
---------------------------------[bvrgci.lua]-------------------------------- 
- 
-env.info( "[JTF-1] bvrgci" )
--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
---- BEGIN BVRGCI SECTION.
--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
---
--- Each Menu level has an associated function which;
--- 1) adds the menu item for the level
--- 2) calls the function for the next level
---
--- Functions fit into the following menu map;
---
--- AI BVRGCI (menu root)
---   |_Group Size (menu level 1)
---     |_Altitude (menu level 2)
---       |_Formation (menu level 3)
---         |_Spacing (menu level 4)
---           |_Aircraft Type (command level 4) 
---   |_Remove Adversaries (command level 2)
-
---- BVRGCI default settings and values.
--- @type BVRGCI
--- @field #table Menu root BVRGCI F10 menu
--- @field #table SubMenu BVRGCI submenus
--- @field #number headingDefault Default heading for adversary spawns
--- @field #boolean Destroy When set to true, spawned adversary groups will be removed
-BVRGCI = {
-    Menu            = {},
-    SubMenu         = {},
-    Spawn           = {},
-    headingDefault  = 150,
-    Destroy         = false,
-    defaultRadio = "377.8",
-  }
-   
-BVRGCI.rangeRadio = JTF1.rangeRadio or BVRGCI.defaultRadio
-
-  --- ME Zone object for BVRGCI area boundary
-  -- @field #string ZoneBvr 
-  BVRGCI.ZoneBvr = ZONE:FindByName("ZONE_BVR")
-  --- ME Zone object for adversary spawn point
-  -- @field #string ZoneBvrSpawn 
-  BVRGCI.ZoneBvrSpawn = ZONE:FindByName("ZONE_BVR_SPAWN")
-  --- ME Zone object for adversary spawn waypoint 1
-  -- @field #string ZoneBvrWp1 
-  BVRGCI.ZoneBvrWp1 = ZONE:FindByName("ZONE_BVR_WP1")
-  
-  --- Sizes of adversary groups
-  -- @type BVRGCI.Size
-  -- @field #number Pair Section size group.
-  -- @field #number Four Flight size group.
-  BVRGCI.Size = {
-    Pair = 2,
-    Four = 4,
-  }
-  
-  --- Levels at which adversary groups may be spawned
-  -- @type BVRGCI.Altitude Altitude name, Altitude in metres for adversary spawns.
-  -- @field #number High Altitude, in metres, for High Level spawn.
-  -- @field #number Medium Altitude, in metres, for Medium Level spawns.
-  -- @field #number Low Altitude, in metres, for Low Level spawns.
-  BVRGCI.Altitude = {
-    High    = 9144, -- 30,000ft
-    Medium  = 6096, -- 20,000ft
-    Low     = 3048, -- 10,000ft
-  }
-      
-  --- Adversary types
-  -- @type BVRGCI.Adversary 
-  -- @list <#string> Display name for adversary type.
-  -- @list <#string> Name of spawn template for adversary type.
-  BVRGCI.Adversary = { 
-    {"F-4", "BVR_F4"},
-    {"F-14A", "BVR_F14A" },
-    {"MiG-21", "BVR_MIG21"},
-    {"MiG-23", "BVR_MIG23"},
-    {"MiG-29A", "BVR_MIG29A"},
-    {"Su-25", "BVR_SU25"},
-    {"Su-34", "BVR_SU34"},
-  }
-  
-  -- @field #table BVRGCI.BvrSpawnVec3 Vec3 coordinates for spawnpoint.
-  BVRGCI.BvrSpawnVec3 = COORDINATE:NewFromVec3(BVRGCI.ZoneBvrSpawn:GetPointVec3())
-  -- @field #table BvrWp1Vec3 Vec3 coordintates for wp1.
-  BVRGCI.BvrWp1Vec3 = COORDINATE:NewFromVec3(BVRGCI.ZoneBvrWp1:GetPointVec3())
-  -- @field #number Heading Heading from spawn point to wp1.
-  BVRGCI.Heading = COORDINATE:GetAngleDegrees(BVRGCI.BvrSpawnVec3:GetDirectionVec3(BVRGCI.BvrWp1Vec3))
-  
-  --- Spawn adversary aircraft with menu tree selected parameters.
-  -- @param #string typeName Aircraft type name
-  -- @param #string typeSpawnTemplate Airctraft type spawn template
-  -- @param #number Qty Quantity to spawn
-  -- @param #number Altitude Alititude at which to spawn adversary group
-  -- @param #number Formation ID for Formation, and spacing, in which to spawn adversary group
-  function BVRGCI.SpawnType(typeName, typeSpawnTemplate, Qty, Altitude, Formation) 
-    local spawnHeading = BVRGCI.Heading
-    local spawnVec3 = BVRGCI.BvrSpawnVec3
-    spawnVec3.y = Altitude
-    local spawnAdversary = SPAWN:New(typeSpawnTemplate)
-    spawnAdversary:InitGrouping(Qty) 
-    spawnAdversary:InitHeading(spawnHeading)
-    spawnAdversary:OnSpawnGroup(
-        function ( SpawnGroup, Formation, typeName )
-          -- reset despawn flag
-          BVRGCI.Destroy = false
-          -- set formation for spawned AC
-          SpawnGroup:SetOption(AI.Option.Air.id.FORMATION, Formation)
-          -- add scheduled funtion, 5 sec interval
-          local CheckAdversary = SCHEDULER:New( SpawnGroup, 
-            function (CheckAdversary)
-              if SpawnGroup then
-                -- remove adversary group if it has left the BVR/GCI zone, or the remove all adversaries menu option has been selected
-                if (SpawnGroup:IsNotInZone(BVRGCI.ZoneBvr) or (BVRGCI.Destroy)) then 
-                  local groupName = SpawnGroup.GroupName
-                  local msgDestroy = "All players, BVR adversary group " .. groupName .. " removed."
-                  local msgLeftZone = "All players, BVR adversary group " .. groupName .. " left zone and was removed."
-                  SpawnGroup:Destroy()
-                  SpawnGroup = nil
-                  local msg = (BVRGCI.Destroy and msgDestroy or msgLeftZone)
-                  if MISSIONSRS.Radio then -- if MISSIONSRS radio object has been created, send message via default broadcast.
-                    MISSIONSRS:SendRadio(msg, BVRGCI.rangeRadio)
-                  else -- otherwise, send in-game text message
-                    MESSAGE:New(msg):ToAll()
-                  end
-                  --MESSAGE:New(BVRGCI.Destroy and msgDestroy or msgLeftZone):ToAll()
-                end
-              end
-            end,
-          {}, 0, 5 )
-        end,
-        Formation, typeName
-      )
-    spawnAdversary:SpawnFromVec3(spawnVec3)
-    local msg = "All players, BVR Adversary group spawned."
-    if MISSIONSRS.Radio then -- if MISSIONSRS radio object has been created, send message via default broadcast.
-      MISSIONSRS:SendRadio(msg, BVRGCI.rangeRadio)
-    else -- otherwise, send in-game text message
-      MESSAGE:New(msg):ToAll()
-    end
-    --MESSAGE:New(_msg):ToAll()
-  end
-  
-  --- Remove all spawned BVRGCI adversaries
-  function BVRGCI.RemoveAdversaries()
-    BVRGCI.Destroy = true
-  end
-  
-  --- Add BVR/GCI MENU Adversary Type.
-  -- @param #table ParentMenu Parent menu with which each command should be associated.
-  function BVRGCI.BuildMenuType(ParentMenu)
-    for i, v in ipairs(BVRGCI.Adversary) do
-      local typeName = v[1]
-      local typeSpawnTemplate = v[2]
-      -- add Type spawn commands if spawn template exists, else send message that it doesn't
-      if GROUP:FindByName(typeSpawnTemplate) ~= nil then
-          MENU_COALITION_COMMAND:New(coalition.side.BLUE, typeName, ParentMenu, BVRGCI.SpawnType, typeName, typeSpawnTemplate, BVRGCI.Spawn.Qty, BVRGCI.Spawn.Level, ENUMS.Formation.FixedWing[BVRGCI.Spawn.Formation][BVRGCI.Spawn.Spacing])
-      else
-        _msg = "Spawn template " .. typeName .. " was not found and could not be added to menu."
-        MESSAGE:New(_msg):ToAll()
-      end
-    end
-  end
-  
-  --- Add BVR/GCI MENU Formation Spacing.
-  -- @param #string Spacing Spacing to apply to adversary group formation.
-  -- @param #string MenuText Text to display for menu option.
-  -- @param #object ParentMenu Parent menu with which this menu should be associated.
-  function BVRGCI.BuildMenuSpacing(Spacing, ParentMenu)
-    local MenuName = Spacing
-    local MenuText = Spacing
-    BVRGCI.SubMenu[MenuName] = MENU_COALITION:New(coalition.side.BLUE, MenuText, ParentMenu)
-    BVRGCI.Spawn.Spacing = Spacing
-    -- Build Type menus
-    BVRGCI.BuildMenuType(BVRGCI.SubMenu[MenuName])
-  end
-  
-  --- Add BVR/GCI MENU Formation.
-  -- @param #string Formation Name of formation in which adversary group should fly.
-  -- @param #string MenuText Text to display for menu option.
-  -- @param #object ParentMenu Parent menu with which this menus should be associated.
-  function BVRGCI.BuildMenuFormation(Formation, MenuText, ParentMenu)
-    local MenuName = Formation
-    BVRGCI.SubMenu[MenuName] = MENU_COALITION:New(coalition.side.BLUE, MenuText, ParentMenu)
-    BVRGCI.Spawn.Formation = Formation
-    -- Build formation spacing menus
-    BVRGCI.BuildMenuSpacing("Open", BVRGCI.SubMenu[MenuName])
-    BVRGCI.BuildMenuSpacing("Close", BVRGCI.SubMenu[MenuName])
-    BVRGCI.BuildMenuSpacing("Group", BVRGCI.SubMenu[MenuName])
-  end
-  
-  --- Add BVR/GCI MENU Level.
-  -- @param #number Altitude Altitude, in metres, at which to adversary group should spawn
-  -- @param #string MenuName Text for this item's menu name
-  -- 
-  function BVRGCI.BuildMenuLevel(Altitude, MenuName, MenuText, ParentMenu)
-    BVRGCI.SubMenu[MenuName] = MENU_COALITION:New(coalition.side.BLUE, MenuText, ParentMenu)
-    BVRGCI.Spawn.Level = Altitude
-    --Build Formation menus
-    BVRGCI.BuildMenuFormation("LineAbreast", "Line Abreast", BVRGCI.SubMenu[MenuName])
-    BVRGCI.BuildMenuFormation("Trail", "Trail", BVRGCI.SubMenu[MenuName])
-    BVRGCI.BuildMenuFormation("Wedge", "Wedge", BVRGCI.SubMenu[MenuName])
-    BVRGCI.BuildMenuFormation("EchelonRight", "Echelon Right", BVRGCI.SubMenu[MenuName])
-    BVRGCI.BuildMenuFormation("EchelonLeft", "Echelon Left", BVRGCI.SubMenu[MenuName])
-    BVRGCI.BuildMenuFormation("FingerFour", "Finger Four", BVRGCI.SubMenu[MenuName])
-    BVRGCI.BuildMenuFormation("Spread", "Spread", BVRGCI.SubMenu[MenuName])
-    BVRGCI.BuildMenuFormation("BomberElement", "Diamond", BVRGCI.SubMenu[MenuName])
-  end
-  
-  --- Add BVR/GCI MENU Group Size.
-  -- @param #number Qty Quantity of aircraft in enemy flight.
-  -- @param #string MenuName Text for this item's menu name
-  -- @param #object ParentMenu to which this menu item belongs 
-  function BVRGCI.BuildMenuQty(Qty, MenuName, ParentMenu)
-    MenuText = MenuName
-    BVRGCI.SubMenu[MenuName] = MENU_COALITION:New(coalition.side.BLUE, MenuText, ParentMenu)
-    BVRGCI.Spawn.Qty = Qty
-    -- Build Level menus
-    BVRGCI.BuildMenuLevel(BVRGCI.Altitude.High, "High", "High Level",  BVRGCI.SubMenu[MenuName])
-    BVRGCI.BuildMenuLevel(BVRGCI.Altitude.Medium, "Medium", "Medium Level",  BVRGCI.SubMenu[MenuName])
-    BVRGCI.BuildMenuLevel(BVRGCI.Altitude.Low, "Low", "Low Level",  BVRGCI.SubMenu[MenuName])
-  end
-
-  
-  
-  --- Add BVRGCI MENU Root.
-  function BVRGCI.BuildMenuRoot()
-    BVRGCI.Menu = MENU_COALITION:New(coalition.side.BLUE, "AI BVR/GCI")
-      -- Build group size menus
-      BVRGCI.BuildMenuQty(2, "Pair", BVRGCI.Menu)
-      BVRGCI.BuildMenuQty(4, "Four", BVRGCI.Menu)
-      -- level 2 command
-      BVRGCI.MenuRemoveAdversaries = MENU_COALITION_COMMAND:New(coalition.side.BLUE, "Remove BVR Adversaries", BVRGCI.Menu, BVRGCI.RemoveAdversaries)
-  end
-  
-  BVRGCI.BuildMenuRoot()
-  
---- END BVRGCI SECTION  
 --------------------------------[core\missiletrainer.lua]-------------------------------- 
  
 env.info( "[JTF-1] missiletrainer.lua" )
@@ -4821,41 +1519,6 @@ end
 -- MTRAINER:Start() -- uncomment if module is used without missiletrainer_data.lua
 
 --- END MISSILE TRAINER  
---------------------------------[missiletrainer_data.lua]-------------------------------- 
- 
-env.info( "[JTF-1] missiletrainer_data" )
--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
---- MISSILE TRAINER SETTINGS FOR MIZ
--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
---
--- This file MUST be loaded AFTER missiletrainer.lua
---
--- These values are specific to the miz and will override the default values in missiletrainer.lua
---
-
--- Error prevention. Create empty container if module core lua not loaded.
-if not MTRAINER then 
-	_msg = "[JTF-1 MTRAINER] CORE FILE NOT LOADED!"
-	BASE:E(_msg)
-	MTRAINER = {}
-end
-
--- these values will override those set in the core file
-MTRAINER.safeZone = nil -- safezone to use, otherwise nil for entire map
-MTRAINER.launchZone = nil -- launchzone to use, otherwise nil for entire map
-MTRAINER.DefaultLaunchAlerts = false -- if true, disable launch alerts
-MTRAINER.DefaultMissileDestruction = false -- 
-MTRAINER.DefaultLaunchMarks = false -- if true, enable map marks for launched missiles
-MTRAINER.ExplosionDistance = 300 -- distance from player at which to destroy incoming missiles
-MTRAINER.useSRS = true -- module should use SRS for radio messages
-
--- Start the MTRAINER module
-if MTRAINER.Start then
-  MTRAINER:Start()
-end
-
-
-  
 --------------------------------[core\markspawn.lua]-------------------------------- 
  
 env.info( "[JTF-1] markspawn" )
@@ -5079,7 +1742,7 @@ MARKSPAWN.ClassName = "MARKSPAWN"
 --MARKSPAWN.MLTgtArray = {}
 MARKSPAWN.radioPresets = {}
 MARKSPAWN.MLSpawnedGroups = {}
-MARKSPAWN.templates = {}
+--MARKSPAWN.templates = {}
 
 MARKSPAWN.default = {
 	-- DEFAULT VALUES
@@ -5111,10 +1774,15 @@ MARKSPAWN.spawnTypes = { -- types available for spawning
     { template = "BVR_F4",     	msType = "F4",      	category = "air",     role = "CAP"},
     { template = "BVR_F16",    	msType = "F16",     	category = "air",     role = "CAP"},
     { template = "BVR_F18",    	msType = "F18",     	category = "air",     role = "CAP"},
+    ------------------------ CAS ------------------------
+    { template = "CAS_MQ9",    	msType = "MQ9",     	category = "air",     role = "CAS"},
+    { template = "CAS_WINGLOON",msType = "WINGLOON",    category = "air",     role = "CAS"},
     ------------------------ SEAD ------------------------
 	{ template = "SEAD_F16",    msType = "F16SEAD",	category = "air",     role = "SEAD"},
 	{ template = "SEAD_F18",    msType = "F18SEAD",	category = "air",     role = "SEAD"},
 	------------------------ SAM ------------------------
+    { template = "SA2",    		msType = "SA2",	  		category = "ground",  role = "SAM"},
+    { template = "SA3",    		msType = "SA3",	  		category = "ground",  role = "SAM"},
     { template = "SA6",    		msType = "SA6",	  		category = "ground",  role = "SAM"},
     { template = "SA8",    		msType = "SA8", 		category = "ground",  role = "SAM"},
     { template = "SA10",   		msType = "SA10", 		category = "ground",  role = "SAM"},
@@ -5125,6 +1793,7 @@ MARKSPAWN.spawnTypes = { -- types available for spawning
     { template = "ZSU23_Shilka",msType = "ZSU23",		category = "ground",  role = "AAA"},
     { template = "ZU23_Emp",	msType = "ZU23EMP",		category = "ground",  role = "AAA"},
     { template = "ZU23_Ural",	msType = "ZU23URAL",	category = "ground",  role = "AAA"},
+    { template = "ZU23_Closed",	msType = "ZU23CLOSED",	category = "ground",  role = "AAA"},
 	------------------------ CONVOY ------------------------
     { template = "CON_light",	msType = "CONLIGHT",	category = "ground",  role = "CON"},
     { template = "CON_heavy",	msType = "CONHEAVY",	category = "ground",  role = "CON"},
@@ -5169,25 +1838,14 @@ function MARKSPAWN:Start()
 			local spawnTemplate
 	
 			-- look in MARKSPAWN templates
-			if self.templates[templateName] then
-				_msg = string.format("%sUse spawn template from MARKSPAWN.templates for %s.",
+			if SPAWNTEMPLATES.templates[templateName] then
+				_msg = string.format("%sUse spawn template from SPAWNTEMPLATES.templates for %s.",
 					self.traceTitle,
 					templateName
 				)
 				self:T(_msg)
 
-				spawnTemplate = self.templates[templateName]
-	
-			-- look in MISSIONSPAWN templates
-			elseif MISSIONSPAWN and MISSIONSPAWN.templates[templateName] then
-				_msg = string.format("%sUse spawn template from MISSIONSPAWN.templates for %s.",
-					self.traceTitle,
-					templateName
-				)
-				self:T(_msg)
-
-				spawnTemplate = MISSIONSPAWN.templates[templateName]
-
+				spawnTemplate = SPAWNTEMPLATES.templates[templateName]
 			end
 
 			-- If we have a template, generate the SPAWN object
@@ -5220,7 +1878,7 @@ function MARKSPAWN:Start()
 				)
 				spawn:Spawn()
 			
-			-- Template cannot be found in miz, MARKSPAWN.templates or MISSIONSPAWN.templates
+			-- Template cannot be found in miz or SPAWNTEMPLATES.templates
 			else
 				_msg = string.format("%sError! Could not find template %s.",
 					self.traceTitle,
@@ -6590,40 +3248,1001 @@ function MARKSPAWN:AddTemplate(spawnType)
 end
 
 --- END MARKSPAWN  
---------------------------------[core\markspawn_templates.lua]-------------------------------- 
+--------------------------------[core\bfmacm.lua]-------------------------------- 
  
-env.info( "[JTF-1] markspawn_templates" )
---------------------------------------------
---- Mark Spawn Spawn Templates Defined in this file
---------------------------------------------
+env.info( "[JTF-1] bfmacm" )
 --
--- **NOTE**: MARKSPAWN.LUA MUST BE LOADED BEFORE THIS FILE IS LOADED!
---
--- This file contains the built-in templates used for spawn objects created 
--- for MARKSPAWN.
---
--- All functions and key values are in MARKSPAWN.LUA, which should be loaded first.
---
--- If MARKSPAWN_DATA.LUA is used it should be loaded after MARKSPAWN.LUA and 
--- MARKSPAWN_TEMPLATES.LUA and the call to MARKSPAWN:Start() at the end of this file
--- should be commented out.
---
--- Load order in miz MUST be;
---     1. markspawn.lua
---     2. markspawn_templates.lua
---     3. [OPTIONAL] markspawn_data.lua
---
+-- ZONES: if zones are MOOSE polygon zones, zone name in mission editor MUST be suffixed with ~ZONE_POLYGON
+-- 
 
--- Error prevention. Create empty container if SUPPORTAIRCRAFT.LUA is not loaded or has failed.
-if not MARKSPAWN then 
-	MARKSPAWN = {}
-	MARKSPAWN.traceTitle = "[JTF-1 MARKSPAWN] "
-	_msg = MARKSPAWN.traceTitle .. "CORE FILE NOT LOADED!"
-	BASE:E(_msg)
+BFMACM = {
+	ClassName = "BFMACM",
+	version = "1.0",
+	traceTitle = "[JTF-1] ",
+	menuAdded = {},
+	menuF10 = {},
+	useSRS = true,
+}
+
+-- BFMACM.zoneBfmAcmName = "COYOTEABC" -- The BFM/ACM Zone
+-- BFMACM.zonesNoSpawnName = { -- zones inside BFM/ACM zone within which adversaries may NOT be spawned.
+-- 	"zone_box",
+-- } 
+
+BFMACM.adversary = {
+	menu = { -- Adversary menu
+		{template = "ADV_F4", menuText = "Adversary A-4"},
+		{template = "ADV_MiG28", menuText = "Adversary MiG-28"},
+		{template = "ADV_Su27", menuText = "Adversary MiG-23"},
+		{template = "ADV_MiG23", menuText = "Adversary Su-27"},
+		{template = "ADV_F16", menuText = "Adversary F-16"},
+		{template = "ADV_F18", menuText = "Adversary F-18"},
+	},
+	range = {5, 10, 20}, -- ranges at which to spawn adversaries in nautical miles
+	spawn = {}, -- container for aversary spawn objects
+	defaultRadio = "377.8",
+}
+
+-- set frequency to use if messages are to be sent using SRS
+BFMACM.rangeRadio = JTF1.rangeRadio or BFMACM.defaultRadio
+
+-- Inherit from BASE
+BFMACM = BASE:Inherit( BFMACM, BASE:New() )
+-- Add eventhandler
+BFMACM:HandleEvent(EVENTS.PlayerEnterAircraft)
+BFMACM:HandleEvent(EVENTS.PlayerLeaveUnit)
+
+local _msg
+local useSRS
+
+function BFMACM:Start() -- start BFMACM module
+	useSRS = (JTF1.useSRS and BFMACM.useSRS) and MISSIONSRS.Radio.active -- default to not using SRS unless both the server AND the module request it and MISSIONSRS.Radio is true
+	_msg = string.format("[JTF-1 BFMACM] useSRS: %s", tostring(useSRS))
+	-- if useSRS then
+	-- 	_msg = _msg .. "TRUE"
+	-- else
+	-- 	_msg = _msg .. "FALSE"
+	-- end 
+	self:T(_msg)
+
+	-- Add main BFMACM zone
+	if self.zoneBfmAcmName ~= nil then
+		_zone = ZONE:FindByName(self.zoneBfmAcmName) or ZONE_POLYGON:FindByName(self.zoneBfmAcmName)
+		if _zone == nil then
+			_msg = string.format("[JTF-1 BFMACM] ERROR: BFM/ACM Zone: %s not found!", self.zoneBfmAcmName)
+			self:E(_msg)
+		else
+			self.zoneBfmAcm = _zone
+			_msg = string.format("[JTF-1 BFMACM] BFM/ACM Zone: %s added.", self.zoneBfmAcmName)
+			self:T(_msg)
+		end
+	else
+		-- no zone defined, whole map will be active
+		_msg = "[JTF-1 BFMACM] No zone defined. Whole map is active."
+		self:T(_msg)
+		self.zoneBfmAcm = false
+
+	end
+
+	-- Add spawn exclusion zone(s)
+	if self.zonesNoSpawnName then
+		self.zonesNoSpawn = {}
+		for i, zoneNoSpawnName in ipairs(self.zonesNoSpawnName) do
+			_zone = (ZONE:FindByName(zoneNoSpawnName) and ZONE:FindByName(zoneNoSpawnName) or ZONE_POLYGON:FindByName(zoneNoSpawnName))
+			if _zone == nil then
+			_msg = "[JTF-1 BFMACM] ERROR: Exclusion zone: " .. tostring(zoneNoSpawnName) .. " not found!"
+			self:E(_msg)
+			else
+				self.zonesNoSpawn[i] = _zone
+			_msg = "[JTF-1 BFMACM] Exclusion zone: " .. tostring(zoneNoSpawnName) .. " added."
+			self:T(_msg)
+			end
+		end
+	else
+		self:T("[JTF-1 BFMACM] No exclusion zones defined.")
+	end
+
+	-- Add spawn objects
+	for i, adversaryMenu in ipairs(BFMACM.adversary.menu) do
+		_adv = GROUP:FindByName(adversaryMenu.template)
+		if _adv then
+			self.adversary.spawn[adversaryMenu.template] = SPAWN:New(adversaryMenu.template)
+		else
+			_msg = "[JTF-1 BFMACM] ERROR: spawn template: " .. tostring(adversaryMenu.template) .. " not found!" .. tostring(zoneNoSpawnName) .. " not found!"
+			self:E(_msg)
+		end
+	end
+
 end
 
-MARKSPAWN.templates = {
-	------------------------ BVR ------------------------
+-- check player is present and unit is alive
+function BFMACM:GetPlayerUnitAndName(unitname)
+	if unitname ~= nil then
+		local DCSunit = Unit.getByName(unitname)
+		if DCSunit then
+		local playername=DCSunit:getPlayerName()
+		local unit = UNIT:Find(DCSunit)
+		if DCSunit and unit and playername then
+			return unit, playername
+		end
+		end
+	end
+	-- Return nil if we could not find a player.
+	return nil,nil
+end
+
+-- Spawn adversaries
+function BFMACM:SpawnAdv(adv,qty,group,rng,unit)
+	local playerName = (unit:GetPlayerName() and unit:GetPlayerName() or "Unknown") 
+	local range = rng * 1852
+	local hdg = unit:GetHeading()
+	local pos = unit:GetPointVec2()
+	local spawnPt = pos:Translate(range, hdg, true)
+	local spawnVec3 = spawnPt:GetVec3()
+	local spawnAllowed, msgNoSpawn
+
+	-- check player is in BFM ACM zone.
+	if self.zoneBfmAcm then
+		_msg = "[JTF-1 BFMACM] SpawnAdv(). Allowed Spawn Zone is defined."
+		self:T(_msg)
+		spawnAllowed = unit:IsInZone(self.zoneBfmAcm)
+		msgNoSpawn = ", Cannot spawn adversary aircraft if you are outside the BFM/ACM zone!"
+	else
+		_msg = "[JTF-1 BFMACM] SpawnAdv(). No Allowed Spawn Zone defined."
+		self:T(_msg)
+		-- no allowed spawn zone defined. Whole map active.
+		spawnAllowed = true
+	end
+
+	-- Check spawn location is not in an exclusion zone
+	if spawnAllowed then
+		if self.zonesNoSpawn then
+		for i, zoneExclusion in ipairs(self.zonesNoSpawn) do
+			spawnAllowed = not zoneExclusion:IsVec3InZone(spawnVec3)
+		end
+		msgNoSpawn = ", Cannot spawn adversary aircraft in an exclusion zone. Change course, or increase your range from the zone, and try again."
+		end
+	end
+
+	-- Check spawn location is inside the BFM/ACM zone
+	if spawnAllowed and self.zoneBfmAcm then
+		spawnAllowed = self.zoneBfmAcm:IsVec3InZone(spawnVec3)
+		msgNoSpawn = ", Cannot spawn adversary aircraft outside the BFM/ACM zone. Change course and try again."
+	end
+
+	-- Spawn the adversary, if not in an exclusion zone or outside the BFM/ACM zone.
+	if spawnAllowed then
+		self.adversary.spawn[adv]:InitGrouping(qty)
+		:InitHeading(hdg + 180)
+		:OnSpawnGroup(
+		function ( SpawnGroup )
+			local CheckAdversary = SCHEDULER:New( SpawnGroup, 
+			function (CheckAdversary)
+				if SpawnGroup and BFMACM.zoneBfmAcm then
+					if SpawnGroup:IsNotInZone( BFMACM.zoneBfmAcm ) then
+						local msg = "All players, BFM Adversary left BFM Zone and was removed!"
+						if useSRS then -- if MISSIONSRS radio object has been created, send message via default broadcast.
+							MISSIONSRS:SendRadio(msg,BFMACM.rangeRadio)
+						else -- otherwise, send in-game text message
+							MESSAGE:New(msg):ToAll()
+						end
+						--MESSAGE:New("Adversary left BFM Zone and was removed!"):ToAll()
+						SpawnGroup:Destroy()
+						SpawnGroup = nil
+					end
+				end
+			end,
+			{}, 0, 5 )
+		end
+		)
+		:SpawnFromVec3(spawnVec3)
+		local msg = "All players, " .. playerName .. " has spawned BFM Adversary."
+		if useSRS then -- if MISSIONSRS radio object has been created, send message via default broadcast.
+			MISSIONSRS:SendRadio(msg,self.rangeRadio)
+		else -- otherwise, send in-game text message
+			MESSAGE:New(msg):ToAll()
+		end
+		--MESSAGE:New(playerName .. " has spawned Adversary."):ToGroup(group)
+	else
+		local msg = playerName .. msgNoSpawn
+		if useSRS then -- if MISSIONSRS radio object has been created, send message via default broadcast.
+			MISSIONSRS:SendRadio(msg,BFMACM.rangeRadio)
+		else -- otherwise, send in-game text message
+			MESSAGE:New(msg):ToAll()
+		end
+		--MESSAGE:New(playerName .. msgNoSpawn):ToGroup(group)
+	end
+end
+
+function BFMACM:AddMenu(unitname)
+	self:T("[JTF-1 BFMACM] AddMenu called.")
+  local unit, playername = self:GetPlayerUnitAndName(unitname)
+  if unit and playername then
+    local group = unit:GetGroup()
+    local gid = group:GetID()
+    local uid = unit:GetID()
+    if group and gid then
+      -- only add menu once!
+      if self.menuAdded[uid] == nil then
+        -- add GROUP menu if not already present
+        if self.menuF10[gid] == nil then
+			self:T("[JTF-1 BFMACM] Adding menu for group: " .. group:GetName())
+			self.menuF10[gid] = MENU_GROUP:New(group, "AI BFM/ACM")
+        end
+        if self.menuF10[gid][uid] == nil then
+          -- add playername submenu
+          self:T("[JTF-1 BFMACM] Add submenu for player: " .. playername)
+          self.menuF10[gid][uid] = MENU_GROUP:New(group, playername, BFMACM.menuF10[gid])
+          -- add adversary submenus and range selectors
+          self:T("[JTF-1 BFMACM] Add submenus and range selectors for player: " .. playername)
+          for iMenu, adversary in ipairs(self.adversary.menu) do
+            -- Add adversary type menu
+            self.menuF10[gid][uid][iMenu] = MENU_GROUP:New(group, adversary.menuText, BFMACM.menuF10[gid][uid])
+            -- Add single or pair selection for adversary type
+            self.menuF10[gid][uid][iMenu].single = MENU_GROUP:New(group, "Single", BFMACM.menuF10[gid][uid][iMenu])
+            self.menuF10[gid][uid][iMenu].pair = MENU_GROUP:New(group, "Pair", BFMACM.menuF10[gid][uid][iMenu])
+            -- select range at which to spawn adversary
+            for iCommand, range in ipairs(BFMACM.adversary.range) do
+                MENU_GROUP_COMMAND:New(group, tostring(range) .. " nm", BFMACM.menuF10[gid][uid][iMenu].single, BFMACM.SpawnAdv, BFMACM, adversary.template, 1, group, range, unit)
+                MENU_GROUP_COMMAND:New(group, tostring(range) .. " nm", BFMACM.menuF10[gid][uid][iMenu].pair, BFMACM.SpawnAdv, BFMACM, adversary.template, 2, group, range, unit)
+            end
+          end
+        end
+        BFMACM.menuAdded[uid] = true
+      end
+    else
+		self:T(string.format("[JTF-1 BFMACM] ERROR: Could not find group or group ID in AddMenu() function. Unit name: %s.", unitname))
+    end
+  else
+    self:T(string.format("[JTF-1 BFMACM] ERROR: Player unit does not exist in AddMenu() function. Unit name: %s.", unitname))
+  end
+end
+  
+-- handler for PlayEnterAircraft event.
+-- call function to add GROUP:UNIT menu.
+function BFMACM:OnEventPlayerEnterAircraft(EventData)
+	self:T("[JTF-1 BFMACM] PlayerEnterAircraft called.")
+	local unitname = EventData.IniUnitName
+	local unit, playername = BFMACM:GetPlayerUnitAndName(unitname)
+	if unit and playername then
+		self:T("[JTF-1 BFMACM] Player entered Aircraft: " .. playername)
+		SCHEDULER:New(nil, BFMACM.AddMenu, {BFMACM, unitname},0.1)
+	end
+end
+
+-- handler for PlayerLeaveUnit event.
+-- remove GROUP:UNIT menu.
+function BFMACM:OnEventPlayerLeaveUnit(EventData)
+	local playername = EventData.IniPlayerName
+	local unit = EventData.IniUnit
+	local gid = EventData.IniGroup:GetID()
+	local uid = EventData.IniUnit:GetID()
+	self:T("[JTF-1 BFMACM] " .. playername .. " left unit:" .. unit:GetName() .. " UID: " .. uid)
+	if gid and uid then
+		if self.menuF10[gid] then
+			self:T("[JTF-1 BFMACM] Removing menu for unit UID:" .. uid)
+			self.menuF10[gid][uid]:Remove()
+			self.menuF10[gid][uid] = nil
+			self.menuAdded[uid] = nil
+		end
+	end
+end
+
+-- pre-defined spawn templates to be used as an alternative to placing late activated templates in the miz
+BFMACM.template = {
+
+}
+--BFMACM:Start()
+
+--- END ACMBFM SECTION  
+--------------------------------[core\Hercules_Cargo.lua]-------------------------------- 
+ 
+env.info( "[JTF-1] Hercules_Cargo.lua" )
+-- Hercules Cargo Drop Events by Anubis Yinepu
+
+-- This script will only work for the Herculus mod by Anubis
+-- Payloads carried by pylons 11, 12 and 13 need to be declared in the Herculus_Loadout.lua file
+-- Except for Ammo pallets, this script will spawn whatever payload gets launched from pylons 11, 12 and 13
+-- Pylons 11, 12 and 13 are moveable within the Herculus cargobay area
+-- Ammo pallets can only be jettisoned from these pylons with no benefit to DCS world
+-- To benefit DCS world, Ammo pallets need to be off/on loaded using DCS arming and refueling window
+-- Cargo_Container_Enclosed = true: Cargo enclosed in container with parachute, need to be dropped from 100m (300ft) or more, except when parked on ground
+-- Cargo_Container_Enclosed = false: Open cargo with no parachute, need to be dropped from 10m (30ft) or less
+
+Hercules_Cargo = {}
+Hercules_Cargo.Hercules_Cargo_Drop_Events = {}
+local GT_DisplayName = ""
+local GT_Name = ""
+local Cargo_Drop_initiator = ""
+local Cargo_Container_Enclosed = false
+local SoldierGroup = false
+local ParatrooperCount = 1
+local ParatrooperGroupSpawnInit = false
+local ParatrooperGroupSpawn = false
+
+local Herc_j = 0
+local Herc_Cargo = {}
+Herc_Cargo.Cargo_Drop_Direction = 0
+Herc_Cargo.Cargo_Contents = ""
+Herc_Cargo.Cargo_Type_name = ""
+Herc_Cargo.Cargo_over_water = false
+Herc_Cargo.Container_Enclosed = false
+Herc_Cargo.offload_cargo = false
+Herc_Cargo.all_cargo_survive_to_the_ground = false
+Herc_Cargo.all_cargo_gets_destroyed = false
+Herc_Cargo.destroy_cargo_dropped_without_parachute = false
+Herc_Cargo.scheduleFunctionID = 0
+
+local CargoHeading = 0
+local Cargo_Drop_Position = {}
+
+local SoldierUnitID = 12000
+local SoldierGroupID = 12000
+local GroupSpacing = 0
+--added by wrench
+Hercules_Cargo.types = {
+	["ATGM M1045 HMMWV TOW Air [7183lb]"] = {['name'] = "M1045 HMMWV TOW", ['container'] = true},
+	["ATGM M1045 HMMWV TOW Skid [7073lb]"] = {['name'] = "M1045 HMMWV TOW", ['container'] = false},
+	["APC M1043 HMMWV Armament Air [7023lb]"] = {['name'] = "M1043 HMMWV Armament", ['container'] = true},
+	["APC M1043 HMMWV Armament Skid [6912lb]"] = {['name'] = "M1043 HMMWV Armament", ['container'] = false},
+	["SAM Avenger M1097 Air [7200lb]"] = {['name'] = "M1097 Avenger", ['container'] = true},
+	["SAM Avenger M1097 Skid [7090lb]"] = {['name'] = "M1097 Avenger", ['container'] = false},
+	["APC Cobra Air [10912lb]"] = {['name'] = "Cobra", ['container'] = true},
+	["APC Cobra Skid [10802lb]"] = {['name'] = "Cobra", ['container'] = false},
+	["APC M113 Air [21624lb]"] = {['name'] = "M-113", ['container'] = true},
+	["APC M113 Skid [21494lb]"] = {['name'] = "M-113", ['container'] = false},
+	["Tanker M978 HEMTT [34000lb]"] = {['name'] = "M978 HEMTT Tanker", ['container'] = false},
+	["HEMTT TFFT [34400lb]"] = {['name'] = "HEMTT TFFT", ['container'] = false},
+	["SPG M1128 Stryker MGS [33036lb]"] = {['name'] = "M1128 Stryker MGS", ['container'] = false},
+	["AAA Vulcan M163 Air [21666lb]"] = {['name'] = "Vulcan", ['container'] = true},
+	["AAA Vulcan M163 Skid [21577lb]"] = {['name'] = "Vulcan", ['container'] = false},
+	["APC M1126 Stryker ICV [29542lb]"] = {['name'] = "M1126 Stryker ICV", ['container'] = false},
+	["ATGM M1134 Stryker [30337lb]"] = {['name'] = "M1134 Stryker ATGM", ['container'] = false},
+	["APC LAV-25 Air [22520lb]"] = {['name'] = "LAV-25", ['container'] = true},
+	["APC LAV-25 Skid [22514lb]"] = {['name'] = "LAV-25", ['container'] = false},
+	["M1025 HMMWV Air [6160lb]"] = {['name'] = "Hummer", ['container'] = true},
+	["M1025 HMMWV Skid [6050lb]"] = {['name'] = "Hummer", ['container'] = false},
+	["IFV M2A2 Bradley [34720lb]"] = {['name'] = "M-2 Bradley", ['container'] = false},
+	["IFV MCV-80 [34720lb]"] = {['name'] = "MCV-80", ['container'] = false},
+	["IFV BMP-1 [23232lb]"] = {['name'] = "BMP-1", ['container'] = false},
+	["IFV BMP-2 [25168lb]"] = {['name'] = "BMP-2", ['container'] = false},
+	["IFV BMP-3 [32912lb]"] = {['name'] = "BMP-3", ['container'] = false},
+	["ARV BRDM-2 Air [12320lb]"] = {['name'] = "BRDM-2", ['container'] = true},
+	["ARV BRDM-2 Skid [12210lb]"] = {['name'] = "BRDM-2", ['container'] = false},
+	["APC BTR-80 Air [23936lb]"] = {['name'] = "BTR-80", ['container'] = true},
+	["APC BTR-80 Skid [23826lb]"] = {['name'] = "BTR-80", ['container'] = false},
+	["APC BTR-82A Air [24998lb]"] = {['name'] = "BTR-82A", ['container'] = true},
+	["APC BTR-82A Skid [24888lb]"] = {['name'] = "BTR-82A", ['container'] = false},
+	["SAM ROLAND ADS [34720lb]"] = {['name'] = "Roland Radar", ['container'] = false},
+	["SAM ROLAND LN [34720b]"] = {['name'] = "Roland ADS", ['container'] = false},
+	["SAM SA-13 STRELA [21624lb]"] = {['name'] = "Strela-10M3", ['container'] = false},
+	["AAA ZSU-23-4 Shilka [32912lb]"] = {['name'] = "ZSU-23-4 Shilka", ['container'] = false},
+	["SAM SA-19 Tunguska 2S6 [34720lb]"] = {['name'] = "2S6 Tunguska", ['container'] = false},
+	["Transport UAZ-469 Air [3747lb]"] = {['name'] = "UAZ-469", ['container'] = true},
+	["Transport UAZ-469 Skid [3630lb]"] = {['name'] = "UAZ-469", ['container'] = false},
+	["AAA GEPARD [34720lb]"] = {['name'] = "Gepard", ['container'] = false},
+	["SAM CHAPARRAL Air [21624lb]"] = {['name'] = "M48 Chaparral", ['container'] = true},
+	["SAM CHAPARRAL Skid [21516lb]"] = {['name'] = "M48 Chaparral", ['container'] = false},
+	["SAM LINEBACKER [34720lb]"] = {['name'] = "M6 Linebacker", ['container'] = false},
+	["Transport URAL-375 [14815lb]"] = {['name'] = "Ural-375", ['container'] = false},
+	["Transport M818 [16000lb]"] = {['name'] = "M 818", ['container'] = false},
+	["IFV MARDER [34720lb]"] = {['name'] = "Marder", ['container'] = false},
+	["Transport Tigr Air [15900lb]"] = {['name'] = "Tigr_233036", ['container'] = true},
+	["Transport Tigr Skid [15730lb]"] = {['name'] = "Tigr_233036", ['container'] = false},
+	["IFV TPZ FUCH [33440lb]"] = {['name'] = "TPZ", ['container'] = false},
+	["IFV BMD-1 Air [18040lb]"] = {['name'] = "BMD-1", ['container'] = true},
+	["IFV BMD-1 Skid [17930lb]"] = {['name'] = "BMD-1", ['container'] = false},
+	["IFV BTR-D Air [18040lb]"] = {['name'] = "BTR_D", ['container'] = true},
+	["IFV BTR-D Skid [17930lb]"] = {['name'] = "BTR_D", ['container'] = false},
+	["EWR SBORKA Air [21624lb]"] = {['name'] = "Dog Ear radar", ['container'] = true},
+	["EWR SBORKA Skid [21624lb]"] = {['name'] = "Dog Ear radar", ['container'] = false},
+	["ART 2S9 NONA Air [19140lb]"] = {['name'] = "SAU 2-C9", ['container'] = true},
+	["ART 2S9 NONA Skid [19030lb]"] = {['name'] = "SAU 2-C9", ['container'] = false},
+	["ART GVOZDIKA [34720lb]"] = {['name'] = "SAU Gvozdika", ['container'] = false},
+	["APC MTLB Air [26400lb]"] = {['name'] = "MTLB", ['container'] = true},
+	["APC MTLB Skid [26290lb]"] = {['name'] = "MTLB", ['container'] = false},
+	--["Generic Crate [20000lb]"] = {['name'] =  "Hercules_Container_Parachute", ['container'] = true}
+}
+function Hercules_Cargo.Soldier_SpawnGroup(Cargo_Drop_Position, Cargo_Type_name, CargoHeading, Cargo_Country, GroupSpacing)
+	SoldierUnitID = SoldierUnitID + 30
+	SoldierGroupID = SoldierGroupID + 1
+	local Herc_Soldier_Spawn = 
+	{
+		["visible"] = false,
+		["tasks"] = 
+		{
+		}, -- end of ["tasks"]
+		["uncontrollable"] = false,
+		["task"] = "Ground Nothing",
+		["taskSelected"] = true,
+		["groupId"] = SoldierGroupID,
+		["hidden"] = false,
+		["units"] = 
+		{
+			[1] = 
+			{
+				["type"] = Cargo_Type_name,
+				["transportable"] = 
+				{
+					["randomTransportable"] = true,
+				}, -- end of ["transportable"]
+				["unitId"] = SoldierUnitID + 1,
+				["skill"] = "Excellent",
+				["y"] = Cargo_Drop_Position.z + 0.5 + GroupSpacing,
+				["x"] = Cargo_Drop_Position.x + 0.5 + GroupSpacing,
+				["name"] = "Soldier Unit "..SoldierUnitID,
+				["heading"] = CargoHeading,
+				["playerCanDrive"] = false,
+			}, -- end of [1]
+			[2] = 
+			{
+				["type"] = Cargo_Type_name,
+				["transportable"] = 
+				{
+					["randomTransportable"] = true,
+				}, -- end of ["transportable"]
+				["unitId"] = SoldierUnitID + 1,
+				["skill"] = "Excellent",
+				["y"] = Cargo_Drop_Position.z + 1.0 + GroupSpacing,
+				["x"] = Cargo_Drop_Position.x + 1.0 + GroupSpacing,
+				["name"] = "Soldier Unit "..SoldierUnitID,
+				["heading"] = CargoHeading,
+				["playerCanDrive"] = false,
+			}, -- end of [2]
+			[3] = 
+			{
+				["type"] = Cargo_Type_name,
+				["transportable"] = 
+				{
+					["randomTransportable"] = true,
+				}, -- end of ["transportable"]
+				["unitId"] = SoldierUnitID + 1,
+				["skill"] = "Excellent",
+				["y"] = Cargo_Drop_Position.z + 1.5 + GroupSpacing,
+				["x"] = Cargo_Drop_Position.x + 1.0 + GroupSpacing,
+				["name"] = "Soldier Unit "..SoldierUnitID,
+				["heading"] = CargoHeading,
+				["playerCanDrive"] = false,
+			}, -- end of [3]
+			[4] = 
+			{
+				["type"] = Cargo_Type_name,
+				["transportable"] = 
+				{
+					["randomTransportable"] = true,
+				}, -- end of ["transportable"]
+				["unitId"] = SoldierUnitID + 1,
+				["skill"] = "Excellent",
+				["y"] = Cargo_Drop_Position.z + 2.0 + GroupSpacing,
+				["x"] = Cargo_Drop_Position.x + 2.0 + GroupSpacing,
+				["name"] = "Soldier Unit "..SoldierUnitID,
+				["heading"] = CargoHeading,
+				["playerCanDrive"] = false,
+			}, -- end of [4]
+			[5] = 
+			{
+				["type"] = Cargo_Type_name,
+				["transportable"] = 
+				{
+					["randomTransportable"] = true,
+				}, -- end of ["transportable"]
+				["unitId"] = SoldierUnitID + 1,
+				["skill"] = "Excellent",
+				["y"] = Cargo_Drop_Position.z + 2.5 + GroupSpacing,
+				["x"] = Cargo_Drop_Position.x + 2.5 + GroupSpacing,
+				["name"] = "Soldier Unit "..SoldierUnitID,
+				["heading"] = CargoHeading,
+				["playerCanDrive"] = false,
+			}, -- end of [5]
+			[6] = 
+			{
+				["type"] = Cargo_Type_name,
+				["transportable"] = 
+				{
+					["randomTransportable"] = true,
+				}, -- end of ["transportable"]
+				["unitId"] = SoldierUnitID + 1,
+				["skill"] = "Excellent",
+				["y"] = Cargo_Drop_Position.z + 3.0 + GroupSpacing,
+				["x"] = Cargo_Drop_Position.x + 3.0 + GroupSpacing,
+				["name"] = "Soldier Unit "..SoldierUnitID,
+				["heading"] = CargoHeading,
+				["playerCanDrive"] = false,
+			}, -- end of [6]
+			[7] = 
+			{
+				["type"] = "Soldier M249",
+				["transportable"] = 
+				{
+					["randomTransportable"] = true,
+				}, -- end of ["transportable"]
+				["unitId"] = SoldierUnitID + 1,
+				["skill"] = "Excellent",
+				["y"] = Cargo_Drop_Position.z + 3.5 + GroupSpacing,
+				["x"] = Cargo_Drop_Position.x + 3.5 + GroupSpacing,
+				["name"] = "Soldier Unit "..SoldierUnitID,
+				["heading"] = CargoHeading,
+				["playerCanDrive"] = false,
+			}, -- end of [7]
+			[8] = 
+			{
+				["type"] = "Soldier M249",
+				["transportable"] = 
+				{
+					["randomTransportable"] = true,
+				}, -- end of ["transportable"]
+				["unitId"] = SoldierUnitID + 1,
+				["skill"] = "Excellent",
+				["y"] = Cargo_Drop_Position.z + 4.0 + GroupSpacing,
+				["x"] = Cargo_Drop_Position.x + 4.0 + GroupSpacing,
+				["name"] = "Soldier Unit "..SoldierUnitID,
+				["heading"] = CargoHeading,
+				["playerCanDrive"] = false,
+			}, -- end of [8]
+			[9] = 
+			{
+				["type"] = Cargo_Type_name,
+				["transportable"] = 
+				{
+					["randomTransportable"] = true,
+				}, -- end of ["transportable"]
+				["unitId"] = SoldierUnitID + 1,
+				["skill"] = "Excellent",
+				["y"] = Cargo_Drop_Position.z + 4.5 + GroupSpacing,
+				["x"] = Cargo_Drop_Position.x + 4.5 + GroupSpacing,
+				["name"] = "Soldier Unit "..SoldierUnitID,
+				["heading"] = CargoHeading,
+				["playerCanDrive"] = false,
+			}, -- end of [9]
+			[10] = 
+			{
+				["type"] = "Paratrooper RPG-16",
+				["transportable"] = 
+				{
+					["randomTransportable"] = true,
+				}, -- end of ["transportable"]
+				["unitId"] = SoldierUnitID + 1,
+				["skill"] = "Excellent",
+				["y"] = Cargo_Drop_Position.z + 5.0 + GroupSpacing,
+				["x"] = Cargo_Drop_Position.x + 5.0 + GroupSpacing,
+				["name"] = "Soldier Unit "..SoldierUnitID,
+				["heading"] = CargoHeading,
+				["playerCanDrive"] = false,
+			}, -- end of [10]
+		}, -- end of ["units"]
+		["y"] = Cargo_Drop_Position.z,
+		["x"] = Cargo_Drop_Position.x,
+		["name"] = "Soldier_Group_"..SoldierGroupID,
+		["start_time"] = 0,
+	}
+	coalition.addGroup(Cargo_Country, Group.Category.GROUND, Herc_Soldier_Spawn)
+end
+
+local CargoUnitID = 10000
+local CargoGroupID = 10000
+local CargoStaticGroupID = 11000
+
+function Hercules_Cargo.Cargo_SpawnGroup(Cargo_Drop_Position, Cargo_Type_name, CargoHeading, Cargo_Country)
+	CargoUnitID = CargoUnitID + 1
+	CargoGroupID = CargoGroupID + 1
+	local Herc_Cargo_Spawn = 
+	{
+		["visible"] = false,
+		["tasks"] = 
+		{
+		}, -- end of ["tasks"]
+		["uncontrollable"] = false,
+		["task"] = "Ground Nothing",
+		["groupId"] = CargoGroupID,
+		["hidden"] = false,
+		["units"] = 
+		{
+			[1] = 
+			{
+				["type"] = Cargo_Type_name,
+				["transportable"] = 
+				{
+					["randomTransportable"] = false,
+				}, -- end of ["transportable"]
+				["unitId"] = CargoUnitID,
+				["skill"] = "Excellent",
+				["y"] = Cargo_Drop_Position.z,
+				["x"] = Cargo_Drop_Position.x,
+				["name"] = "Cargo Unit "..CargoUnitID,
+				["heading"] = CargoHeading,
+				["playerCanDrive"] = true,
+			}, -- end of [1]
+		}, -- end of ["units"]
+		["y"] = Cargo_Drop_Position.z,
+		["x"] = Cargo_Drop_Position.x,
+		["name"] = "Cargo Group "..CargoUnitID,
+		["start_time"] = 0,
+	}
+	coalition.addGroup(Cargo_Country, Group.Category.GROUND, Herc_Cargo_Spawn)
+end
+
+function Hercules_Cargo.Cargo_SpawnStatic(Cargo_Drop_Position, Cargo_Type_name, CargoHeading, dead, Cargo_Country)
+	CargoStaticGroupID = CargoStaticGroupID + 1
+	local Herc_CargoObject_Spawn = 
+	{
+		["type"] = Cargo_Type_name,
+		["y"] = Cargo_Drop_Position.z,
+		["x"] = Cargo_Drop_Position.x,
+		["name"] = "Cargo Static Group "..CargoStaticGroupID,
+		["heading"] = CargoHeading,
+		["dead"] = dead,
+	}
+	coalition.addStaticObject(Cargo_Country, Herc_CargoObject_Spawn)
+end
+
+function Hercules_Cargo.Cargo_SpawnObjects(Cargo_Drop_Direction, Cargo_Content_position, Cargo_Type_name, Cargo_over_water, Container_Enclosed, ParatrooperGroupSpawn, offload_cargo, all_cargo_survive_to_the_ground, all_cargo_gets_destroyed, destroy_cargo_dropped_without_parachute, Cargo_Country)
+	if offload_cargo == true then
+		------------------------------------------------------------------------------
+		if CargoHeading >= 3.14 then
+			CargoHeading = 0
+			Cargo_Drop_Position = {["x"] = Cargo_Content_position.x - (30.0 * math.cos(Cargo_Drop_Direction - 1.0)),
+								   ["z"] = Cargo_Content_position.z - (30.0 * math.sin(Cargo_Drop_Direction - 1.0))}
+		else
+			if CargoHeading >= 1.57 then
+				CargoHeading = 3.14
+				Cargo_Drop_Position = {["x"] = Cargo_Content_position.x - (20.0 * math.cos(Cargo_Drop_Direction + 0.5)),
+									   ["z"] = Cargo_Content_position.z - (20.0 * math.sin(Cargo_Drop_Direction + 0.5))}
+			else
+				if CargoHeading >= 0 then
+					CargoHeading = 1.57
+					Cargo_Drop_Position = {["x"] = Cargo_Content_position.x - (10.0 * math.cos(Cargo_Drop_Direction + 1.5)),
+										   ["z"] = Cargo_Content_position.z - (10.0 * math.sin(Cargo_Drop_Direction + 1.5))}
+				end
+			end
+		end
+		------------------------------------------------------------------------------
+		if ParatrooperGroupSpawn == true then
+			Hercules_Cargo.Soldier_SpawnGroup(Cargo_Drop_Position, Cargo_Type_name, CargoHeading, Cargo_Country, 0)
+			Hercules_Cargo.Soldier_SpawnGroup(Cargo_Drop_Position, Cargo_Type_name, CargoHeading, Cargo_Country, 5)
+			Hercules_Cargo.Soldier_SpawnGroup(Cargo_Drop_Position, Cargo_Type_name, CargoHeading, Cargo_Country, 10)
+		else
+			Hercules_Cargo.Cargo_SpawnGroup(Cargo_Drop_Position, Cargo_Type_name, CargoHeading, Cargo_Country, 0)
+		end
+	else
+		------------------------------------------------------------------------------
+		CargoHeading = 0
+		Cargo_Drop_Position = {["x"] = Cargo_Content_position.x - (20.0 * math.cos(Cargo_Drop_Direction)),
+							   ["z"] = Cargo_Content_position.z - (20.0 * math.cos(Cargo_Drop_Direction))}
+		------------------------------------------------------------------------------
+		if all_cargo_gets_destroyed == true or Cargo_over_water == true then
+			if Container_Enclosed == true then
+				Hercules_Cargo.Cargo_SpawnStatic(Cargo_Drop_Position, Cargo_Type_name, CargoHeading, true, Cargo_Country)
+				if ParatrooperGroupSpawn == false then
+					Hercules_Cargo.Cargo_SpawnStatic(Cargo_Drop_Position, "Hercules_Container_Parachute_Static", CargoHeading, true, Cargo_Country)
+				end
+			else
+				Hercules_Cargo.Cargo_SpawnStatic(Cargo_Drop_Position, Cargo_Type_name, CargoHeading, true, Cargo_Country)
+			end
+		else
+			------------------------------------------------------------------------------
+			if all_cargo_survive_to_the_ground == true then
+				if ParatrooperGroupSpawn == true then
+					Hercules_Cargo.Cargo_SpawnStatic(Cargo_Drop_Position, Cargo_Type_name, CargoHeading, true, Cargo_Country)
+				else
+					Hercules_Cargo.Cargo_SpawnGroup(Cargo_Drop_Position, Cargo_Type_name, CargoHeading, Cargo_Country)
+				end
+				if Container_Enclosed == true then
+					if ParatrooperGroupSpawn == false then
+						Hercules_Cargo.Cargo_SpawnStatic({["z"] = Cargo_Drop_Position.z + 10.0,["x"] = Cargo_Drop_Position.x + 10.0}, "Hercules_Container_Parachute_Static", CargoHeading, false, Cargo_Country)
+					end
+				end
+			end
+			------------------------------------------------------------------------------
+			if destroy_cargo_dropped_without_parachute == true then
+				if Container_Enclosed == true then
+					if ParatrooperGroupSpawn == true then
+						Hercules_Cargo.Soldier_SpawnGroup(Cargo_Drop_Position, Cargo_Type_name, CargoHeading, Cargo_Country, 0)
+					else
+						Hercules_Cargo.Cargo_SpawnGroup(Cargo_Drop_Position, Cargo_Type_name, CargoHeading, Cargo_Country)
+						Hercules_Cargo.Cargo_SpawnStatic({["z"] = Cargo_Drop_Position.z + 10.0,["x"] = Cargo_Drop_Position.x + 10.0}, "Hercules_Container_Parachute_Static", CargoHeading, false, Cargo_Country)
+					end
+				else
+					Hercules_Cargo.Cargo_SpawnStatic(Cargo_Drop_Position, Cargo_Type_name, CargoHeading, true, Cargo_Country)
+				end
+			end
+			------------------------------------------------------------------------------
+		end
+	end
+end
+
+function Hercules_Cargo.Calculate_Object_Height_AGL(object)
+	return object:getPosition().p.y - land.getHeight({x = object:getPosition().p.x, y = object:getPosition().p.z})
+end
+
+function Hercules_Cargo.Check_SurfaceType(object)
+   -- LAND,--1 SHALLOW_WATER,--2 WATER,--3 ROAD,--4 RUNWAY--5
+	return land.getSurfaceType({x = object:getPosition().p.x, y = object:getPosition().p.z})
+end
+
+function Hercules_Cargo.Cargo_Track(Arg, time)
+	local status, result = pcall(
+		function()
+		local next = next
+		if next(Arg[1].Cargo_Contents) ~= nil then
+			if Hercules_Cargo.Calculate_Object_Height_AGL(Arg[1].Cargo_Contents) < 5.0 then--pallet less than 5m above ground before spawning
+				if Hercules_Cargo.Check_SurfaceType(Arg[1].Cargo_Contents) == 2 or Hercules_Cargo.Check_SurfaceType(Arg[1].Cargo_Contents) == 3 then
+					Arg[1].Cargo_over_water = true--pallets gets destroyed in water
+				end
+				Arg[1].Cargo_Contents:destroy()--remove pallet+parachute before hitting ground and replace with Cargo_SpawnContents
+				Hercules_Cargo.Cargo_SpawnObjects(Arg[1].Cargo_Drop_Direction, Object.getPoint(Arg[1].Cargo_Contents), Arg[1].Cargo_Type_name, Arg[1].Cargo_over_water, Arg[1].Container_Enclosed, Arg[1].ParatrooperGroupSpawn, Arg[1].offload_cargo, Arg[1].all_cargo_survive_to_the_ground, Arg[1].all_cargo_gets_destroyed, Arg[1].destroy_cargo_dropped_without_parachute, Arg[1].Cargo_Country)
+				timer.removeFunction(Arg[1].scheduleFunctionID)
+				Arg[1] = {}
+			end
+			return time + 0.1
+		end
+	end) -- pcall
+	if not status then
+		-- env.error(string.format("Cargo_Spawn: %s", result))
+	else
+		return result
+	end
+end
+
+function Hercules_Cargo.Calculate_Cargo_Drop_initiator_NorthCorrection(point)	--correction needed for true north
+	if not point.z then --Vec2; convert to Vec3
+		point.z = point.y
+		point.y = 0
+	end
+	local lat, lon = coord.LOtoLL(point)
+	local north_posit = coord.LLtoLO(lat + 1, lon)
+	return math.atan2(north_posit.z - point.z, north_posit.x - point.x)
+end
+
+function Hercules_Cargo.Calculate_Cargo_Drop_initiator_Heading(Cargo_Drop_initiator)
+	local Heading = math.atan2(Cargo_Drop_initiator:getPosition().x.z, Cargo_Drop_initiator:getPosition().x.x)
+	Heading = Heading + Hercules_Cargo.Calculate_Cargo_Drop_initiator_NorthCorrection(Cargo_Drop_initiator:getPosition().p)
+	if Heading < 0 then
+		Heading = Heading + (2 * math.pi)-- put heading in range of 0 to 2*pi
+	end
+	return Heading + 0.06 -- rad
+end
+
+function Hercules_Cargo.Cargo_Initialize(initiator, Cargo_Contents, Cargo_Type_name, Container_Enclosed)
+	local status, result = pcall(
+		function()
+		Cargo_Drop_initiator = Unit.getByName(initiator:getName())
+		local next = next
+		if next(Cargo_Drop_initiator) ~= nil then
+			if ParatrooperGroupSpawnInit == true then
+				if (ParatrooperCount == 1 or ParatrooperCount == 2 or ParatrooperCount == 3) then
+					Herc_j = Herc_j + 1
+					Herc_Cargo[Herc_j] = {}
+					Herc_Cargo[Herc_j].Cargo_Drop_Direction = Hercules_Cargo.Calculate_Cargo_Drop_initiator_Heading(Cargo_Drop_initiator)
+					Herc_Cargo[Herc_j].Cargo_Contents = Cargo_Contents
+					Herc_Cargo[Herc_j].Cargo_Type_name = Cargo_Type_name
+					Herc_Cargo[Herc_j].Container_Enclosed = Container_Enclosed
+					Herc_Cargo[Herc_j].ParatrooperGroupSpawn = ParatrooperGroupSpawnInit
+					Herc_Cargo[Herc_j].Cargo_Country = initiator:getCountry()
+				------------------------------------------------------------------------------
+					if Hercules_Cargo.Calculate_Object_Height_AGL(Cargo_Drop_initiator) < 5.0 then--aircraft on ground
+						Herc_Cargo[Herc_j].offload_cargo = true
+						ParatrooperCount = 0
+						ParatrooperGroupSpawnInit = false
+					else
+				------------------------------------------------------------------------------
+						if Hercules_Cargo.Calculate_Object_Height_AGL(Cargo_Drop_initiator) < 10.0 then--aircraft less than 10m above ground
+							Herc_Cargo[Herc_j].all_cargo_survive_to_the_ground = true
+						else
+				------------------------------------------------------------------------------
+							if Hercules_Cargo.Calculate_Object_Height_AGL(Cargo_Drop_initiator) < 152.4 then--aircraft more than 30ft but less than 500ft above ground
+								Herc_Cargo[Herc_j].all_cargo_gets_destroyed = true
+							else
+				------------------------------------------------------------------------------
+								Herc_Cargo[Herc_j].destroy_cargo_dropped_without_parachute = true--aircraft more than 152.4m (500ft)above ground
+							end
+						end
+					end
+				------------------------------------------------------------------------------
+					Herc_Cargo[Herc_j].scheduleFunctionID = timer.scheduleFunction(Hercules_Cargo.Cargo_Track, {Herc_Cargo[Herc_j]}, timer.getTime() + 0.1)
+					ParatrooperCount = ParatrooperCount + 1.0
+				else
+					if (ParatrooperCount == 30) then
+						ParatrooperGroupSpawnInit = false
+						ParatrooperCount = 1
+					else
+						ParatrooperCount = ParatrooperCount + 1.0
+					end
+				end
+			else
+				Herc_j = Herc_j + 1
+				Herc_Cargo[Herc_j] = {}
+				Herc_Cargo[Herc_j].Cargo_Drop_Direction = Hercules_Cargo.Calculate_Cargo_Drop_initiator_Heading(Cargo_Drop_initiator)
+				Herc_Cargo[Herc_j].Cargo_Contents = Cargo_Contents
+				Herc_Cargo[Herc_j].Cargo_Type_name = Cargo_Type_name
+				Herc_Cargo[Herc_j].Container_Enclosed = Container_Enclosed
+				Herc_Cargo[Herc_j].ParatrooperGroupSpawn = ParatrooperGroupSpawnInit
+				Herc_Cargo[Herc_j].Cargo_Country = initiator:getCountry()
+			------------------------------------------------------------------------------
+				if Hercules_Cargo.Calculate_Object_Height_AGL(Cargo_Drop_initiator) < 5.0 then--aircraft on ground
+					Herc_Cargo[Herc_j].offload_cargo = true
+				else
+			------------------------------------------------------------------------------
+					if Hercules_Cargo.Calculate_Object_Height_AGL(Cargo_Drop_initiator) < 10.0 then--aircraft less than 10m above ground
+						Herc_Cargo[Herc_j].all_cargo_survive_to_the_ground = true
+					else
+			------------------------------------------------------------------------------
+						if Hercules_Cargo.Calculate_Object_Height_AGL(Cargo_Drop_initiator) < 100.0 then--aircraft more than 10m but less than 100m above ground
+							Herc_Cargo[Herc_j].all_cargo_gets_destroyed = true
+						else
+			------------------------------------------------------------------------------
+							Herc_Cargo[Herc_j].destroy_cargo_dropped_without_parachute = true--aircraft more than 100m above ground
+						end
+					end
+				end
+			------------------------------------------------------------------------------
+				Herc_Cargo[Herc_j].scheduleFunctionID = timer.scheduleFunction(Hercules_Cargo.Cargo_Track, {Herc_Cargo[Herc_j]}, timer.getTime() + 0.1)
+			end
+		end
+	end) -- pcall
+	if not status then
+		-- env.error(string.format("Cargo_Initialize: %s", result))
+	else
+		return result
+	end
+end
+
+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+	-- EventHandlers
+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+function Hercules_Cargo.Hercules_Cargo_Drop_Events:onEvent(Cargo_Drop_Event)
+	if Cargo_Drop_Event.id == world.event.S_EVENT_SHOT then
+		GT_DisplayName = Weapon.getDesc(Cargo_Drop_Event.weapon).typeName:sub(15, -1)--Remove "weapons.bombs." from string
+		 -- trigger.action.outTextForCoalition(coalition.side.BLUE, string.format("Cargo_Drop_Event: %s", Weapon.getDesc(Cargo_Drop_Event.weapon).typeName), 10)
+		 -- trigger.action.outTextForCoalition(coalition.side.RED, string.format("Cargo_Drop_Event: %s", Weapon.getDesc(Cargo_Drop_Event.weapon).typeName), 10)
+			 ---------------------------------------------------------------------------------------------------------------------------------
+			if (GT_DisplayName == "Squad 30 x Soldier [7950lb]") then
+				GT_Name = "Soldier M4 GRG"
+				SoldierGroup = true
+				ParatrooperGroupSpawnInit = true
+				Hercules_Cargo.Cargo_Initialize(Cargo_Drop_Event.initiator, Cargo_Drop_Event.weapon, GT_Name, SoldierGroup)
+			end
+			 ---------------------------------------------------------------------------------------------------------------------------------
+			if Hercules_Cargo.types[GT_DisplayName] then
+				local GT_Name = Hercules_Cargo.types[GT_DisplayName]['name']
+				local Cargo_Container_Enclosed = Hercules_Cargo.types[GT_DisplayName]['container']
+				Hercules_Cargo.Cargo_Initialize(Cargo_Drop_Event.initiator, Cargo_Drop_Event.weapon, GT_Name, Cargo_Container_Enclosed)
+			end
+	end
+end
+world.addEventHandler(Hercules_Cargo.Hercules_Cargo_Drop_Events)
+
+-- trigger.action.outTextForCoalition(coalition.side.BLUE, string.format("Cargo_Drop_Event.weapon: %s", Weapon.getDesc(Cargo_Drop_Event.weapon).typeName), 10)
+-- trigger.action.outTextForCoalition(coalition.side.BLUE, tostring('Calculate_Object_Height_AGL: ' .. aaaaa), 10)
+-- trigger.action.outTextForCoalition(coalition.side.BLUE, string.format("Speed: %.2f", Calculate_Object_Speed(Cargo_Drop_initiator)), 10)
+-- trigger.action.outTextForCoalition(coalition.side.BLUE, string.format("Russian Interceptor Patrol scrambled from Nalchik"), 10)
+
+-- function basicSerialize(var)
+	-- if var == nil then
+		-- return "\"\""
+	-- else
+		-- if ((type(var) == 'number') or
+				-- (type(var) == 'boolean') or
+				-- (type(var) == 'function') or
+				-- (type(var) == 'table') or
+				-- (type(var) == 'userdata') ) then
+			-- return tostring(var)
+		-- else
+			-- if type(var) == 'string' then
+				-- var = string.format('%q', var)
+				-- return var
+			-- end
+		-- end
+	-- end
+-- end
+	
+-- function tableShow(tbl, loc, indent, tableshow_tbls) --based on serialize_slmod, this is a _G serialization
+	-- tableshow_tbls = tableshow_tbls or {} --create table of tables
+	-- loc = loc or ""
+	-- indent = indent or ""
+	-- if type(tbl) == 'table' then --function only works for tables!
+		-- tableshow_tbls[tbl] = loc
+		-- local tbl_str = {}
+		-- tbl_str[#tbl_str + 1] = indent .. '{\n'
+		-- for ind,val in pairs(tbl) do -- serialize its fields
+			-- if type(ind) == "number" then
+				-- tbl_str[#tbl_str + 1] = indent
+				-- tbl_str[#tbl_str + 1] = loc .. '['
+				-- tbl_str[#tbl_str + 1] = tostring(ind)
+				-- tbl_str[#tbl_str + 1] = '] = '
+			-- else
+				-- tbl_str[#tbl_str + 1] = indent
+				-- tbl_str[#tbl_str + 1] = loc .. '['
+				-- tbl_str[#tbl_str + 1] = basicSerialize(ind)
+				-- tbl_str[#tbl_str + 1] = '] = '
+			-- end
+			-- if ((type(val) == 'number') or (type(val) == 'boolean')) then
+				-- tbl_str[#tbl_str + 1] = tostring(val)
+				-- tbl_str[#tbl_str + 1] = ',\n'
+			-- elseif type(val) == 'string' then
+				-- tbl_str[#tbl_str + 1] = basicSerialize(val)
+				-- tbl_str[#tbl_str + 1] = ',\n'
+			-- elseif type(val) == 'nil' then -- won't ever happen, right?
+				-- tbl_str[#tbl_str + 1] = 'nil,\n'
+			-- elseif type(val) == 'table' then
+				-- if tableshow_tbls[val] then
+					-- tbl_str[#tbl_str + 1] = tostring(val) .. ' already defined: ' .. tableshow_tbls[val] .. ',\n'
+				-- else
+					-- tableshow_tbls[val] = loc ..	'[' .. basicSerialize(ind) .. ']'
+					-- tbl_str[#tbl_str + 1] = tostring(val) .. ' '
+					-- tbl_str[#tbl_str + 1] = tableShow(val,	loc .. '[' .. basicSerialize(ind).. ']', indent .. '		', tableshow_tbls)
+					-- tbl_str[#tbl_str + 1] = ',\n'
+				-- end
+			-- elseif type(val) == 'function' then
+				-- if debug and debug.getinfo then
+					-- local fcnname = tostring(val)
+					-- local info = debug.getinfo(val, "S")
+					-- if info.what == "C" then
+						-- tbl_str[#tbl_str + 1] = string.format('%q', fcnname .. ', C function') .. ',\n'
+					-- else
+						-- if (string.sub(info.source, 1, 2) == [[./]]) then
+							-- tbl_str[#tbl_str + 1] = string.format('%q', fcnname .. ', defined in (' .. info.linedefined .. '-' .. info.lastlinedefined .. ')' .. info.source) ..',\n'
+						-- else
+							-- tbl_str[#tbl_str + 1] = string.format('%q', fcnname .. ', defined in (' .. info.linedefined .. '-' .. info.lastlinedefined .. ')') ..',\n'
+						-- end
+					-- end
+				-- else
+					-- tbl_str[#tbl_str + 1] = 'a function,\n'
+				-- end
+			-- else
+				-- tbl_str[#tbl_str + 1] = 'unable to serialize value type ' .. basicSerialize(type(val)) .. ' at index ' .. tostring(ind)
+			-- end
+		-- end
+		-- tbl_str[#tbl_str + 1] = indent .. '}'
+		-- return table.concat(tbl_str)
+	-- end
+-- end
+
+
+
+
+-- function F10CargoDrop(GroupId, Unitname)
+	-- local rootPath = missionCommands.addSubMenuForGroup(GroupId, "Cargo Drop")
+	-- missionCommands.addCommandForGroup(GroupId, "Drop direction", rootPath, CruiseMissilesMessage, {GroupId, Unitname})
+	-- missionCommands.addCommandForGroup(GroupId, "Drop distance", rootPath, ForwardConvoy, nil)
+	-- local measurementsSetPath = missionCommands.addSubMenuForGroup(GroupId,"Set measurement units",rootPath)
+	-- missionCommands.addCommandForGroup(GroupId, "Set to Imperial (feet, knts)",measurementsSetPath,setMeasurements,{GroupId, "imperial"})
+	-- missionCommands.addCommandForGroup(GroupId, "Set to Metric (meters, km/h)",measurementsSetPath,setMeasurements,{GroupId, "metric"})
+-- end
+
+-- function Calculate_Object_Speed(object)
+	-- return math.sqrt(object:getVelocity().x^2 + object:getVelocity().y^2 + object:getVelocity().z^2) * 3600 / 1852 -- knts
+-- end
+
+-- function vecDotProduct(vec1, vec2)
+	-- return vec1.x*vec2.x + vec1.y*vec2.y + vec1.z*vec2.z
+-- end
+
+-- function Calculate_Aircraft_ForwardVelocity(Drop_initiator)
+	-- return vecDotProduct(Drop_initiator:getPosition().x, Drop_initiator:getVelocity())
+-- end
+
+--- END HERCULES CARGO SUPPORT SECTION
+
+
+  
+--------------------------------[core\spawntemplates.lua]-------------------------------- 
+ 
+env.info( "[JTF-1] spawntemplates" )
+--------------------------------------------
+--- Spawn Templates Defined in this file
+--------------------------------------------
+--
+-- This file contains a library of templates to be used for spawn objects 
+-- created for various modules and *MUST* be loaded prior to the 
+-- calling module's Start() call (either in the module, or in the [module]_data.lua).
+--
+
+SPAWNTEMPLATES = {}
+SPAWNTEMPLATES.traceTitle = "[JTF-1 SPAWNTEMPLATES] "
+SPAWNTEMPLATES.version = "0.1"
+
+SPAWNTEMPLATES.templates = {
+	------------------------ BVR AIRCRAFT ------------------------
 	["BVR_MIG23"] = {
 		["category"] = Group.Category.AIRPLANE,
 		["lateActivation"] = true,
@@ -7922,7 +5541,604 @@ MARKSPAWN.templates = {
 		["modulation"] = 0,
 		["frequency"] = 305,
 	},	 -- end of ["BVR_F18"]
-    ------------------------ SEAD ------------------------
+	------------------------ CAS AIRCRAFT ------------------------
+	["CAS_MQ9"] = {
+		["category"] = Group.Category.AIRPLANE,
+		["lateActivation"] = true,
+		["tasks"] = 
+		{
+		}, -- end of ["tasks"]
+		["radioSet"] = false,
+		["task"] = "CAS",
+		["uncontrolled"] = false,
+		["taskSelected"] = true,
+		["route"] = 
+		{
+			["routeRelativeTOT"] = true,
+			["points"] = 
+			{
+				[1] = 
+				{
+					["alt"] = 2000,
+					["action"] = "Turning Point",
+					["alt_type"] = "BARO",
+					["speed"] = 82.222222222222,
+					["task"] = 
+					{
+						["id"] = "ComboTask",
+						["params"] = 
+						{
+							["tasks"] = 
+							{
+								[1] = 
+								{
+									["number"] = 1,
+									["auto"] = false,
+									["id"] = "WrappedAction",
+									["enabled"] = true,
+									["params"] = 
+									{
+										["action"] = 
+										{
+											["id"] = "SetUnlimitedFuel",
+											["params"] = 
+											{
+												["value"] = true,
+											}, -- end of ["params"]
+										}, -- end of ["action"]
+									}, -- end of ["params"]
+								}, -- end of [1]
+								[2] = 
+								{
+									["number"] = 2,
+									["key"] = "CAS",
+									["id"] = "EngageTargets",
+									["enabled"] = true,
+									["auto"] = true,
+									["params"] = 
+									{
+										["targetTypes"] = 
+										{
+											[1] = "Helicopters",
+											[2] = "Ground Units",
+											[3] = "Light armed ships",
+										}, -- end of ["targetTypes"]
+										["priority"] = 0,
+									}, -- end of ["params"]
+								}, -- end of [2]
+								[3] = 
+								{
+									["number"] = 3,
+									["auto"] = true,
+									["id"] = "WrappedAction",
+									["enabled"] = true,
+									["params"] = 
+									{
+										["action"] = 
+										{
+											["id"] = "Option",
+											["params"] = 
+											{
+												["value"] = 2,
+												["name"] = 1,
+											}, -- end of ["params"]
+										}, -- end of ["action"]
+									}, -- end of ["params"]
+								}, -- end of [3]
+								[4] = 
+								{
+									["number"] = 4,
+									["auto"] = true,
+									["id"] = "WrappedAction",
+									["enabled"] = true,
+									["params"] = 
+									{
+										["action"] = 
+										{
+											["id"] = "Option",
+											["params"] = 
+											{
+												["value"] = 1,
+												["name"] = 3,
+											}, -- end of ["params"]
+										}, -- end of ["action"]
+									}, -- end of ["params"]
+								}, -- end of [4]
+								[5] = 
+								{
+									["number"] = 5,
+									["auto"] = true,
+									["id"] = "WrappedAction",
+									["enabled"] = true,
+									["params"] = 
+									{
+										["action"] = 
+										{
+											["id"] = "Option",
+											["params"] = 
+											{
+												["variantIndex"] = 2,
+												["name"] = 5,
+												["formationIndex"] = 2,
+												["value"] = 131074,
+											}, -- end of ["params"]
+										}, -- end of ["action"]
+									}, -- end of ["params"]
+								}, -- end of [5]
+								[6] = 
+								{
+									["number"] = 6,
+									["auto"] = true,
+									["id"] = "WrappedAction",
+									["enabled"] = true,
+									["params"] = 
+									{
+										["action"] = 
+										{
+											["id"] = "Option",
+											["params"] = 
+											{
+												["value"] = true,
+												["name"] = 15,
+											}, -- end of ["params"]
+										}, -- end of ["action"]
+									}, -- end of ["params"]
+								}, -- end of [6]
+								[7] = 
+								{
+									["number"] = 7,
+									["auto"] = true,
+									["id"] = "WrappedAction",
+									["enabled"] = true,
+									["params"] = 
+									{
+										["action"] = 
+										{
+											["id"] = "Option",
+											["params"] = 
+											{
+												["targetTypes"] = 
+												{
+												}, -- end of ["targetTypes"]
+												["name"] = 21,
+												["value"] = "none;",
+												["noTargetTypes"] = 
+												{
+													[1] = "Fighters",
+													[2] = "Multirole fighters",
+													[3] = "Bombers",
+													[4] = "Helicopters",
+													[5] = "UAVs",
+													[6] = "Infantry",
+													[7] = "Fortifications",
+													[8] = "Tanks",
+													[9] = "IFV",
+													[10] = "APC",
+													[11] = "Artillery",
+													[12] = "Unarmed vehicles",
+													[13] = "AAA",
+													[14] = "SR SAM",
+													[15] = "MR SAM",
+													[16] = "LR SAM",
+													[17] = "Aircraft Carriers",
+													[18] = "Cruisers",
+													[19] = "Destroyers",
+													[20] = "Frigates",
+													[21] = "Corvettes",
+													[22] = "Light armed ships",
+													[23] = "Unarmed ships",
+													[24] = "Submarines",
+													[25] = "Cruise missiles",
+													[26] = "Antiship Missiles",
+													[27] = "AA Missiles",
+													[28] = "AG Missiles",
+													[29] = "SA Missiles",
+												}, -- end of ["noTargetTypes"]
+											}, -- end of ["params"]
+										}, -- end of ["action"]
+									}, -- end of ["params"]
+								}, -- end of [7]
+								[8] = 
+								{
+									["number"] = 8,
+									["auto"] = true,
+									["id"] = "WrappedAction",
+									["enabled"] = true,
+									["params"] = 
+									{
+										["action"] = 
+										{
+											["id"] = "Option",
+											["params"] = 
+											{
+												["value"] = true,
+												["name"] = 19,
+											}, -- end of ["params"]
+										}, -- end of ["action"]
+									}, -- end of ["params"]
+								}, -- end of [8]
+								[9] = 
+								{
+									["number"] = 9,
+									["auto"] = true,
+									["id"] = "WrappedAction",
+									["enabled"] = true,
+									["params"] = 
+									{
+										["action"] = 
+										{
+											["id"] = "EPLRS",
+											["params"] = 
+											{
+												["value"] = true,
+												["groupId"] = 1,
+											}, -- end of ["params"]
+										}, -- end of ["action"]
+									}, -- end of ["params"]
+								}, -- end of [9]
+							}, -- end of ["tasks"]
+						}, -- end of ["params"]
+					}, -- end of ["task"]
+					["type"] = "Turning Point",
+					["ETA"] = 0,
+					["ETA_locked"] = true,
+					["y"] = 378428.12563875,
+					["x"] = -11230.450562956,
+					["speed_locked"] = true,
+					["formation_template"] = "",
+				}, -- end of [1]
+			}, -- end of ["points"]
+		}, -- end of ["route"]
+		["groupId"] = 319,
+		["hidden"] = false,
+		["units"] = 
+		{
+			[1] = 
+			{
+				["alt"] = 2000,
+				["hardpoint_racks"] = true,
+				["alt_type"] = "BARO",
+				["skill"] = "High",
+				["speed"] = 82.222222222222,
+				["type"] = "MQ-9 Reaper",
+				["unitId"] = 3086,
+				["psi"] = 0,
+				["onboard_num"] = "010",
+				["y"] = 378428.12563875,
+				["x"] = -11230.450562956,
+				["name"] = "_MQ9",
+				["payload"] = 
+				{
+					["pylons"] = 
+					{
+						[2] = 
+						{
+							["CLSID"] = "{DB769D48-67D7-42ED-A2BE-108D566C8B1E}",
+						}, -- end of [2]
+						[3] = 
+						{
+							["CLSID"] = "{DB769D48-67D7-42ED-A2BE-108D566C8B1E}",
+						}, -- end of [3]
+					}, -- end of ["pylons"]
+					["fuel"] = 1300,
+					["flare"] = 0,
+					["chaff"] = 0,
+					["gun"] = 100,
+				}, -- end of ["payload"]
+				["heading"] = -1.8785757343974,
+				["callsign"] = 
+				{
+					[1] = 1,
+					[2] = 1,
+					["name"] = "Enfield11",
+					[3] = 1,
+				}, -- end of ["callsign"]
+			}, -- end of [1]
+		}, -- end of ["units"]
+		["y"] = 378428.12563875,
+		["x"] = -11230.450562956,
+		["name"] = "_MQ9",
+		["communication"] = true,
+		["start_time"] = 0,
+		["modulation"] = 0,
+		["frequency"] = 305,
+	}, -- end of ["BVR_MQ9"]
+	["CAS_WINGLOON"] = {
+		["category"] = Group.Category.AIRPLANE,
+		["lateActivation"] = true,
+		["tasks"] = 
+		{
+		}, -- end of ["tasks"]
+		["radioSet"] = false,
+		["task"] = "CAS",
+		["uncontrolled"] = false,
+		["route"] = 
+		{
+			["routeRelativeTOT"] = true,
+			["points"] = 
+			{
+				[1] = 
+				{
+					["alt"] = 2000,
+					["action"] = "Turning Point",
+					["alt_type"] = "BARO",
+					["speed"] = 61.666666666667,
+					["task"] = 
+					{
+						["id"] = "ComboTask",
+						["params"] = 
+						{
+							["tasks"] = 
+							{
+								[1] = 
+								{
+									["number"] = 1,
+									["auto"] = false,
+									["id"] = "WrappedAction",
+									["enabled"] = true,
+									["params"] = 
+									{
+										["action"] = 
+										{
+											["id"] = "SetUnlimitedFuel",
+											["params"] = 
+											{
+												["value"] = true,
+											}, -- end of ["params"]
+										}, -- end of ["action"]
+									}, -- end of ["params"]
+								}, -- end of [1]
+								[2] = 
+								{
+									["number"] = 2,
+									["key"] = "CAS",
+									["id"] = "EngageTargets",
+									["enabled"] = true,
+									["auto"] = true,
+									["params"] = 
+									{
+										["targetTypes"] = 
+										{
+											[1] = "Helicopters",
+											[2] = "Ground Units",
+											[3] = "Light armed ships",
+										}, -- end of ["targetTypes"]
+										["priority"] = 0,
+									}, -- end of ["params"]
+								}, -- end of [2]
+								[3] = 
+								{
+									["number"] = 3,
+									["auto"] = true,
+									["id"] = "WrappedAction",
+									["enabled"] = true,
+									["params"] = 
+									{
+										["action"] = 
+										{
+											["id"] = "Option",
+											["params"] = 
+											{
+												["value"] = 2,
+												["name"] = 1,
+											}, -- end of ["params"]
+										}, -- end of ["action"]
+									}, -- end of ["params"]
+								}, -- end of [3]
+								[4] = 
+								{
+									["number"] = 4,
+									["auto"] = true,
+									["id"] = "WrappedAction",
+									["enabled"] = true,
+									["params"] = 
+									{
+										["action"] = 
+										{
+											["id"] = "Option",
+											["params"] = 
+											{
+												["value"] = 1,
+												["name"] = 3,
+											}, -- end of ["params"]
+										}, -- end of ["action"]
+									}, -- end of ["params"]
+								}, -- end of [4]
+								[5] = 
+								{
+									["number"] = 5,
+									["auto"] = true,
+									["id"] = "WrappedAction",
+									["enabled"] = true,
+									["params"] = 
+									{
+										["action"] = 
+										{
+											["id"] = "Option",
+											["params"] = 
+											{
+												["variantIndex"] = 2,
+												["name"] = 5,
+												["formationIndex"] = 2,
+												["value"] = 131074,
+											}, -- end of ["params"]
+										}, -- end of ["action"]
+									}, -- end of ["params"]
+								}, -- end of [5]
+								[6] = 
+								{
+									["number"] = 6,
+									["auto"] = true,
+									["id"] = "WrappedAction",
+									["enabled"] = true,
+									["params"] = 
+									{
+										["action"] = 
+										{
+											["id"] = "Option",
+											["params"] = 
+											{
+												["value"] = true,
+												["name"] = 15,
+											}, -- end of ["params"]
+										}, -- end of ["action"]
+									}, -- end of ["params"]
+								}, -- end of [6]
+								[7] = 
+								{
+									["number"] = 7,
+									["auto"] = true,
+									["id"] = "WrappedAction",
+									["enabled"] = true,
+									["params"] = 
+									{
+										["action"] = 
+										{
+											["id"] = "Option",
+											["params"] = 
+											{
+												["targetTypes"] = 
+												{
+												}, -- end of ["targetTypes"]
+												["name"] = 21,
+												["value"] = "none;",
+												["noTargetTypes"] = 
+												{
+													[1] = "Fighters",
+													[2] = "Multirole fighters",
+													[3] = "Bombers",
+													[4] = "Helicopters",
+													[5] = "UAVs",
+													[6] = "Infantry",
+													[7] = "Fortifications",
+													[8] = "Tanks",
+													[9] = "IFV",
+													[10] = "APC",
+													[11] = "Artillery",
+													[12] = "Unarmed vehicles",
+													[13] = "AAA",
+													[14] = "SR SAM",
+													[15] = "MR SAM",
+													[16] = "LR SAM",
+													[17] = "Aircraft Carriers",
+													[18] = "Cruisers",
+													[19] = "Destroyers",
+													[20] = "Frigates",
+													[21] = "Corvettes",
+													[22] = "Light armed ships",
+													[23] = "Unarmed ships",
+													[24] = "Submarines",
+													[25] = "Cruise missiles",
+													[26] = "Antiship Missiles",
+													[27] = "AA Missiles",
+													[28] = "AG Missiles",
+													[29] = "SA Missiles",
+												}, -- end of ["noTargetTypes"]
+											}, -- end of ["params"]
+										}, -- end of ["action"]
+									}, -- end of ["params"]
+								}, -- end of [7]
+								[8] = 
+								{
+									["number"] = 8,
+									["auto"] = true,
+									["id"] = "WrappedAction",
+									["enabled"] = true,
+									["params"] = 
+									{
+										["action"] = 
+										{
+											["id"] = "Option",
+											["params"] = 
+											{
+												["value"] = true,
+												["name"] = 19,
+											}, -- end of ["params"]
+										}, -- end of ["action"]
+									}, -- end of ["params"]
+								}, -- end of [8]
+								[9] = 
+								{
+									["number"] = 9,
+									["auto"] = true,
+									["id"] = "WrappedAction",
+									["enabled"] = true,
+									["params"] = 
+									{
+										["action"] = 
+										{
+											["id"] = "EPLRS",
+											["params"] = 
+											{
+												["value"] = true,
+												["groupId"] = 2,
+											}, -- end of ["params"]
+										}, -- end of ["action"]
+									}, -- end of ["params"]
+								}, -- end of [9]
+							}, -- end of ["tasks"]
+						}, -- end of ["params"]
+					}, -- end of ["task"]
+					["type"] = "Turning Point",
+					["ETA"] = 0,
+					["ETA_locked"] = true,
+					["y"] = 374191.87334164,
+					["x"] = -10920.480882679,
+					["speed_locked"] = true,
+					["formation_template"] = "",
+				}, -- end of [1]
+			}, -- end of ["points"]
+		}, -- end of ["route"]
+		["groupId"] = 320,
+		["hidden"] = false,
+		["units"] = 
+		{
+			[1] = 
+			{
+				["alt"] = 2000,
+				["hardpoint_racks"] = true,
+				["alt_type"] = "BARO",
+				["livery_id"] = "plaaf",
+				["skill"] = "High",
+				["speed"] = 61.666666666667,
+				["type"] = "WingLoong-I",
+				["unitId"] = 3087,
+				["psi"] = 0,
+				["onboard_num"] = "010",
+				["y"] = 374191.87334164,
+				["x"] = -10920.480882679,
+				["name"] = "wingloon",
+				["payload"] = 
+				{
+					["pylons"] = 
+					{
+						[1] = 
+						{
+							["CLSID"] = "DIS_AKD-10",
+						}, -- end of [1]
+						[2] = 
+						{
+							["CLSID"] = "DIS_AKD-10",
+						}, -- end of [2]
+					}, -- end of ["pylons"]
+					["fuel"] = 400,
+					["flare"] = 0,
+					["chaff"] = 0,
+					["gun"] = 100,
+				}, -- end of ["payload"]
+				["heading"] = 0,
+				["callsign"] = 100,
+			}, -- end of [1]
+		}, -- end of ["units"]
+		["y"] = 374191.87334164,
+		["x"] = -10920.480882679,
+		["name"] = "wingloon",
+		["communication"] = true,
+		["start_time"] = 0,
+		["modulation"] = 0,
+		["frequency"] = 305,
+	}, -- end of ["BVR_WINGLOON"]
+    ------------------------ SEAD AIRCRAFT------------------------
 	["SEAD_F16"] = {
 		["category"] = Group.Category.AIRPLANE,
 		["lateActivation"] = true,
@@ -8511,6 +6727,1050 @@ MARKSPAWN.templates = {
 		["modulation"] = 0,
 		["frequency"] = 305,
 	}, -- end of ["SEAD_F18"]
+	--------------------SUPPORT AIRCRAFT---------------------
+	["KC-135"] = {
+		["category"] = Group.Category.AIRPLANE,
+		["lateActivation"] = true,
+		["tasks"] = 
+		{
+		}, -- end of ["tasks"]
+		["radioSet"] = false,
+		["task"] = "Refueling",
+		["uncontrolled"] = false,
+		["route"] = 
+		{
+			["routeRelativeTOT"] = true,
+			["points"] = 
+			{
+				[1] = 
+				{
+					["alt"] = 2000,
+					["action"] = "Turning Point",
+					["alt_type"] = "BARO",
+					["speed"] = 220.97222222222,
+					["task"] = 
+					{
+						["id"] = "ComboTask",
+						["params"] = 
+						{
+							["tasks"] = 
+							{
+								[1] = 
+								{
+									["enabled"] = true,
+									["auto"] = false,
+									["id"] = "WrappedAction",
+									["number"] = 1,
+									["params"] = 
+									{
+										["action"] = 
+										{
+											["id"] = "SetUnlimitedFuel",
+											["params"] = 
+											{
+												["value"] = true,
+											}, -- end of ["params"]
+										}, -- end of ["action"]
+									}, -- end of ["params"]
+								}, -- end of [1]
+								[2] = 
+								{
+									["enabled"] = true,
+									["auto"] = false,
+									["id"] = "WrappedAction",
+									["number"] = 2,
+									["params"] = 
+									{
+										["action"] = 
+										{
+											["id"] = "SetInvisible",
+											["params"] = 
+											{
+												["value"] = true,
+											}, -- end of ["params"]
+										}, -- end of ["action"]
+									}, -- end of ["params"]
+								}, -- end of [2]
+								[3] = 
+								{
+									["number"] = 3,
+									["auto"] = true,
+									["id"] = "Tanker",
+									["enabled"] = true,
+									["params"] = 
+									{
+									}, -- end of ["params"]
+								}, -- end of [3]
+								[4] = 
+								{
+									["number"] = 4,
+									["auto"] = true,
+									["id"] = "WrappedAction",
+									["enabled"] = true,
+									["params"] = 
+									{
+										["action"] = 
+										{
+											["id"] = "ActivateBeacon",
+											["params"] = 
+											{
+												["type"] = 4,
+												["AA"] = false,
+												["callsign"] = "TKR",
+												["system"] = 4,
+												["channel"] = 1,
+												["modeChannel"] = "X",
+												["bearing"] = true,
+												["frequency"] = 962000000,
+											}, -- end of ["params"]
+										}, -- end of ["action"]
+									}, -- end of ["params"]
+								}, -- end of [4]
+								[5] = 
+								{
+									["number"] = 5,
+									["auto"] = true,
+									["id"] = "WrappedAction",
+									["enabled"] = true,
+									["params"] = 
+									{
+										["action"] = 
+										{
+											["id"] = "EPLRS",
+											["params"] = 
+											{
+												["value"] = true,
+												["groupId"] = 1,
+											}, -- end of ["params"]
+										}, -- end of ["action"]
+									}, -- end of ["params"]
+								}, -- end of [5]
+							}, -- end of ["tasks"]
+						}, -- end of ["params"]
+					}, -- end of ["task"]
+					["type"] = "Turning Point",
+					["ETA"] = 0,
+					["ETA_locked"] = true,
+					["y"] = -8563.6832781353,
+					["x"] = -395281.46534495,
+					["speed_locked"] = true,
+					["formation_template"] = "",
+				}, -- end of [1]
+			}, -- end of ["points"]
+		}, -- end of ["route"]
+		["groupId"] = 1,
+		["hidden"] = false,
+		["units"] = 
+		{
+			[1] = 
+			{
+				["alt"] = 2000,
+				["alt_type"] = "BARO",
+				["livery_id"] = "Standard USAF",
+				["skill"] = "High",
+				["speed"] = 220.97222222222,
+				["AddPropAircraft"] = 
+				{
+					["VoiceCallsignLabel"] = "TO",
+					["VoiceCallsignNumber"] = "11",
+					["STN_L16"] = "07101",
+				}, -- end of ["AddPropAircraft"]
+				["type"] = "KC-135",
+				["unitId"] = 1,
+				["psi"] = 0,
+				["onboard_num"] = "010",
+				["y"] = -8563.6832781353,
+				["x"] = -395281.46534495,
+				["name"] = "KC-135-1",
+				["payload"] = 
+				{
+					["pylons"] = 
+					{
+					}, -- end of ["pylons"]
+					["fuel"] = 90700,
+					["flare"] = 0,
+					["chaff"] = 0,
+					["gun"] = 100,
+				}, -- end of ["payload"]
+				["heading"] = 0,
+				["callsign"] = 
+				{
+					[1] = 1,
+					[2] = 1,
+					["name"] = "Texaco11",
+					[3] = 1,
+				}, -- end of ["callsign"]
+			}, -- end of [1]
+		}, -- end of ["units"]
+		["y"] = -8563.6832781353,
+		["x"] = -395281.46534495,
+		["name"] = "KC-135",
+		["communication"] = true,
+		["start_time"] = 0,
+		["modulation"] = 0,
+		["frequency"] = 251,
+	}, -- end of [KC-135]
+	["KC-135MPRS"] = {
+		["category"] = Group.Category.AIRPLANE,
+		["lateActivation"] = true,
+		["tasks"] = 
+		{
+		}, -- end of ["tasks"]
+		["radioSet"] = true,
+		["task"] = "Refueling",
+		["uncontrolled"] = false,
+		["route"] = 
+		{
+			["routeRelativeTOT"] = true,
+			["points"] = 
+			{
+				[1] = 
+				{
+					["alt"] = 6096,
+					["action"] = "Fly Over Point",
+					["alt_type"] = "BARO",
+					["speed"] = 164.44444444444,
+					["task"] = 
+					{
+						["id"] = "ComboTask",
+						["params"] = 
+						{
+							["tasks"] = 
+							{
+								[1] = 
+								{
+									["enabled"] = true,
+									["auto"] = true,
+									["id"] = "Tanker",
+									["number"] = 1,
+									["params"] = 
+									{
+									}, -- end of ["params"]
+								}, -- end of [1]
+								[2] = 
+								{
+									["enabled"] = true,
+									["auto"] = true,
+									["id"] = "WrappedAction",
+									["number"] = 2,
+									["params"] = 
+									{
+										["action"] = 
+										{
+											["id"] = "ActivateBeacon",
+											["params"] = 
+											{
+												["type"] = 4,
+												["AA"] = false,
+												["callsign"] = "RTB",
+												["modeChannel"] = "Y",
+												["channel"] = 60,
+												["system"] = 5,
+												["unitId"] = 20565,
+												["bearing"] = true,
+												["frequency"] = 1147000000,
+											}, -- end of ["params"]
+										}, -- end of ["action"]
+									}, -- end of ["params"]
+								}, -- end of [2]
+								[3] = 
+								{
+									["number"] = 3,
+									["auto"] = false,
+									["id"] = "WrappedAction",
+									["enabled"] = true,
+									["params"] = 
+									{
+										["action"] = 
+										{
+											["id"] = "SetInvisible",
+											["params"] = 
+											{
+												["value"] = true,
+											}, -- end of ["params"]
+										}, -- end of ["action"]
+									}, -- end of ["params"]
+								}, -- end of [3]
+								[4] = 
+								{
+									["number"] = 4,
+									["auto"] = false,
+									["id"] = "WrappedAction",
+									["enabled"] = true,
+									["params"] = 
+									{
+										["action"] = 
+										{
+											["id"] = "Option",
+											["params"] = 
+											{
+												["value"] = true,
+												["name"] = 6,
+											}, -- end of ["params"]
+										}, -- end of ["action"]
+									}, -- end of ["params"]
+								}, -- end of [4]
+							}, -- end of ["tasks"]
+						}, -- end of ["params"]
+					}, -- end of ["task"]
+					["type"] = "Turning Point",
+					["ETA"] = 0,
+					["ETA_locked"] = true,
+					["y"] = -87560.730212787,
+					["x"] = -129296.58141675,
+					["name"] = "",
+					["formation_template"] = "",
+					["speed_locked"] = true,
+				}, -- end of [1]
+			}, -- end of ["points"]
+		}, -- end of ["route"]
+		["groupId"] = 1,
+		["hidden"] = false,
+		["units"] = 
+		{
+			[1] = 
+			{
+				["alt"] = 6096,
+				["alt_type"] = "BARO",
+				["livery_id"] = "22nd ARW",
+				["skill"] = "Excellent",
+				["speed"] = 164.44444444444,
+				["type"] = "KC135MPRS",
+				["unitId"] = 1,
+				["psi"] = 1.0660373467781,
+				["y"] = -87560.730212787,
+				["x"] = -129296.58141675,
+				["name"] = "KC-135MPRS",
+				["payload"] = 
+				{
+					["pylons"] = 
+					{
+					}, -- end of ["pylons"]
+					["fuel"] = 90700,
+					["flare"] = 60,
+					["chaff"] = 120,
+					["gun"] = 100,
+				}, -- end of ["payload"]
+				["heading"] = -1.0660373467782,
+				["callsign"] = 
+				{
+					[1] = 3,
+					[2] = 1,
+					["name"] = "Shell11",
+					[3] = 1,
+				}, -- end of ["callsign"]
+				["onboard_num"] = "089",
+			}, -- end of [1]
+		}, -- end of ["units"]
+		["y"] = -87560.730212787,
+		["x"] = -129296.58141675,
+		["name"] = "KC-135MPRS",
+		["communication"] = true,
+		["start_time"] = 0,
+		["modulation"] = 0,
+		["frequency"] = 251,
+	}, -- end of [KC-135MPRS]
+	["KC-130"] = {
+		["category"] = Group.Category.AIRPLANE,
+		["lateActivation"] = true,
+		["tasks"] = 
+		{
+		}, -- end of ["tasks"]
+		["radioSet"] = true,
+		["task"] = "Refueling",
+		["uncontrolled"] = false,
+		["route"] = 
+		{
+			["routeRelativeTOT"] = true,
+			["points"] = 
+			{
+				[1] = 
+				{
+					["alt"] = 2438.4,
+					["action"] = "Turning Point",
+					["alt_type"] = "BARO",
+					["speed"] = 172.5,
+					["task"] = 
+					{
+						["id"] = "ComboTask",
+						["params"] = 
+						{
+							["tasks"] = 
+							{
+								[1] = 
+								{
+									["number"] = 1,
+									["auto"] = true,
+									["id"] = "Tanker",
+									["enabled"] = true,
+									["params"] = 
+									{
+									}, -- end of ["params"]
+								}, -- end of [1]
+								[2] = 
+								{
+									["number"] = 2,
+									["auto"] = true,
+									["id"] = "WrappedAction",
+									["enabled"] = true,
+									["params"] = 
+									{
+										["action"] = 
+										{
+											["id"] = "ActivateBeacon",
+											["params"] = 
+											{
+												["type"] = 4,
+												["AA"] = false,
+												["unitId"] = 16683,
+												["modeChannel"] = "Y",
+												["channel"] = 60,
+												["system"] = 5,
+												["callsign"] = "ARC",
+												["bearing"] = true,
+												["frequency"] = 1147000000,
+											}, -- end of ["params"]
+										}, -- end of ["action"]
+									}, -- end of ["params"]
+								}, -- end of [2]
+								[3] = 
+								{
+									["enabled"] = true,
+									["auto"] = false,
+									["id"] = "WrappedAction",
+									["number"] = 3,
+									["params"] = 
+									{
+										["action"] = 
+										{
+											["id"] = "SetInvisible",
+											["params"] = 
+											{
+												["value"] = true,
+											}, -- end of ["params"]
+										}, -- end of ["action"]
+									}, -- end of ["params"]
+								}, -- end of [3]
+							}, -- end of ["tasks"]
+						}, -- end of ["params"]
+					}, -- end of ["task"]
+					["type"] = "Turning Point",
+					["ETA"] = 0,
+					["ETA_locked"] = true,
+					["y"] = -11585.313345172,
+					["x"] = -399323.02717468,
+					["name"] = "",
+					["formation_template"] = "",
+					["speed_locked"] = true,
+				}, -- end of [1]
+			}, -- end of ["points"]
+		}, -- end of ["route"]
+		["groupId"] = 2447,
+		["hidden"] = false,
+		["units"] = 
+		{
+			[1] = 
+			{
+				["alt"] = 2438.4,
+				["alt_type"] = "BARO",
+				["livery_id"] = "default",
+				["skill"] = "Excellent",
+				["speed"] = 172.5,
+				["type"] = "KC130",
+				["unitId"] = 16683,
+				["psi"] = 1.4236457627903,
+				["y"] = -11585.313345172,
+				["x"] = -399323.02717468,
+				["name"] = "KC-130",
+				["payload"] = 
+				{
+					["pylons"] = 
+					{
+					}, -- end of ["pylons"]
+					["fuel"] = 30000,
+					["flare"] = 60,
+					["chaff"] = 120,
+					["gun"] = 100,
+				}, -- end of ["payload"]
+				["heading"] = -1.4236457627903,
+				["callsign"] = 
+				{
+					[1] = 2,
+					[2] = 1,
+					["name"] = "Arco11",
+					[3] = 1,
+				}, -- end of ["callsign"]
+				["onboard_num"] = "139",
+			}, -- end of [1]
+		}, -- end of ["units"]
+		["y"] = -11585.313345172,
+		["x"] = -399323.02717468,
+		["name"] = "KC-130",
+		["communication"] = true,
+		["start_time"] = 0,
+		["modulation"] = 0,
+		["frequency"] = 251,		
+	}, -- end of ["KC-130"]
+	["AWACS-E3A"] = {
+		["category"] = Group.Category.AIRPLANE,
+		["lateActivation"] = true,
+		["tasks"] = 
+		{
+		}, -- end of ["tasks"]
+		["radioSet"] = true,
+		["task"] = "AWACS",
+		["uncontrolled"] = false,
+		["route"] = 
+		{
+			["routeRelativeTOT"] = true,
+			["points"] = 
+			{
+				[1] = 
+				{
+					["alt"] = 6096,
+					["action"] = "Fly Over Point",
+					["alt_type"] = "BARO",
+					["speed"] = 164.44444444444,
+					["task"] = 
+					{
+						["id"] = "ComboTask",
+						["params"] = 
+						{
+							["tasks"] = 
+							{
+								[1] = 
+								{
+									["number"] = 1,
+									["auto"] = true,
+									["id"] = "AWACS",
+									["enabled"] = true,
+									["params"] = 
+									{
+									}, -- end of ["params"]
+								}, -- end of [1]
+								[2] = 
+								{
+									["enabled"] = true,
+									["auto"] = false,
+									["id"] = "WrappedAction",
+									["number"] = 2,
+									["params"] = 
+									{
+										["action"] = 
+										{
+											["id"] = "SetInvisible",
+											["params"] = 
+											{
+												["value"] = true,
+											}, -- end of ["params"]
+										}, -- end of ["action"]
+									}, -- end of ["params"]
+								}, -- end of [2]
+								[3] = 
+								{
+									["number"] = 3,
+									["auto"] = false,
+									["id"] = "WrappedAction",
+									["enabled"] = true,
+									["params"] = 
+									{
+										["action"] = 
+										{
+											["id"] = "EPLRS",
+											["params"] = 
+											{
+												["value"] = true,
+												["groupId"] = 46,
+											}, -- end of ["params"]
+										}, -- end of ["action"]
+									}, -- end of ["params"]
+								}, -- end of [3]
+							}, -- end of ["tasks"]
+						}, -- end of ["params"]
+					}, -- end of ["task"]
+					["type"] = "Turning Point",
+					["ETA"] = 0,
+					["ETA_locked"] = true,
+					["y"] = -88627.624510964,
+					["x"] = -129296.58141675,
+					["name"] = "",
+					["formation_template"] = "",
+					["speed_locked"] = true,
+				}, -- end of [1]
+			}, -- end of ["points"]
+		}, -- end of ["route"]
+		["groupId"] = 17446,
+		["hidden"] = false,
+		["units"] = 
+		{
+			[1] = 
+			{
+				["alt"] = 6096,
+				["alt_type"] = "BARO",
+				["livery_id"] = "nato",
+				["skill"] = "Excellent",
+				["speed"] = 164.44444444444,
+				["type"] = "E-3A",
+				["unitId"] = 20566,
+				["psi"] = 1.1124120783257,
+				["y"] = -88627.624510964,
+				["x"] = -129296.58141675,
+				["name"] = "AWACS-E3A",
+				["payload"] = 
+				{
+					["pylons"] = 
+					{
+					}, -- end of ["pylons"]
+					["fuel"] = 65000,
+					["flare"] = 60,
+					["chaff"] = 120,
+					["gun"] = 100,
+				}, -- end of ["payload"]
+				["heading"] = -1.1124120783257,
+				["callsign"] = 
+				{
+					[1] = 1,
+					[2] = 1,
+					["name"] = "Overlord11",
+					[3] = 1,
+				}, -- end of ["callsign"]
+				["onboard_num"] = "090",
+			}, -- end of [1]
+		}, -- end of ["units"]
+		["y"] = -88627.624510964,
+		["x"] = -129296.58141675,
+		["name"] = "AWACS-E3A",
+		["communication"] = true,
+		["start_time"] = 0,
+		["modulation"] = 0,
+		["frequency"] = 251,
+	}, -- end of [AWACS-E3A]
+  	["AWACS-E2D"] = {
+		["category"] = Group.Category.AIRPLANE,
+		["lateActivation"] = true,
+		["tasks"] = 
+		{
+		}, -- end of ["tasks"]
+		["radioSet"] = true,
+		["task"] = "AWACS",
+		["uncontrolled"] = false,
+		["route"] = 
+		{
+			["routeRelativeTOT"] = true,
+			["points"] = 
+			{
+				[1] = 
+				{
+					["alt"] = 9144,
+					["action"] = "Turning Point",
+					["alt_type"] = "BARO",
+					["speed"] = 133.61111111111,
+					["task"] = 
+					{
+						["id"] = "ComboTask",
+						["params"] = 
+						{
+							["tasks"] = 
+							{
+								[1] = 
+								{
+									["enabled"] = true,
+									["auto"] = true,
+									["id"] = "AWACS",
+									["number"] = 1,
+									["params"] = 
+									{
+									}, -- end of ["params"]
+								}, -- end of [1]
+								[2] = 
+								{
+									["enabled"] = true,
+									["auto"] = true,
+									["id"] = "WrappedAction",
+									["number"] = 2,
+									["params"] = 
+									{
+										["action"] = 
+										{
+											["id"] = "EPLRS",
+											["params"] = 
+											{
+												["value"] = true,
+												["groupId"] = 38,
+											}, -- end of ["params"]
+										}, -- end of ["action"]
+									}, -- end of ["params"]
+								}, -- end of [2]
+								[3] = 
+								{
+									["enabled"] = true,
+									["auto"] = false,
+									["id"] = "WrappedAction",
+									["number"] = 3,
+									["params"] = 
+									{
+										["action"] = 
+										{
+											["id"] = "SetInvisible",
+											["params"] = 
+											{
+												["value"] = true,
+											}, -- end of ["params"]
+										}, -- end of ["action"]
+									}, -- end of ["params"]
+								}, -- end of [3]
+							}, -- end of ["tasks"]
+						}, -- end of ["params"]
+					}, -- end of ["task"]
+					["type"] = "Turning Point",
+					["ETA"] = 0,
+					["ETA_locked"] = true,
+					["y"] = -12187.736469214,
+					["x"] = -399320.85899169,
+					["name"] = "",
+					["formation_template"] = "",
+					["speed_locked"] = true,
+				}, -- end of [1]
+			}, -- end of ["points"]
+		}, -- end of ["route"]
+		["groupId"] = 2452,
+		["hidden"] = false,
+		["units"] = 
+		{
+			[1] = 
+			{
+				["alt"] = 9144,
+				["alt_type"] = "BARO",
+				["livery_id"] = "E-2D Demo",
+				["skill"] = "High",
+				["speed"] = 133.61111111111,
+				["type"] = "E-2C",
+				["unitId"] = 16697,
+				["psi"] = 1.3887207292845,
+				["y"] = -12187.736469214,
+				["x"] = -399320.85899169,
+				["name"] = "AWACS-E2D-1",
+				["payload"] = 
+				{
+					["pylons"] = 
+					{
+					}, -- end of ["pylons"]
+					["fuel"] = "5624",
+					["flare"] = 60,
+					["chaff"] = 120,
+					["gun"] = 100,
+				}, -- end of ["payload"]
+				["heading"] = -1.3887207292845,
+				["callsign"] = 
+				{
+					[1] = 1,
+					[2] = 1,
+					["name"] = "Overlord11",
+					[3] = 1,
+				}, -- end of ["callsign"]
+				["onboard_num"] = "143",
+			}, -- end of [1]
+		}, -- end of ["units"]
+		["y"] = -12187.736469214,
+		["x"] = -399320.85899169,
+		["name"] = "AWACS-E2D",
+		["communication"] = true,
+		["start_time"] = 0,
+		["modulation"] = 0,
+		["frequency"] = 251,		
+	}, -- end of ["AWACS-E2D"]
+	["AWACS-A50"] = {
+		["category"] = Group.Category.AIRPLANE,
+		["lateActivation"] = true,
+		["tasks"] = 
+		{
+		}, -- end of ["tasks"]
+		["radioSet"] = false,
+		["task"] = "AWACS",
+		["uncontrolled"] = false,
+		["taskSelected"] = true,
+		["route"] = 
+		{
+			["routeRelativeTOT"] = true,
+			["points"] = 
+			{
+				[1] = 
+				{
+					["alt"] = 10972.8,
+					["action"] = "Turning Point",
+					["alt_type"] = "BARO",
+					["speed"] = 220.97222222222,
+					["task"] = 
+					{
+						["id"] = "ComboTask",
+						["params"] = 
+						{
+							["tasks"] = 
+							{
+								[1] = 
+								{
+									["enabled"] = true,
+									["auto"] = true,
+									["id"] = "AWACS",
+									["number"] = 1,
+									["params"] = 
+									{
+									}, -- end of ["params"]
+								}, -- end of [1]
+								[2] = 
+								{
+									["enabled"] = true,
+									["auto"] = false,
+									["id"] = "WrappedAction",
+									["number"] = 2,
+									["params"] = 
+									{
+										["action"] = 
+										{
+											["id"] = "SetInvisible",
+											["params"] = 
+											{
+												["value"] = true,
+											}, -- end of ["params"]
+										}, -- end of ["action"]
+									}, -- end of ["params"]
+								}, -- end of [2]
+								[3] = 
+								{
+									["enabled"] = true,
+									["auto"] = false,
+									["id"] = "WrappedAction",
+									["number"] = 3,
+									["params"] = 
+									{
+										["action"] = 
+										{
+											["id"] = "Option",
+											["params"] = 
+											{
+												["value"] = 0,
+												["name"] = 1,
+											}, -- end of ["params"]
+										}, -- end of ["action"]
+									}, -- end of ["params"]
+								}, -- end of [3]
+								[4] = 
+								{
+									["enabled"] = true,
+									["auto"] = false,
+									["id"] = "WrappedAction",
+									["number"] = 4,
+									["params"] = 
+									{
+										["action"] = 
+										{
+											["id"] = "Option",
+											["params"] = 
+											{
+												["value"] = false,
+												["name"] = 19,
+											}, -- end of ["params"]
+										}, -- end of ["action"]
+									}, -- end of ["params"]
+								}, -- end of [4]
+							}, -- end of ["tasks"]
+						}, -- end of ["params"]
+					}, -- end of ["task"]
+					["type"] = "Turning Point",
+					["ETA"] = 0,
+					["ETA_locked"] = true,
+					["y"] = 315953.41096792,
+					["x"] = 63905.857563882,
+					["name"] = "",
+					["formation_template"] = "",
+					["speed_locked"] = true,
+				}, -- end of [1]
+			}, -- end of ["points"]
+		}, -- end of ["route"]
+		["groupId"] = 588,
+		["hidden"] = false,
+		["units"] = 
+		{
+			[1] = 
+			{
+				["alt"] = 10972.8,
+				["alt_type"] = "BARO",
+				["livery_id"] = "RF Air Force new",
+				["skill"] = "High",
+				["speed"] = 220.97222222222,
+				["AddPropAircraft"] = 
+				{
+					["PropellorType"] = 0,
+					["SoloFlight"] = false,
+				}, -- end of ["AddPropAircraft"]
+				["type"] = "A-50",
+				["unitId"] = 1595,
+				["psi"] = -1.7947587772958,
+				["y"] = 315953.41096792,
+				["x"] = 63905.857563882,
+				["name"] = "RED_AWACS",
+				["payload"] = 
+				{
+					["pylons"] = 
+					{
+					}, -- end of ["pylons"]
+					["fuel"] = "70000",
+					["flare"] = 192,
+					["chaff"] = 192,
+					["gun"] = 100,
+				}, -- end of ["payload"]
+				["heading"] = 1.7947587772958,
+				["callsign"] = 666,
+				["onboard_num"] = "027",
+			}, -- end of [1]
+		}, -- end of ["units"]
+		["y"] = 315953.41096792,
+		["x"] = 63905.857563882,
+		["name"] = "RED_AWACS",
+		["communication"] = true,
+		["start_time"] = 0,
+		["modulation"] = 0,
+		["frequency"] = 251,
+	}, -- end of ["AWACS-RED"]
+	["S3BTANKER"] = {
+		["category"] = Group.Category.AIRPLANE,
+		["lateActivation"] = true,
+		["tasks"] = 
+		{
+		}, -- end of ["tasks"]
+		["radioSet"] = false,
+		["task"] = "Refueling",
+		["uncontrolled"] = false,
+		["route"] = 
+		{
+			["routeRelativeTOT"] = true,
+			["points"] = 
+			{
+				[1] = 
+				{
+					["alt"] = 1828.8,
+					["action"] = "Turning Point",
+					["alt_type"] = "BARO",
+					["speed"] = 141.31944444444,
+					["task"] = 
+					{
+						["id"] = "ComboTask",
+						["params"] = 
+						{
+							["tasks"] = 
+							{
+								[1] = 
+								{
+									["number"] = 1,
+									["auto"] = true,
+									["id"] = "Tanker",
+									["enabled"] = true,
+									["params"] = 
+									{
+									}, -- end of ["params"]
+								}, -- end of [1]
+								[2] = 
+								{
+									["number"] = 2,
+									["auto"] = true,
+									["id"] = "WrappedAction",
+									["enabled"] = true,
+									["params"] = 
+									{
+										["action"] = 
+										{
+											["id"] = "ActivateBeacon",
+											["params"] = 
+											{
+												["type"] = 4,
+												["AA"] = false,
+												["callsign"] = "TKR",
+												["system"] = 4,
+												["channel"] = 1,
+												["modeChannel"] = "X",
+												["bearing"] = true,
+												["frequency"] = 962000000,
+											}, -- end of ["params"]
+										}, -- end of ["action"]
+									}, -- end of ["params"]
+								}, -- end of [2]
+								[3] = 
+								{
+									["number"] = 3,
+									["auto"] = false,
+									["id"] = "WrappedAction",
+									["enabled"] = true,
+									["params"] = 
+									{
+										["action"] = 
+										{
+											["id"] = "SetInvisible",
+											["params"] = 
+											{
+												["value"] = true,
+											}, -- end of ["params"]
+										}, -- end of ["action"]
+									}, -- end of ["params"]
+								}, -- end of [3]
+							}, -- end of ["tasks"]
+						}, -- end of ["params"]
+					}, -- end of ["task"]
+					["type"] = "Turning Point",
+					["ETA"] = 0,
+					["ETA_locked"] = true,
+					["y"] = 606748.96393416,
+					["x"] = -358539.84033849,
+					["formation_template"] = "",
+					["speed_locked"] = true,
+				}, -- end of [1]
+			}, -- end of ["points"]
+		}, -- end of ["route"]
+		["groupId"] = 1,
+		["hidden"] = false,
+		["units"] = 
+		{
+			[1] = 
+			{
+				["alt"] = 1828.8,
+				["alt_type"] = "BARO",
+				["livery_id"] = "usaf standard",
+				["skill"] = "High",
+				["speed"] = 141.31944444444,
+				["type"] = "S-3B Tanker",
+				["unitId"] = 1,
+				["psi"] = 0,
+				["y"] = 606748.96393416,
+				["x"] = -358539.84033849,
+				["name"] = "Aerial-1-1",
+				["payload"] = 
+				{
+					["pylons"] = 
+					{
+					}, -- end of ["pylons"]
+					["fuel"] = "7813",
+					["flare"] = 30,
+					["chaff"] = 30,
+					["gun"] = 100,
+				}, -- end of ["payload"]
+				["heading"] = 0,
+				["callsign"] = 
+				{
+					[1] = 1,
+					[2] = 1,
+					["name"] = "Texaco11",
+					[3] = 1,
+				}, -- end of ["callsign"]
+				["onboard_num"] = "010",
+			}, -- end of [1]
+		}, -- end of ["units"]
+		["y"] = 606748.96393416,
+		["x"] = -358539.84033849,
+		["name"] = "S3BTANKER",
+		["communication"] = true,
+		["start_time"] = 0,
+		["modulation"] = 0,
+		["frequency"] = 251,
+	}, -- end of ["S3BTANKER"]
 	------------------------ SAM ------------------------
 	["SA2"] = {
 		["category"] = Group.Category.GROUND,
@@ -10410,7 +9670,7 @@ MARKSPAWN.templates = {
 		["name"] = "AAA_Zu23Ural",
 		["start_time"] = 0,
 	}, -- end of ["ZU23_Ural"]
-	["ZU23CLOSED"] = {
+	["ZU23_Closed"] = {
 		["category"] = Group.Category.GROUND,
 		["visible"] = false,
 		["lateActivation"] = true,
@@ -10527,8 +9787,734 @@ MARKSPAWN.templates = {
 		["x"] = 39637.695245398,
 		["name"] = "AAA_Zu23Closed",
 		["start_time"] = 0,
-	}, -- end of [ZU23CLOSED]	
-	------------------------ CONVOY ------------------------
+	}, -- end of [ZU23_Closed]	
+	----------------------- MANPADS -----------------------
+	["SA18Manpads"] = {
+		["category"] = Group.Category.GROUND,
+		["visible"] = false,
+		["lateActivation"] = true,
+		["tasks"] = 
+		{
+		}, -- end of ["tasks"]
+		["uncontrollable"] = false,
+		["task"] = "Ground Nothing",
+		["taskSelected"] = true,
+		["route"] = 
+		{
+			["spans"] = 
+			{
+			}, -- end of ["spans"]
+			["points"] = 
+			{
+				[1] = 
+				{
+					["alt"] = 22,
+					["type"] = "Turning Point",
+					["ETA"] = 0,
+					["alt_type"] = "BARO",
+					["formation_template"] = "",
+					["y"] = 299292.29428324,
+					["x"] = 39611.688066858,
+					["name"] = "",
+					["ETA_locked"] = true,
+					["speed"] = 4,
+					["action"] = "Off Road",
+					["task"] = 
+					{
+						["id"] = "ComboTask",
+						["params"] = 
+						{
+							["tasks"] = 
+							{
+								[1] = 
+								{
+									["enabled"] = true,
+									["auto"] = false,
+									["id"] = "WrappedAction",
+									["number"] = 1,
+									["params"] = 
+									{
+										["action"] = 
+										{
+											["id"] = "Option",
+											["params"] = 
+											{
+												["value"] = 0,
+												["name"] = 0,
+											}, -- end of ["params"]
+										}, -- end of ["action"]
+									}, -- end of ["params"]
+								}, -- end of [1]
+								[2] = 
+								{
+									["enabled"] = true,
+									["auto"] = false,
+									["id"] = "WrappedAction",
+									["number"] = 2,
+									["params"] = 
+									{
+										["action"] = 
+										{
+											["id"] = "Option",
+											["params"] = 
+											{
+												["value"] = 0,
+												["name"] = 9,
+											}, -- end of ["params"]
+										}, -- end of ["action"]
+									}, -- end of ["params"]
+								}, -- end of [2]
+							}, -- end of ["tasks"]
+						}, -- end of ["params"]
+					}, -- end of ["task"]
+					["speed_locked"] = true,
+				}, -- end of [1]
+			}, -- end of ["points"]
+			["routeRelativeTOT"] = true,
+		}, -- end of ["route"]
+		["groupId"] = 92,
+		["hidden"] = false,
+		["units"] = 
+		{
+			[1] = 
+			{
+				["skill"] = "Random",
+				["coldAtStart"] = false,
+				["type"] = "SA-18 Igla manpad",
+				["unitId"] = 482,
+				["y"] = 299292.29428324,
+				["x"] = 39611.688066858,
+				["name"] = "Unit #210",
+				["heading"] = 3.1415926535898,
+				["playerCanDrive"] = true,
+			}, -- end of [1]
+		}, -- end of ["units"]
+		["y"] = 299292.29428324,
+		["x"] = 39611.688066858,
+		["name"] = "SAM_Sa18Manpads",
+		["start_time"] = 0,
+	}, -- end of [SA18Manpads]
+	["SA18SManpads"] = {
+		["category"] = Group.Category.GROUND,
+		["visible"] = false,
+		["lateActivation"] = true,
+		["tasks"] = 
+		{
+		}, -- end of ["tasks"]
+		["uncontrollable"] = false,
+		["task"] = "Ground Nothing",
+		["taskSelected"] = true,
+		["route"] = 
+		{
+			["spans"] = 
+			{
+				[1] = 
+				{
+					[1] = 
+					{
+						["y"] = 299317.36320321,
+						["x"] = 39529.033326712,
+					}, -- end of [1]
+					[2] = 
+					{
+						["y"] = 299320.60780347,
+						["x"] = 39533.359460394,
+					}, -- end of [2]
+				}, -- end of [1]
+			}, -- end of ["spans"]
+			["points"] = 
+			{
+				[1] = 
+				{
+					["alt"] = 22,
+					["type"] = "Turning Point",
+					["ETA"] = 0,
+					["alt_type"] = "BARO",
+					["formation_template"] = "",
+					["y"] = 299308.07028743,
+					["x"] = 39613.508375033,
+					["name"] = "",
+					["ETA_locked"] = true,
+					["speed"] = 4,
+					["action"] = "Off Road",
+					["task"] = 
+					{
+						["id"] = "ComboTask",
+						["params"] = 
+						{
+							["tasks"] = 
+							{
+								[1] = 
+								{
+									["enabled"] = true,
+									["auto"] = false,
+									["id"] = "WrappedAction",
+									["number"] = 1,
+									["params"] = 
+									{
+										["action"] = 
+										{
+											["id"] = "Option",
+											["params"] = 
+											{
+												["value"] = 0,
+												["name"] = 0,
+											}, -- end of ["params"]
+										}, -- end of ["action"]
+									}, -- end of ["params"]
+								}, -- end of [1]
+								[2] = 
+								{
+									["enabled"] = true,
+									["auto"] = false,
+									["id"] = "WrappedAction",
+									["number"] = 2,
+									["params"] = 
+									{
+										["action"] = 
+										{
+											["id"] = "Option",
+											["params"] = 
+											{
+												["value"] = 0,
+												["name"] = 9,
+											}, -- end of ["params"]
+										}, -- end of ["action"]
+									}, -- end of ["params"]
+								}, -- end of [2]
+							}, -- end of ["tasks"]
+						}, -- end of ["params"]
+					}, -- end of ["task"]
+					["speed_locked"] = true,
+				}, -- end of [1]
+			}, -- end of ["points"]
+			["routeRelativeTOT"] = true,
+		}, -- end of ["route"]
+		["groupId"] = 93,
+		["hidden"] = false,
+		["units"] = 
+		{
+			[1] = 
+			{
+				["skill"] = "Random",
+				["coldAtStart"] = false,
+				["type"] = "SA-18 Igla-S manpad",
+				["unitId"] = 483,
+				["y"] = 299308.07028743,
+				["x"] = 39613.508375033,
+				["name"] = "Unit #211",
+				["heading"] = 3.1415926535898,
+				["playerCanDrive"] = true,
+			}, -- end of [1]
+		}, -- end of ["units"]
+		["y"] = 299308.07028743,
+		["x"] = 39613.508375033,
+		["name"] = "SAM_Sa18sManpads",
+		["start_time"] = 0,
+	}, -- end of [SA18SManpads]
+	------------------------ CAMP ------------------------
+	["CAMP_Heavy"] = {
+		["category"] = Group.Category.GROUND,
+		["visible"] = false,
+		["lateActivation"] = true,
+		["tasks"] = 
+		{
+		}, -- end of ["tasks"]
+		["uncontrollable"] = false,
+		["route"] = 
+		{
+			["spans"] = 
+			{
+			}, -- end of ["spans"]
+			["points"] = 
+			{
+				[1] = 
+				{
+					["alt"] = 30,
+					["type"] = "Turning Point",
+					["ETA"] = 0,
+					["alt_type"] = "BARO",
+					["formation_template"] = "",
+					["y"] = -850039.55005353,
+					["x"] = 507552.14703332,
+					["ETA_locked"] = true,
+					["speed"] = 5.5555555555556,
+					["action"] = "Off Road",
+					["task"] = 
+					{
+						["id"] = "ComboTask",
+						["params"] = 
+						{
+							["tasks"] = 
+							{
+							}, -- end of ["tasks"]
+						}, -- end of ["params"]
+					}, -- end of ["task"]
+					["speed_locked"] = true,
+				}, -- end of [1]
+			}, -- end of ["points"]
+			["routeRelativeTOT"] = true,
+		}, -- end of ["route"]
+		["groupId"] = 17483,
+		["hidden"] = false,
+		["units"] = 
+		{
+			[1] = 
+			{
+				["skill"] = "Random",
+				["coldAtStart"] = false,
+				["type"] = "BTR-80",
+				["unitId"] = 20656,
+				["y"] = -850039.55005353,
+				["x"] = 507552.14703332,
+				["name"] = "CAMP_Heavy",
+				["heading"] = 0,
+				["playerCanDrive"] = true,
+			}, -- end of [1]
+		}, -- end of ["units"]
+		["y"] = -850039.55005353,
+		["x"] = 507552.14703332,
+		["name"] = "CAMP_Heavy",
+		["start_time"] = 0,
+	}, -- end of ["CAMP_Heavy"]
+	["CAMP_Tent_Group"] = {
+		["category"] = Group.Category.GROUND,
+		["visible"] = false,
+		["lateActivation"] = true,
+		["tasks"] = 
+		{
+		}, -- end of ["tasks"]
+		["uncontrollable"] = false,
+		["task"] = "Ground Nothing",
+		["taskSelected"] = true,
+		["route"] = 
+		{
+			["spans"] = 
+			{
+			}, -- end of ["spans"]
+			["points"] = 
+			{
+				[1] = 
+				{
+					["alt"] = 21,
+					["type"] = "Turning Point",
+					["ETA"] = 0,
+					["alt_type"] = "BARO",
+					["formation_template"] = "",
+					["y"] = 289225.29837187,
+					["x"] = 40597.069277546,
+					["name"] = "",
+					["ETA_locked"] = true,
+					["speed"] = 5.5555555555556,
+					["action"] = "Off Road",
+					["task"] = 
+					{
+						["id"] = "ComboTask",
+						["params"] = 
+						{
+							["tasks"] = 
+							{
+							}, -- end of ["tasks"]
+						}, -- end of ["params"]
+					}, -- end of ["task"]
+					["speed_locked"] = true,
+				}, -- end of [1]
+			}, -- end of ["points"]
+			["routeRelativeTOT"] = true,
+		}, -- end of ["route"]
+		["groupId"] = 73,
+		["hidden"] = false,
+		["units"] = 
+		{
+			[1] = 
+			{
+				["skill"] = "Excellent",
+				["coldAtStart"] = false,
+				["type"] = "tentepetite_vert",
+				["unitId"] = 448,
+				["y"] = 289225.29837187,
+				["x"] = 40597.069277546,
+				["name"] = "Unit #183",
+				["heading"] = 5.9864793343406,
+				["playerCanDrive"] = false,
+			}, -- end of [1]
+			[2] = 
+			{
+				["skill"] = "Excellent",
+				["coldAtStart"] = false,
+				["type"] = "tente_verte",
+				["unitId"] = 449,
+				["y"] = 289203.1385953,
+				["x"] = 40609.827936785,
+				["name"] = "Unit #184",
+				["heading"] = 0.069813170079773,
+				["playerCanDrive"] = false,
+			}, -- end of [2]
+			[3] = 
+			{
+				["skill"] = "Random",
+				["coldAtStart"] = false,
+				["type"] = "tente_verte",
+				["unitId"] = 450,
+				["y"] = 289247.45814844,
+				["x"] = 40585.429798943,
+				["name"] = "Unit #185",
+				["heading"] = 5.9864793343406,
+				["playerCanDrive"] = false,
+			}, -- end of [3]
+			[4] = 
+			{
+				["skill"] = "Random",
+				["coldAtStart"] = false,
+				["type"] = "tentepetite_vert",
+				["unitId"] = 451,
+				["y"] = 289211.86820425,
+				["x"] = 40594.159407896,
+				["name"] = "Unit #186",
+				["heading"] = 5.9864793343406,
+				["playerCanDrive"] = false,
+			}, -- end of [4]
+			[5] = 
+			{
+				["skill"] = "Random",
+				["coldAtStart"] = false,
+				["type"] = "tente_verte",
+				["unitId"] = 452,
+				["y"] = 289240.29539238,
+				["x"] = 40610.051772912,
+				["name"] = "Unit #187",
+				["heading"] = 4.8869219055841,
+				["playerCanDrive"] = false,
+			}, -- end of [5]
+			[6] = 
+			{
+				["skill"] = "Random",
+				["coldAtStart"] = false,
+				["type"] = "Container_Vert",
+				["unitId"] = 453,
+				["y"] = 289199.7810534,
+				["x"] = 40591.025702118,
+				["name"] = "Unit #188",
+				["heading"] = 5.9864793343406,
+				["playerCanDrive"] = false,
+			}, -- end of [6]
+			[7] = 
+			{
+				["skill"] = "Random",
+				["coldAtStart"] = false,
+				["type"] = "Container_Vert",
+				["unitId"] = 454,
+				["y"] = 289230.44660279,
+				["x"] = 40574.46182872,
+				["name"] = "Unit #189",
+				["heading"] = 5.9864793343406,
+				["playerCanDrive"] = false,
+			}, -- end of [7]
+			[8] = 
+			{
+				["skill"] = "Random",
+				["coldAtStart"] = false,
+				["type"] = "tente_verte",
+				["unitId"] = 455,
+				["y"] = 289217.44400127,
+				["x"] = 40579.772531204,
+				["name"] = "Unit #190",
+				["heading"] = 0.4014257279587,
+				["playerCanDrive"] = false,
+			}, -- end of [8]
+			[9] = 
+			{
+				["skill"] = "Random",
+				["coldAtStart"] = false,
+				["type"] = "tentepetite_vert",
+				["unitId"] = 456,
+				["y"] = 289217.01643517,
+				["x"] = 40621.691251516,
+				["name"] = "Unit #191",
+				["heading"] = 5.9864793343406,
+				["playerCanDrive"] = false,
+			}, -- end of [9]
+			[10] = 
+			{
+				["skill"] = "Random",
+				["coldAtStart"] = false,
+				["type"] = "Tente H_verte",
+				["unitId"] = 461,
+				["y"] = 289221.76804989,
+				["x"] = 40560.906732556,
+				["name"] = "Unit #196",
+				["heading"] = 5.9864793343406,
+				["playerCanDrive"] = false,
+			}, -- end of [10]
+			[11] = 
+			{
+				["skill"] = "Random",
+				["coldAtStart"] = false,
+				["type"] = "tentepetite_vert",
+				["unitId"] = 462,
+				["y"] = 289206.58029006,
+				["x"] = 40572.63999098,
+				["name"] = "Unit #197",
+				["heading"] = 5.9864793343406,
+				["playerCanDrive"] = false,
+			}, -- end of [11]
+			[12] = 
+			{
+				["skill"] = "Random",
+				["coldAtStart"] = false,
+				["type"] = "Tente H_verte",
+				["unitId"] = 463,
+				["y"] = 289247.52799094,
+				["x"] = 40566.742969199,
+				["name"] = "Unit #198",
+				["heading"] = 5.9864793343406,
+				["playerCanDrive"] = false,
+			}, -- end of [12]
+		}, -- end of ["units"]
+		["y"] = 289225.29837187,
+		["x"] = 40597.069277546,
+		["name"] = "CAMP_Tent_Group",
+		["start_time"] = 0,
+	}, -- end of [CAMP_Tent_Group]
+	["CAMP_Inf_02"] = {
+		["category"] = Group.Category.GROUND,
+		["visible"] = false,
+		["lateActivation"] = true,
+		["tasks"] = 
+		{
+		}, -- end of ["tasks"]
+		["uncontrollable"] = false,
+		["task"] = "Ground Nothing",
+		["taskSelected"] = true,
+		["route"] = 
+		{
+			["spans"] = 
+			{
+			}, -- end of ["spans"]
+			["points"] = 
+			{
+				[1] = 
+				{
+					["alt"] = 20,
+					["type"] = "Turning Point",
+					["ETA"] = 0,
+					["alt_type"] = "BARO",
+					["formation_template"] = "",
+					["y"] = 288079.26256212,
+					["x"] = 42645.403272296,
+					["name"] = "",
+					["ETA_locked"] = true,
+					["speed"] = 4,
+					["action"] = "Off Road",
+					["task"] = 
+					{
+						["id"] = "ComboTask",
+						["params"] = 
+						{
+							["tasks"] = 
+							{
+								[1] = 
+								{
+									["enabled"] = true,
+									["auto"] = false,
+									["id"] = "WrappedAction",
+									["number"] = 1,
+									["params"] = 
+									{
+										["action"] = 
+										{
+											["id"] = "Option",
+											["params"] = 
+											{
+												["value"] = 0,
+												["name"] = 0,
+											}, -- end of ["params"]
+										}, -- end of ["action"]
+									}, -- end of ["params"]
+								}, -- end of [1]
+								[2] = 
+								{
+									["enabled"] = true,
+									["auto"] = false,
+									["id"] = "WrappedAction",
+									["number"] = 2,
+									["params"] = 
+									{
+										["action"] = 
+										{
+											["id"] = "Option",
+											["params"] = 
+											{
+												["value"] = 0,
+												["name"] = 9,
+											}, -- end of ["params"]
+										}, -- end of ["action"]
+									}, -- end of ["params"]
+								}, -- end of [2]
+							}, -- end of ["tasks"]
+						}, -- end of ["params"]
+					}, -- end of ["task"]
+					["speed_locked"] = true,
+				}, -- end of [1]
+			}, -- end of ["points"]
+			["routeRelativeTOT"] = true,
+		}, -- end of ["route"]
+		["groupId"] = 57,
+		["hidden"] = false,
+		["units"] = 
+		{
+			[1] = 
+			{
+				["skill"] = "Random",
+				["coldAtStart"] = false,
+				["type"] = "Paratrooper AKS-74",
+				["unitId"] = 367,
+				["y"] = 288079.26256212,
+				["x"] = 42645.403272296,
+				["name"] = "Unit #104",
+				["heading"] = 2.8448866807508,
+				["playerCanDrive"] = false,
+			}, -- end of [1]
+			[2] = 
+			{
+				["skill"] = "Random",
+				["coldAtStart"] = false,
+				["type"] = "Infantry AK",
+				["unitId"] = 368,
+				["y"] = 288069.14056436,
+				["x"] = 42636.996867373,
+				["name"] = "Unit #105",
+				["heading"] = 5.0789081233035,
+				["playerCanDrive"] = false,
+			}, -- end of [2]
+			[3] = 
+			{
+				["skill"] = "Random",
+				["coldAtStart"] = false,
+				["type"] = "Paratrooper RPG-16",
+				["unitId"] = 369,
+				["y"] = 288078.76029292,
+				["x"] = 42635.106753823,
+				["name"] = "Unit #106",
+				["heading"] = 3.6651914291881,
+				["playerCanDrive"] = false,
+			}, -- end of [3]
+			[4] = 
+			{
+				["skill"] = "Random",
+				["coldAtStart"] = false,
+				["type"] = "Infantry AK",
+				["unitId"] = 370,
+				["y"] = 288088.5545422,
+				["x"] = 42637.618099792,
+				["name"] = "Unit #107",
+				["heading"] = 2.8448866807508,
+				["playerCanDrive"] = false,
+			}, -- end of [4]
+			[5] = 
+			{
+				["skill"] = "Random",
+				["coldAtStart"] = false,
+				["type"] = "Infantry AK",
+				["unitId"] = 371,
+				["y"] = 288088.05227301,
+				["x"] = 42647.412349072,
+				["name"] = "Unit #108",
+				["heading"] = 0.97738438111682,
+				["playerCanDrive"] = false,
+			}, -- end of [5]
+			[6] = 
+			{
+				["skill"] = "Random",
+				["coldAtStart"] = false,
+				["type"] = "Paratrooper RPG-16",
+				["unitId"] = 445,
+				["y"] = 288095.83744551,
+				["x"] = 42639.124907373,
+				["name"] = "Unit #180",
+				["heading"] = 0.97738438111682,
+				["playerCanDrive"] = false,
+			}, -- end of [6]
+			[7] = 
+			{
+				["skill"] = "Random",
+				["coldAtStart"] = false,
+				["type"] = "Infantry AK",
+				["unitId"] = 446,
+				["y"] = 288073.98873558,
+				["x"] = 42653.941848591,
+				["name"] = "Unit #181",
+				["heading"] = 0.97738438111682,
+				["playerCanDrive"] = false,
+			}, -- end of [7]
+			[8] = 
+			{
+				["skill"] = "Random",
+				["coldAtStart"] = false,
+				["type"] = "Infantry AK",
+				["unitId"] = 447,
+				["y"] = 288071.97965881,
+				["x"] = 42644.398733909,
+				["name"] = "Unit #182",
+				["heading"] = 0.97738438111682,
+				["playerCanDrive"] = false,
+			}, -- end of [8]
+			[9] = 
+			{
+				["skill"] = "Random",
+				["coldAtStart"] = false,
+				["type"] = "Infantry AK",
+				["unitId"] = 457,
+				["y"] = 288066.95696687,
+				["x"] = 42649.421425847,
+				["name"] = "Unit #192",
+				["heading"] = 0.97738438111682,
+				["playerCanDrive"] = false,
+			}, -- end of [9]
+			[10] = 
+			{
+				["skill"] = "Random",
+				["coldAtStart"] = false,
+				["type"] = "Infantry AK",
+				["unitId"] = 458,
+				["y"] = 288083.28071567,
+				["x"] = 42654.946386979,
+				["name"] = "Unit #193",
+				["heading"] = 0.97738438111682,
+				["playerCanDrive"] = false,
+			}, -- end of [10]
+			[11] = 
+			{
+				["skill"] = "Random",
+				["coldAtStart"] = false,
+				["type"] = "Infantry AK",
+				["unitId"] = 459,
+				["y"] = 288093.07496495,
+				["x"] = 42644.901003102,
+				["name"] = "Unit #194",
+				["heading"] = 0.97738438111682,
+				["playerCanDrive"] = false,
+			}, -- end of [11]
+			[12] = 
+			{
+				["skill"] = "Random",
+				["coldAtStart"] = false,
+				["type"] = "Infantry AK",
+				["unitId"] = 460,
+				["y"] = 288085.03865785,
+				["x"] = 42629.581792691,
+				["name"] = "Unit #195",
+				["heading"] = 0.97738438111682,
+				["playerCanDrive"] = false,
+			}, -- end of [12]
+		}, -- end of ["units"]
+		["y"] = 288079.26256212,
+		["x"] = 42645.403272296,
+		["name"] = "CAMP_Inf_02",
+		["start_time"] = 0,
+		["hiddenOnPlanner"] = false,
+	}, -- end of [CAMP_Inf_02]
+    ----------------------- CONVOY ------------------------
 	["CON_light"] = {
 		["category"] = Group.Category.GROUND,
 		["visible"] = false,
@@ -11212,275 +11198,3587 @@ MARKSPAWN.templates = {
 		["name"] = "CONVOY_heavy-2",
 		["start_time"] = 0,
 	},  -- end of ["CON_heavy"]
-	------------------------ ARTILLERY ------------------------
+	["CONVOY_base"] = {
+		["category"] = Group.Category.GROUND,
+		["visible"] = false,
+		["lateActivation"] = true,
+		["tasks"] = 
+		{
+		}, -- end of ["tasks"]
+		["uncontrollable"] = false,
+		["task"] = "Ground Nothing",
+		["taskSelected"] = true,
+		["route"] = 
+		{
+			["spans"] = 
+			{
+				[1] = 
+				{
+					[1] = 
+					{
+						["y"] = 307429.64127261,
+						["x"] = 36315.691981635,
+					}, -- end of [1]
+					[2] = 
+					{
+						["y"] = 307429.64127261,
+						["x"] = 36315.691981635,
+					}, -- end of [2]
+				}, -- end of [1]
+			}, -- end of ["spans"]
+			["points"] = 
+			{
+				[1] = 
+				{
+					["alt"] = 5,
+					["type"] = "Turning Point",
+					["ETA"] = 0,
+					["alt_type"] = "BARO",
+					["formation_template"] = "",
+					["y"] = 307929.59357735,
+					["x"] = 36284.831768249,
+					["name"] = "",
+					["ETA_locked"] = true,
+					["speed"] = 5.5555555555556,
+					["action"] = "On Road",
+					["task"] = 
+					{
+						["id"] = "ComboTask",
+						["params"] = 
+						{
+							["tasks"] = 
+							{
+								[1] = 
+								{
+									["number"] = 1,
+									["auto"] = false,
+									["id"] = "WrappedAction",
+									["enabled"] = true,
+									["params"] = 
+									{
+										["action"] = 
+										{
+											["id"] = "Option",
+											["params"] = 
+											{
+												["value"] = 0,
+												["name"] = 0,
+											}, -- end of ["params"]
+										}, -- end of ["action"]
+									}, -- end of ["params"]
+								}, -- end of [1]
+								[2] = 
+								{
+									["number"] = 2,
+									["auto"] = false,
+									["id"] = "WrappedAction",
+									["enabled"] = true,
+									["params"] = 
+									{
+										["action"] = 
+										{
+											["id"] = "Option",
+											["params"] = 
+											{
+												["value"] = 0,
+												["name"] = 9,
+											}, -- end of ["params"]
+										}, -- end of ["action"]
+									}, -- end of ["params"]
+								}, -- end of [2]
+							}, -- end of ["tasks"]
+						}, -- end of ["params"]
+					}, -- end of ["task"]
+					["speed_locked"] = true,
+				}, -- end of [1]
+			}, -- end of ["points"]
+			["routeRelativeTOT"] = true,
+		}, -- end of ["route"]
+		["groupId"] = 72,
+		["hidden"] = false,
+		["units"] = 
+		{
+			[1] = 
+			{
+				["skill"] = "Excellent",
+				["coldAtStart"] = false,
+				["type"] = "Tigr_233036",
+				["unitId"] = 444,
+				["y"] = 307929.59357735,
+				["x"] = 36284.831768249,
+				["name"] = "Unit #179",
+				["heading"] = -0.061648098349977,
+				["playerCanDrive"] = false,
+				["wagons"] = 
+				{
+				}, -- end of ["wagons"]
+			}, -- end of [1]
+		}, -- end of ["units"]
+		["y"] = 307929.59357735,
+		["x"] = 36284.831768249,
+		["name"] = "CONVOY_base",
+		["start_time"] = 0,
+	}, -- end of [CONVOY_base]
+	["CONVOY_light-1"] = {
+		["category"] = Group.Category.GROUND,
+		["visible"] = false,
+		["lateActivation"] = true,
+		["tasks"] = 
+		{
+		}, -- end of ["tasks"]
+		["uncontrollable"] = false,
+		["task"] = "Ground Nothing",
+		["taskSelected"] = true,
+		["route"] = 
+		{
+			["spans"] = 
+			{
+				[1] = 
+				{
+					[1] = 
+					{
+						["y"] = 307002.29266054,
+						["x"] = 36451.947799565,
+					}, -- end of [1]
+					[2] = 
+					{
+						["y"] = 307002.29266054,
+						["x"] = 36451.947799565,
+					}, -- end of [2]
+				}, -- end of [1]
+			}, -- end of ["spans"]
+			["points"] = 
+			{
+				[1] = 
+				{
+					["alt"] = 52,
+					["type"] = "Turning Point",
+					["ETA"] = 0,
+					["alt_type"] = "BARO",
+					["formation_template"] = "",
+					["y"] = 427622.79355021,
+					["x"] = 13792.384414609,
+					["name"] = "",
+					["ETA_locked"] = true,
+					["speed"] = 5.5555555555556,
+					["action"] = "Off Road",
+					["task"] = 
+					{
+						["id"] = "ComboTask",
+						["params"] = 
+						{
+							["tasks"] = 
+							{
+								[1] = 
+								{
+									["number"] = 1,
+									["auto"] = false,
+									["id"] = "WrappedAction",
+									["enabled"] = true,
+									["params"] = 
+									{
+										["action"] = 
+										{
+											["id"] = "Option",
+											["params"] = 
+											{
+												["value"] = 0,
+												["name"] = 0,
+											}, -- end of ["params"]
+										}, -- end of ["action"]
+									}, -- end of ["params"]
+								}, -- end of [1]
+								[2] = 
+								{
+									["number"] = 2,
+									["auto"] = false,
+									["id"] = "WrappedAction",
+									["enabled"] = true,
+									["params"] = 
+									{
+										["action"] = 
+										{
+											["id"] = "Option",
+											["params"] = 
+											{
+												["value"] = 0,
+												["name"] = 9,
+											}, -- end of ["params"]
+										}, -- end of ["action"]
+									}, -- end of ["params"]
+								}, -- end of [2]
+							}, -- end of ["tasks"]
+						}, -- end of ["params"]
+					}, -- end of ["task"]
+					["speed_locked"] = true,
+				}, -- end of [1]
+			}, -- end of ["points"]
+			["routeRelativeTOT"] = true,
+		}, -- end of ["route"]
+		["groupId"] = 323,
+		["hidden"] = false,
+		["units"] = 
+		{
+			[1] = 
+			{
+				["skill"] = "Excellent",
+				["coldAtStart"] = false,
+				["type"] = "Tigr_233036",
+				["unitId"] = 3127,
+				["y"] = 427622.79355021,
+				["x"] = 13792.384414609,
+				["name"] = "CONVOY_light-1-1",
+				["heading"] = 1.8849555921539,
+				["playerCanDrive"] = false,
+				["wagons"] = 
+				{
+				}, -- end of ["wagons"]
+			}, -- end of [1]
+			[2] = 
+			{
+				["skill"] = "Excellent",
+				["coldAtStart"] = false,
+				["type"] = "BTR-80",
+				["unitId"] = 3128,
+				["y"] = 427626.31175636,
+				["x"] = 13800.112737528,
+				["name"] = "CONVOY_light-1-2",
+				["heading"] = 1.8790433242373,
+				["playerCanDrive"] = false,
+			}, -- end of [2]
+			[3] = 
+			{
+				["skill"] = "Excellent",
+				["coldAtStart"] = false,
+				["type"] = "BTR-80",
+				["unitId"] = 3129,
+				["y"] = 427629.89876323,
+				["x"] = 13807.286751269,
+				["name"] = "CONVOY_light-1-3",
+				["heading"] = 1.8790149274913,
+				["playerCanDrive"] = false,
+			}, -- end of [3]
+			[4] = 
+			{
+				["skill"] = "Excellent",
+				["coldAtStart"] = false,
+				["type"] = "Ural-375 ZU-23",
+				["unitId"] = 3130,
+				["y"] = 427632.96159248,
+				["x"] = 13815.434763184,
+				["name"] = "CONVOY_light-1-4",
+				["heading"] = 1.8790045696829,
+				["playerCanDrive"] = false,
+			}, -- end of [4]
+			[5] = 
+			{
+				["skill"] = "Excellent",
+				["coldAtStart"] = false,
+				["type"] = "Ural-375 PBU",
+				["unitId"] = 3131,
+				["y"] = 427607.96625072,
+				["x"] = 13796.5513766,
+				["name"] = "CONVOY_light-1-5",
+				["heading"] = 1.8790140394514,
+				["playerCanDrive"] = false,
+			}, -- end of [5]
+			[6] = 
+			{
+				["skill"] = "Excellent",
+				["coldAtStart"] = false,
+				["type"] = "Tigr_233036",
+				["unitId"] = 3132,
+				["y"] = 427612.49231782,
+				["x"] = 13804.369128866,
+				["name"] = "CONVOY_light-1-6",
+				["heading"] = 1.8790787459442,
+				["playerCanDrive"] = false,
+			}, -- end of [6]
+			[7] = 
+			{
+				["skill"] = "Excellent",
+				["coldAtStart"] = false,
+				["type"] = "KAMAZ Truck",
+				["unitId"] = 3133,
+				["y"] = 427615.21163357,
+				["x"] = 13812.799293817,
+				["name"] = "CONVOY_light-1-7",
+				["heading"] = 1.8792307204181,
+				["playerCanDrive"] = false,
+			}, -- end of [7]
+			[8] = 
+			{
+				["skill"] = "Excellent",
+				["coldAtStart"] = false,
+				["type"] = "Ural-375 ZU-23",
+				["unitId"] = 3134,
+				["y"] = 427617.34538382,
+				["x"] = 13820.600818143,
+				["name"] = "CONVOY_light-1-8",
+				["heading"] = 1.8795438987433,
+				["playerCanDrive"] = false,
+			}, -- end of [8]
+			[9] = 
+			{
+				["skill"] = "Excellent",
+				["coldAtStart"] = false,
+				["type"] = "KAMAZ Truck",
+				["unitId"] = 3135,
+				["y"] = 427594.59377974,
+				["x"] = 13800.871713379,
+				["name"] = "CONVOY_light-1-9",
+				["heading"] = 1.8801155465484,
+				["playerCanDrive"] = false,
+			}, -- end of [9]
+			[10] = 
+			{
+				["skill"] = "Excellent",
+				["coldAtStart"] = false,
+				["type"] = "KAMAZ Truck",
+				["unitId"] = 3136,
+				["y"] = 427598.40835041,
+				["x"] = 13809.598668452,
+				["name"] = "CONVOY_light-1-10",
+				["heading"] = 1.8805447152192,
+				["playerCanDrive"] = false,
+			}, -- end of [10]
+			[11] = 
+			{
+				["skill"] = "Excellent",
+				["coldAtStart"] = false,
+				["type"] = "KAMAZ Truck",
+				["unitId"] = 3137,
+				["y"] = 427602.14241334,
+				["x"] = 13817.600231864,
+				["name"] = "CONVOY_light-1-11",
+				["heading"] = 1.8805410215421,
+				["playerCanDrive"] = false,
+			}, -- end of [11]
+			[12] = 
+			{
+				["skill"] = "Random",
+				["coldAtStart"] = false,
+				["type"] = "Ural-375 ZU-23",
+				["unitId"] = 3138,
+				["y"] = 427604.40952297,
+				["x"] = 13825.601795274,
+				["name"] = "CONVOY_light-1-12",
+				["heading"] = 1.8803837453141,
+				["playerCanDrive"] = false,
+			}, -- end of [12]
+			[13] = 
+			{
+				["skill"] = "Excellent",
+				["coldAtStart"] = false,
+				["type"] = "SKP-11",
+				["unitId"] = 3139,
+				["y"] = 427582.07182511,
+				["x"] = 13804.397652236,
+				["name"] = "CONVOY_light-1-13",
+				["heading"] = 1.8802767356983,
+				["playerCanDrive"] = false,
+			}, -- end of [13]
+			[14] = 
+			{
+				["skill"] = "Excellent",
+				["coldAtStart"] = false,
+				["type"] = "Tigr_233036",
+				["unitId"] = 3140,
+				["y"] = 427585.67252865,
+				["x"] = 13812.06581717,
+				["name"] = "CONVOY_light-1-14",
+				["heading"] = 1.8802038056136,
+				["playerCanDrive"] = false,
+			}, -- end of [14]
+			[15] = 
+			{
+				["skill"] = "Excellent",
+				["coldAtStart"] = false,
+				["type"] = "ZiL-131 APA-80",
+				["unitId"] = 3141,
+				["y"] = 427588.33971645,
+				["x"] = 13821.134255703,
+				["name"] = "CONVOY_light-1-15",
+				["heading"] = 1.8801457366544,
+				["playerCanDrive"] = false,
+			}, -- end of [15]
+			[16] = 
+			{
+				["skill"] = "Excellent",
+				["coldAtStart"] = false,
+				["type"] = "ZiL-131 APA-80",
+				["unitId"] = 3142,
+				["y"] = 427592.07377938,
+				["x"] = 13829.335858199,
+				["name"] = "CONVOY_light-1-16",
+				["heading"] = 1.8800874621262,
+				["playerCanDrive"] = false,
+			}, -- end of [16]
+			[17] = 
+			{
+				["skill"] = "Excellent",
+				["coldAtStart"] = false,
+				["type"] = "KAMAZ Truck",
+				["unitId"] = 3143,
+				["y"] = 427569.40268305,
+				["x"] = 13808.198394856,
+				["name"] = "CONVOY_light-1-17",
+				["heading"] = 1.8799869866622,
+				["playerCanDrive"] = false,
+			}, -- end of [17]
+			[18] = 
+			{
+				["skill"] = "Excellent",
+				["coldAtStart"] = false,
+				["type"] = "KAMAZ Truck",
+				["unitId"] = 3186,
+				["y"] = 427578.81880602,
+				["x"] = 13833.309137985,
+				["name"] = "CONVOY_light-1-20",
+				["heading"] = 1.8799607746795,
+				["playerCanDrive"] = false,
+			}, -- end of [18]
+			[19] = 
+			{
+				["skill"] = "Excellent",
+				["coldAtStart"] = false,
+				["type"] = "KAMAZ Truck",
+				["unitId"] = 3144,
+				["y"] = 427572.53662872,
+				["x"] = 13816.666716131,
+				["name"] = "CONVOY_light-1-18",
+				["heading"] = 1.8799607746795,
+				["playerCanDrive"] = false,
+			}, -- end of [19]
+			[20] = 
+			{
+				["skill"] = "Random",
+				["coldAtStart"] = false,
+				["type"] = "Osa 9A33 ln",
+				["unitId"] = 3145,
+				["y"] = 427575.00377743,
+				["x"] = 13825.201717104,
+				["name"] = "CONVOY_light-1-19",
+				["heading"] = 1.8799518773351,
+				["playerCanDrive"] = false,
+			}, -- end of [20]
+		}, -- end of ["units"]
+		["y"] = 427622.79355021,
+		["x"] = 13792.384414609,
+		["name"] = "CONVOY_light-1",
+		["start_time"] = 0,
+	}, -- end of ["CONVOY_light-1"]
+	["CONVOY_light-2"] = {
+		["category"] = Group.Category.GROUND,
+		["visible"] = false,
+		["lateActivation"] = true,
+		["tasks"] = 
+		{
+		}, -- end of ["tasks"]
+		["uncontrollable"] = false,
+		["task"] = "Ground Nothing",
+		["taskSelected"] = true,
+		["route"] = 
+		{
+			["spans"] = 
+			{
+				[1] = 
+				{
+					[1] = 
+					{
+						["y"] = 306224.70862636,
+						["x"] = 36700.197414639,
+					}, -- end of [1]
+					[2] = 
+					{
+						["y"] = 306224.70862636,
+						["x"] = 36700.197414639,
+					}, -- end of [2]
+				}, -- end of [1]
+			}, -- end of ["spans"]
+			["points"] = 
+			{
+				[1] = 
+				{
+					["alt"] = 51,
+					["type"] = "Turning Point",
+					["ETA"] = 0,
+					["alt_type"] = "BARO",
+					["formation_template"] = "",
+					["y"] = 427651.63035237,
+					["x"] = 13850.757198918,
+					["name"] = "",
+					["ETA_locked"] = true,
+					["speed"] = 5.5555555555556,
+					["action"] = "Off Road",
+					["task"] = 
+					{
+						["id"] = "ComboTask",
+						["params"] = 
+						{
+							["tasks"] = 
+							{
+								[1] = 
+								{
+									["number"] = 1,
+									["auto"] = false,
+									["id"] = "WrappedAction",
+									["enabled"] = true,
+									["params"] = 
+									{
+										["action"] = 
+										{
+											["id"] = "Option",
+											["params"] = 
+											{
+												["value"] = 0,
+												["name"] = 0,
+											}, -- end of ["params"]
+										}, -- end of ["action"]
+									}, -- end of ["params"]
+								}, -- end of [1]
+								[2] = 
+								{
+									["number"] = 2,
+									["auto"] = false,
+									["id"] = "WrappedAction",
+									["enabled"] = true,
+									["params"] = 
+									{
+										["action"] = 
+										{
+											["id"] = "Option",
+											["params"] = 
+											{
+												["value"] = 0,
+												["name"] = 9,
+											}, -- end of ["params"]
+										}, -- end of ["action"]
+									}, -- end of ["params"]
+								}, -- end of [2]
+							}, -- end of ["tasks"]
+						}, -- end of ["params"]
+					}, -- end of ["task"]
+					["speed_locked"] = true,
+				}, -- end of [1]
+			}, -- end of ["points"]
+			["routeRelativeTOT"] = true,
+		}, -- end of ["route"]
+		["groupId"] = 321,
+		["hidden"] = false,
+		["units"] = 
+		{
+			[1] = 
+			{
+				["skill"] = "Excellent",
+				["coldAtStart"] = false,
+				["type"] = "Tigr_233036",
+				["unitId"] = 3088,
+				["y"] = 427651.63035237,
+				["x"] = 13850.757198918,
+				["name"] = "CONVOY_light-2-1",
+				["heading"] = 1.8849555921539,
+				["playerCanDrive"] = false,
+				["wagons"] = 
+				{
+				}, -- end of ["wagons"]
+			}, -- end of [1]
+			[2] = 
+			{
+				["skill"] = "Excellent",
+				["coldAtStart"] = false,
+				["type"] = "BTR-80",
+				["unitId"] = 3089,
+				["y"] = 427653.52285025,
+				["x"] = 13855.921158178,
+				["name"] = "CONVOY_light-2-2",
+				["heading"] = 1.879900916109,
+				["playerCanDrive"] = false,
+			}, -- end of [2]
+			[3] = 
+			{
+				["skill"] = "Excellent",
+				["coldAtStart"] = false,
+				["type"] = "BTR-80",
+				["unitId"] = 3090,
+				["y"] = 427656.79369732,
+				["x"] = 13862.099424868,
+				["name"] = "CONVOY_light-2-3",
+				["heading"] = 1.8799008592043,
+				["playerCanDrive"] = false,
+			}, -- end of [3]
+			[4] = 
+			{
+				["skill"] = "Excellent",
+				["coldAtStart"] = false,
+				["type"] = "Ural-375 ZU-23",
+				["unitId"] = 3091,
+				["y"] = 427658.61083458,
+				["x"] = 13868.277691558,
+				["name"] = "CONVOY_light-2-4",
+				["heading"] = 1.879900859882,
+				["playerCanDrive"] = false,
+			}, -- end of [4]
+			[5] = 
+			{
+				["skill"] = "Excellent",
+				["coldAtStart"] = false,
+				["type"] = "Ural-375 PBU",
+				["unitId"] = 3092,
+				["y"] = 427638.25889725,
+				["x"] = 13855.073160789,
+				["name"] = "CONVOY_light-2-5",
+				["heading"] = 1.8799008723394,
+				["playerCanDrive"] = false,
+			}, -- end of [5]
+			[6] = 
+			{
+				["skill"] = "Excellent",
+				["coldAtStart"] = false,
+				["type"] = "Tigr_233036",
+				["unitId"] = 3093,
+				["y"] = 427641.07041672,
+				["x"] = 13860.432449647,
+				["name"] = "CONVOY_light-2-6",
+				["heading"] = 1.8799008962587,
+				["playerCanDrive"] = false,
+			}, -- end of [6]
+			[7] = 
+			{
+				["skill"] = "Excellent",
+				["coldAtStart"] = false,
+				["type"] = "Ural-375",
+				["unitId"] = 3094,
+				["y"] = 427643.32549924,
+				["x"] = 13866.719346379,
+				["name"] = "CONVOY_light-2-7",
+				["heading"] = 1.8799009318986,
+				["playerCanDrive"] = false,
+			}, -- end of [7]
+			[8] = 
+			{
+				["skill"] = "Excellent",
+				["coldAtStart"] = false,
+				["type"] = "Ural-375",
+				["unitId"] = 3095,
+				["y"] = 427645.71725343,
+				["x"] = 13873.142914779,
+				["name"] = "CONVOY_light-2-8",
+				["heading"] = 1.8799009689035,
+				["playerCanDrive"] = false,
+			}, -- end of [8]
+			[9] = 
+			{
+				["skill"] = "Excellent",
+				["coldAtStart"] = false,
+				["type"] = "Ural-375",
+				["unitId"] = 3096,
+				["y"] = 427626.92489907,
+				["x"] = 13859.065732967,
+				["name"] = "CONVOY_light-2-9",
+				["heading"] = 1.8799009988225,
+				["playerCanDrive"] = false,
+			}, -- end of [9]
+			[10] = 
+			{
+				["skill"] = "Excellent",
+				["coldAtStart"] = false,
+				["type"] = "Ural-375",
+				["unitId"] = 3097,
+				["y"] = 427629.24831743,
+				["x"] = 13864.737607192,
+				["name"] = "CONVOY_light-2-10",
+				["heading"] = 1.8799010251592,
+				["playerCanDrive"] = false,
+			}, -- end of [10]
+			[11] = 
+			{
+				["skill"] = "Excellent",
+				["coldAtStart"] = false,
+				["type"] = "Ural-375",
+				["unitId"] = 3098,
+				["y"] = 427631.77674329,
+				["x"] = 13871.092839757,
+				["name"] = "CONVOY_light-2-11",
+				["heading"] = 1.8799010371935,
+				["playerCanDrive"] = false,
+			}, -- end of [11]
+			[12] = 
+			{
+				["skill"] = "Random",
+				["coldAtStart"] = false,
+				["type"] = "Ural-375 ZU-23",
+				["unitId"] = 3099,
+				["y"] = 427634.51017665,
+				["x"] = 13877.516408157,
+				["name"] = "CONVOY_light-2-12",
+				["heading"] = 1.879901035186,
+				["playerCanDrive"] = false,
+			}, -- end of [12]
+			[13] = 
+			{
+				["skill"] = "Excellent",
+				["coldAtStart"] = false,
+				["type"] = "ZIL-131 KUNG",
+				["unitId"] = 3100,
+				["y"] = 427616.26450896,
+				["x"] = 13862.482524669,
+				["name"] = "CONVOY_light-2-13",
+				["heading"] = 1.8799010189057,
+				["playerCanDrive"] = false,
+			}, -- end of [13]
+			[14] = 
+			{
+				["skill"] = "Excellent",
+				["coldAtStart"] = false,
+				["type"] = "Tigr_233036",
+				["unitId"] = 3101,
+				["y"] = 427619.06627815,
+				["x"] = 13868.154398894,
+				["name"] = "CONVOY_light-2-14",
+				["heading"] = 1.8799008997323,
+				["playerCanDrive"] = false,
+			}, -- end of [14]
+			[15] = 
+			{
+				["skill"] = "Excellent",
+				["coldAtStart"] = false,
+				["type"] = "ZiL-131 APA-80",
+				["unitId"] = 3102,
+				["y"] = 427621.86804735,
+				["x"] = 13874.714638961,
+				["name"] = "CONVOY_light-2-15",
+				["heading"] = 1.879899520508,
+				["playerCanDrive"] = false,
+			}, -- end of [15]
+			[16] = 
+			{
+				["skill"] = "Excellent",
+				["coldAtStart"] = false,
+				["type"] = "ZiL-131 APA-80",
+				["unitId"] = 3103,
+				["y"] = 427624.87482405,
+				["x"] = 13881.274879029,
+				["name"] = "CONVOY_light-2-16",
+				["heading"] = 1.8798949531691,
+				["playerCanDrive"] = false,
+			}, -- end of [16]
+			[17] = 
+			{
+				["skill"] = "Excellent",
+				["coldAtStart"] = false,
+				["type"] = "GAZ-66",
+				["unitId"] = 3104,
+				["y"] = 427605.33077551,
+				["x"] = 13866.172659707,
+				["name"] = "CONVOY_light-2-17",
+				["heading"] = 1.8798871541494,
+				["playerCanDrive"] = false,
+			}, -- end of [17]
+			[18] = 
+			{
+				["skill"] = "Excellent",
+				["coldAtStart"] = false,
+				["type"] = "GAZ-66",
+				["unitId"] = 3187,
+				["y"] = 427613.15856542,
+				["x"] = 13884.409797101,
+				["name"] = "CONVOY_light-2-20",
+				["heading"] = 1.8798761276137,
+				["playerCanDrive"] = false,
+			}, -- end of [18]
+			[19] = 
+			{
+				["skill"] = "Excellent",
+				["coldAtStart"] = false,
+				["type"] = "GAZ-66",
+				["unitId"] = 3105,
+				["y"] = 427610.9343139,
+				["x"] = 13877.994758995,
+				["name"] = "CONVOY_light-2-18",
+				["heading"] = 1.8798761276137,
+				["playerCanDrive"] = false,
+			}, -- end of [19]
+			[20] = 
+			{
+				["skill"] = "Random",
+				["coldAtStart"] = false,
+				["type"] = "Osa 9A33 ln",
+				["unitId"] = 3106,
+				["y"] = 427608.20088054,
+				["x"] = 13871.9812056,
+				["name"] = "CONVOY_light-2-19",
+				["heading"] = 1.8798618795929,
+				["playerCanDrive"] = false,
+			}, -- end of [20]
+		}, -- end of ["units"]
+		["y"] = 427651.63035237,
+		["x"] = 13850.757198918,
+		["name"] = "CONVOY_light-2",
+		["start_time"] = 0,
+	}, -- end of ["CONVOY_light-2"]
+	["CONVOY_heavy-1"] = {
+		["category"] = Group.Category.GROUND,
+		["visible"] = false,
+		["lateActivation"] = true,
+		["tasks"] = 
+		{
+		}, -- end of ["tasks"]
+		["uncontrollable"] = false,
+		["task"] = "Ground Nothing",
+		["taskSelected"] = true,
+		["route"] = 
+		{
+			["spans"] = 
+			{
+				[1] = 
+				{
+					[1] = 
+					{
+						["y"] = 305424.62758347,
+						["x"] = 36955.598089493,
+					}, -- end of [1]
+					[2] = 
+					{
+						["y"] = 305424.62758347,
+						["x"] = 36955.598089493,
+					}, -- end of [2]
+				}, -- end of [1]
+			}, -- end of ["spans"]
+			["points"] = 
+			{
+				[1] = 
+				{
+					["alt"] = 52,
+					["type"] = "Turning Point",
+					["ETA"] = 0,
+					["alt_type"] = "BARO",
+					["formation_template"] = "",
+					["y"] = 427585.19682356,
+					["x"] = 13671.643558776,
+					["name"] = "",
+					["ETA_locked"] = true,
+					["speed"] = 9.25,
+					["action"] = "Off Road",
+					["task"] = 
+					{
+						["id"] = "ComboTask",
+						["params"] = 
+						{
+							["tasks"] = 
+							{
+								[1] = 
+								{
+									["number"] = 1,
+									["auto"] = false,
+									["id"] = "WrappedAction",
+									["enabled"] = true,
+									["params"] = 
+									{
+										["action"] = 
+										{
+											["id"] = "Option",
+											["params"] = 
+											{
+												["value"] = 0,
+												["name"] = 0,
+											}, -- end of ["params"]
+										}, -- end of ["action"]
+									}, -- end of ["params"]
+								}, -- end of [1]
+								[2] = 
+								{
+									["number"] = 2,
+									["auto"] = false,
+									["id"] = "WrappedAction",
+									["enabled"] = true,
+									["params"] = 
+									{
+										["action"] = 
+										{
+											["id"] = "Option",
+											["params"] = 
+											{
+												["value"] = 0,
+												["name"] = 9,
+											}, -- end of ["params"]
+										}, -- end of ["action"]
+									}, -- end of ["params"]
+								}, -- end of [2]
+							}, -- end of ["tasks"]
+						}, -- end of ["params"]
+					}, -- end of ["task"]
+					["speed_locked"] = true,
+				}, -- end of [1]
+			}, -- end of ["points"]
+			["routeRelativeTOT"] = true,
+		}, -- end of ["route"]
+		["groupId"] = 322,
+		["hidden"] = false,
+		["units"] = 
+		{
+			[1] = 
+			{
+				["skill"] = "Excellent",
+				["coldAtStart"] = false,
+				["type"] = "Tigr_233036",
+				["unitId"] = 3107,
+				["y"] = 427585.19682356,
+				["x"] = 13671.643558776,
+				["name"] = "CONVOY_heavy-1-1",
+				["heading"] = 1.850049007114,
+				["playerCanDrive"] = true,
+			}, -- end of [1]
+			[2] = 
+			{
+				["skill"] = "Excellent",
+				["coldAtStart"] = false,
+				["type"] = "BMP-2",
+				["unitId"] = 3108,
+				["y"] = 427543.20068003,
+				["x"] = 13707.91421832,
+				["name"] = "CONVOY_heavy-1-2",
+				["heading"] = 1.8791409262917,
+				["playerCanDrive"] = true,
+			}, -- end of [2]
+			[3] = 
+			{
+				["skill"] = "Excellent",
+				["coldAtStart"] = false,
+				["type"] = "BMP-2",
+				["unitId"] = 3109,
+				["y"] = 427587.45327674,
+				["x"] = 13677.959587648,
+				["name"] = "CONVOY_heavy-1-3",
+				["heading"] = 1.8791601648452,
+				["playerCanDrive"] = true,
+			}, -- end of [3]
+			[4] = 
+			{
+				["skill"] = "Excellent",
+				["coldAtStart"] = false,
+				["type"] = "BMP-2",
+				["unitId"] = 3110,
+				["y"] = 427590.43800042,
+				["x"] = 13685.028670051,
+				["name"] = "CONVOY_heavy-1-4",
+				["heading"] = 1.8792199564999,
+				["playerCanDrive"] = true,
+			}, -- end of [4]
+			[5] = 
+			{
+				["skill"] = "Average",
+				["coldAtStart"] = false,
+				["type"] = "BMP-2",
+				["unitId"] = 3111,
+				["y"] = 427593.89399626,
+				["x"] = 13691.312298852,
+				["name"] = "CONVOY_heavy-1-5",
+				["heading"] = 1.8792993044879,
+				["playerCanDrive"] = true,
+			}, -- end of [5]
+			[6] = 
+			{
+				["skill"] = "Average",
+				["coldAtStart"] = false,
+				["type"] = "Ural-375 ZU-23",
+				["unitId"] = 3112,
+				["y"] = 427571.27293257,
+				["x"] = 13675.760317568,
+				["name"] = "CONVOY_heavy-1-6",
+				["heading"] = 1.8793461925752,
+				["playerCanDrive"] = true,
+			}, -- end of [6]
+			[7] = 
+			{
+				["skill"] = "Average",
+				["coldAtStart"] = false,
+				["type"] = "BMP-2",
+				["unitId"] = 3113,
+				["y"] = 427573.94347482,
+				["x"] = 13681.88685565,
+				["name"] = "CONVOY_heavy-1-7",
+				["heading"] = 1.8793518558872,
+				["playerCanDrive"] = true,
+			}, -- end of [7]
+			[8] = 
+			{
+				["skill"] = "Average",
+				["coldAtStart"] = false,
+				["type"] = "BMP-2",
+				["unitId"] = 3114,
+				["y"] = 427576.62903289,
+				["x"] = 13689.139390002,
+				["name"] = "CONVOY_heavy-1-8",
+				["heading"] = 1.8792989748675,
+				["playerCanDrive"] = true,
+			}, -- end of [8]
+			[9] = 
+			{
+				["skill"] = "Random",
+				["coldAtStart"] = false,
+				["type"] = "BMP-2",
+				["unitId"] = 3115,
+				["y"] = 427579.65132233,
+				["x"] = 13695.733476045,
+				["name"] = "CONVOY_heavy-1-9",
+				["heading"] = 1.8791699310651,
+				["playerCanDrive"] = false,
+			}, -- end of [9]
+			[10] = 
+			{
+				["skill"] = "Average",
+				["coldAtStart"] = false,
+				["type"] = "BMP-2",
+				["unitId"] = 3116,
+				["y"] = 427558.77004986,
+				["x"] = 13680.347275277,
+				["name"] = "CONVOY_heavy-1-10",
+				["heading"] = 1.8790240909102,
+				["playerCanDrive"] = true,
+			}, -- end of [10]
+			[11] = 
+			{
+				["skill"] = "Average",
+				["coldAtStart"] = false,
+				["type"] = "Osa 9A33 ln",
+				["unitId"] = 3117,
+				["y"] = 427561.24283212,
+				["x"] = 13686.39185415,
+				["name"] = "CONVOY_heavy-1-11",
+				["heading"] = 1.878900414256,
+				["playerCanDrive"] = true,
+			}, -- end of [11]
+			[12] = 
+			{
+				["skill"] = "Average",
+				["coldAtStart"] = false,
+				["type"] = "BTR_D",
+				["unitId"] = 3118,
+				["y"] = 427564.44829062,
+				["x"] = 13693.16910925,
+				["name"] = "CONVOY_heavy-1-12",
+				["heading"] = 1.8788157653291,
+				["playerCanDrive"] = true,
+			}, -- end of [12]
+			[13] = 
+			{
+				["skill"] = "Average",
+				["coldAtStart"] = false,
+				["type"] = "BTR_D",
+				["unitId"] = 3119,
+				["y"] = 427567.28741099,
+				["x"] = 13699.854779822,
+				["name"] = "CONVOY_heavy-1-13",
+				["heading"] = 1.8787606099854,
+				["playerCanDrive"] = true,
+			}, -- end of [13]
+			[14] = 
+			{
+				["skill"] = "Excellent",
+				["coldAtStart"] = false,
+				["type"] = "BTR_D",
+				["unitId"] = 3120,
+				["y"] = 427546.77247664,
+				["x"] = 13684.926501696,
+				["name"] = "CONVOY_heavy-1-14",
+				["heading"] = 1.8787212155447,
+				["playerCanDrive"] = true,
+			}, -- end of [14]
+			[15] = 
+			{
+				["skill"] = "Random",
+				["coldAtStart"] = false,
+				["type"] = "BTR-80",
+				["unitId"] = 3121,
+				["y"] = 427549.52001249,
+				["x"] = 13690.971080569,
+				["name"] = "CONVOY_heavy-1-15",
+				["heading"] = 1.878691365128,
+				["playerCanDrive"] = true,
+			}, -- end of [15]
+			[16] = 
+			{
+				["skill"] = "Excellent",
+				["coldAtStart"] = false,
+				["type"] = "Ural-375 ZU-23",
+				["unitId"] = 3122,
+				["y"] = 427552.26754834,
+				["x"] = 13697.381997556,
+				["name"] = "CONVOY_heavy-1-16",
+				["heading"] = 1.8786679717346,
+				["playerCanDrive"] = true,
+			}, -- end of [16]
+			[17] = 
+			{
+				["skill"] = "Excellent",
+				["coldAtStart"] = false,
+				["type"] = "BTR-80",
+				["unitId"] = 3123,
+				["y"] = 427555.28983778,
+				["x"] = 13703.792914542,
+				["name"] = "CONVOY_heavy-1-17",
+				["heading"] = 1.8786490585146,
+				["playerCanDrive"] = true,
+			}, -- end of [17]
+			[18] = 
+			{
+				["skill"] = "Random",
+				["coldAtStart"] = false,
+				["type"] = "Ural-375",
+				["unitId"] = 3124,
+				["y"] = 427534.13381172,
+				["x"] = 13689.139390002,
+				["name"] = "CONVOY_heavy-1-18",
+				["heading"] = 1.8786338426242,
+				["playerCanDrive"] = false,
+			}, -- end of [18]
+			[19] = 
+			{
+				["skill"] = "Random",
+				["coldAtStart"] = false,
+				["type"] = "Ural-375",
+				["unitId"] = 3125,
+				["y"] = 427537.15610116,
+				["x"] = 13695.550306988,
+				["name"] = "CONVOY_heavy-1-19",
+				["heading"] = 1.8786213481253,
+				["playerCanDrive"] = false,
+			}, -- end of [19]
+			[20] = 
+			{
+				["skill"] = "Random",
+				["coldAtStart"] = false,
+				["type"] = "Osa 9A33 ln",
+				["unitId"] = 3126,
+				["y"] = 427540.45314418,
+				["x"] = 13701.503301333,
+				["name"] = "CONVOY_heavy-1-20",
+				["heading"] = 1.878611069685,
+				["playerCanDrive"] = true,
+			}, -- end of [20]
+		}, -- end of ["units"]
+		["y"] = 427585.19682356,
+		["x"] = 13671.643558776,
+		["name"] = "CONVOY_heavy-1",
+		["start_time"] = 0,
+	}, -- end of ["CONVOY_heavy-1"]
+	["CONVOY_heavy-2"] = {
+		["category"] = Group.Category.GROUND,
+		["visible"] = false,
+		["lateActivation"] = true,
+		["tasks"] = 
+		{
+		}, -- end of ["tasks"]
+		["uncontrollable"] = false,
+		["task"] = "Ground Nothing",
+		["taskSelected"] = true,
+		["route"] = 
+		{
+			["spans"] = 
+			{
+				[1] = 
+				{
+					[1] = 
+					{
+						["y"] = 304414.77669086,
+						["x"] = 37276.865434798,
+					}, -- end of [1]
+					[2] = 
+					{
+						["y"] = 304414.77669086,
+						["x"] = 37276.865434798,
+					}, -- end of [2]
+				}, -- end of [1]
+			}, -- end of ["spans"]
+			["points"] = 
+			{
+				[1] = 
+				{
+					["alt"] = 52,
+					["type"] = "Turning Point",
+					["ETA"] = 0,
+					["alt_type"] = "BARO",
+					["formation_template"] = "",
+					["y"] = 427552.42580137,
+					["x"] = 13613.164301968,
+					["name"] = "",
+					["ETA_locked"] = true,
+					["speed"] = 9.25,
+					["action"] = "Custom",
+					["task"] = 
+					{
+						["id"] = "ComboTask",
+						["params"] = 
+						{
+							["tasks"] = 
+							{
+								[1] = 
+								{
+									["number"] = 1,
+									["auto"] = false,
+									["id"] = "WrappedAction",
+									["enabled"] = true,
+									["params"] = 
+									{
+										["action"] = 
+										{
+											["id"] = "Option",
+											["params"] = 
+											{
+												["value"] = 0,
+												["name"] = 0,
+											}, -- end of ["params"]
+										}, -- end of ["action"]
+									}, -- end of ["params"]
+								}, -- end of [1]
+								[2] = 
+								{
+									["number"] = 2,
+									["auto"] = false,
+									["id"] = "WrappedAction",
+									["enabled"] = true,
+									["params"] = 
+									{
+										["action"] = 
+										{
+											["id"] = "Option",
+											["params"] = 
+											{
+												["value"] = 0,
+												["name"] = 9,
+											}, -- end of ["params"]
+										}, -- end of ["action"]
+									}, -- end of ["params"]
+								}, -- end of [2]
+							}, -- end of ["tasks"]
+						}, -- end of ["params"]
+					}, -- end of ["task"]
+					["speed_locked"] = true,
+				}, -- end of [1]
+			}, -- end of ["points"]
+			["routeRelativeTOT"] = true,
+		}, -- end of ["route"]
+		["groupId"] = 324,
+		["hidden"] = false,
+		["units"] = 
+		{
+			[1] = 
+			{
+				["skill"] = "Excellent",
+				["coldAtStart"] = false,
+				["type"] = "ZSU-23-4 Shilka",
+				["unitId"] = 3146,
+				["y"] = 427552.42580137,
+				["x"] = 13613.164301968,
+				["name"] = "CONVOY_heavy-2-1",
+				["heading"] = 1.9024088846738,
+				["playerCanDrive"] = true,
+			}, -- end of [1]
+			[2] = 
+			{
+				["skill"] = "Excellent",
+				["coldAtStart"] = false,
+				["type"] = "T-72B",
+				["unitId"] = 3147,
+				["y"] = 427555.12715032,
+				["x"] = 13619.130326314,
+				["name"] = "CONVOY_heavy-2-2",
+				["heading"] = 1.8782668196037,
+				["playerCanDrive"] = true,
+			}, -- end of [2]
+			[3] = 
+			{
+				["skill"] = "Excellent",
+				["coldAtStart"] = false,
+				["type"] = "T-72B",
+				["unitId"] = 3148,
+				["y"] = 427557.3968117,
+				["x"] = 13624.96659842,
+				["name"] = "CONVOY_heavy-2-3",
+				["heading"] = 1.8784381995326,
+				["playerCanDrive"] = true,
+			}, -- end of [3]
+			[4] = 
+			{
+				["skill"] = "Excellent",
+				["coldAtStart"] = false,
+				["type"] = "Ural-375 ZU-23",
+				["unitId"] = 3149,
+				["y"] = 427559.01799839,
+				["x"] = 13630.802870525,
+				["name"] = "CONVOY_heavy-2-4",
+				["heading"] = 1.8785398765432,
+				["playerCanDrive"] = true,
+			}, -- end of [4]
+			[5] = 
+			{
+				["skill"] = "Average",
+				["coldAtStart"] = false,
+				["type"] = "T-72B",
+				["unitId"] = 3150,
+				["y"] = 427541.75236008,
+				["x"] = 13616.69854627,
+				["name"] = "CONVOY_heavy-2-5",
+				["heading"] = 1.8783470362892,
+				["playerCanDrive"] = true,
+			}, -- end of [5]
+			[6] = 
+			{
+				["skill"] = "Average",
+				["coldAtStart"] = false,
+				["type"] = "T-72B",
+				["unitId"] = 3151,
+				["y"] = 427543.53566545,
+				["x"] = 13622.77799638,
+				["name"] = "CONVOY_heavy-2-6",
+				["heading"] = 1.877645336169,
+				["playerCanDrive"] = true,
+			}, -- end of [6]
+			[7] = 
+			{
+				["skill"] = "Average",
+				["coldAtStart"] = false,
+				["type"] = "T-72B",
+				["unitId"] = 3152,
+				["y"] = 427546.53486084,
+				["x"] = 13628.371090481,
+				["name"] = "CONVOY_heavy-2-7",
+				["heading"] = 1.877473355351,
+				["playerCanDrive"] = true,
+			}, -- end of [7]
+			[8] = 
+			{
+				["skill"] = "Average",
+				["coldAtStart"] = false,
+				["type"] = "T-72B",
+				["unitId"] = 3153,
+				["y"] = 427548.23710687,
+				["x"] = 13633.964184582,
+				["name"] = "CONVOY_heavy-2-8",
+				["heading"] = 1.8773984159304,
+				["playerCanDrive"] = true,
+			}, -- end of [8]
+			[9] = 
+			{
+				["skill"] = "Random",
+				["coldAtStart"] = false,
+				["type"] = "Osa 9A33 ln",
+				["unitId"] = 3154,
+				["y"] = 427530.16087521,
+				["x"] = 13620.265157001,
+				["name"] = "CONVOY_heavy-2-9",
+				["heading"] = 1.8773291465698,
+				["playerCanDrive"] = false,
+			}, -- end of [9]
+			[10] = 
+			{
+				["skill"] = "Average",
+				["coldAtStart"] = false,
+				["type"] = "T-72B",
+				["unitId"] = 3155,
+				["y"] = 427532.10629924,
+				["x"] = 13626.425666446,
+				["name"] = "CONVOY_heavy-2-10",
+				["heading"] = 1.8772303862861,
+				["playerCanDrive"] = true,
+			}, -- end of [10]
+			[11] = 
+			{
+				["skill"] = "Average",
+				["coldAtStart"] = false,
+				["type"] = "T-72B",
+				["unitId"] = 3156,
+				["y"] = 427534.94337596,
+				["x"] = 13632.261938552,
+				["name"] = "CONVOY_heavy-2-11",
+				["heading"] = 1.8769893046105,
+				["playerCanDrive"] = true,
+			}, -- end of [11]
+			[12] = 
+			{
+				["skill"] = "Average",
+				["coldAtStart"] = false,
+				["type"] = "T-72B",
+				["unitId"] = 3157,
+				["y"] = 427537.05091866,
+				["x"] = 13638.665626001,
+				["name"] = "CONVOY_heavy-2-12",
+				["heading"] = 1.8757472778833,
+				["playerCanDrive"] = true,
+			}, -- end of [12]
+			[13] = 
+			{
+				["skill"] = "Average",
+				["coldAtStart"] = false,
+				["type"] = "T-72B",
+				["unitId"] = 3158,
+				["y"] = 427518.974687,
+				["x"] = 13624.074945737,
+				["name"] = "CONVOY_heavy-2-13",
+				["heading"] = 1.8730157673716,
+				["playerCanDrive"] = true,
+			}, -- end of [13]
+			[14] = 
+			{
+				["skill"] = "Excellent",
+				["coldAtStart"] = false,
+				["type"] = "Ural-375 ZU-23",
+				["unitId"] = 3159,
+				["y"] = 427520.8390517,
+				["x"] = 13629.749099173,
+				["name"] = "CONVOY_heavy-2-14",
+				["heading"] = 1.8708689503781,
+				["playerCanDrive"] = true,
+			}, -- end of [14]
+			[15] = 
+			{
+				["skill"] = "Random",
+				["coldAtStart"] = false,
+				["type"] = "BTR-80",
+				["unitId"] = 3160,
+				["y"] = 427523.51400975,
+				["x"] = 13635.747489948,
+				["name"] = "CONVOY_heavy-2-15",
+				["heading"] = 1.8679285264736,
+				["playerCanDrive"] = true,
+			}, -- end of [15]
+			[16] = 
+			{
+				["skill"] = "Excellent",
+				["coldAtStart"] = false,
+				["type"] = "BTR-80",
+				["unitId"] = 3161,
+				["y"] = 427526.59426448,
+				["x"] = 13642.394355401,
+				["name"] = "CONVOY_heavy-2-16",
+				["heading"] = 1.8637875013618,
+				["playerCanDrive"] = true,
+			}, -- end of [16]
+			[17] = 
+			{
+				["skill"] = "Excellent",
+				["coldAtStart"] = false,
+				["type"] = "BTR-80",
+				["unitId"] = 3162,
+				["y"] = 427507.27020542,
+				["x"] = 13627.798973696,
+				["name"] = "CONVOY_heavy-2-17",
+				["heading"] = 1.8575911919256,
+				["playerCanDrive"] = true,
+			}, -- end of [17]
+			[18] = 
+			{
+				["skill"] = "Random",
+				["coldAtStart"] = false,
+				["type"] = "BTR-80",
+				["unitId"] = 3163,
+				["y"] = 427510.7226846,
+				["x"] = 13633.948702249,
+				["name"] = "CONVOY_heavy-2-18",
+				["heading"] = 1.8495312285784,
+				["playerCanDrive"] = true,
+			}, -- end of [18]
+			[19] = 
+			{
+				["skill"] = "Random",
+				["coldAtStart"] = false,
+				["type"] = "T-72B",
+				["unitId"] = 3164,
+				["y"] = 427513.41993397,
+				["x"] = 13640.314210752,
+				["name"] = "CONVOY_heavy-2-19",
+				["heading"] = 1.846427458863,
+				["playerCanDrive"] = true,
+			}, -- end of [19]
+			[20] = 
+			{
+				["skill"] = "Random",
+				["coldAtStart"] = false,
+				["type"] = "Osa 9A33 ln",
+				["unitId"] = 3165,
+				["y"] = 427516.54874323,
+				["x"] = 13646.248159355,
+				["name"] = "CONVOY_heavy-2-20",
+				["heading"] = 1.8562698946798,
+				["playerCanDrive"] = true,
+			}, -- end of [20]
+		}, -- end of ["units"]
+		["y"] = 427552.42580137,
+		["x"] = 13613.164301968,
+		["name"] = "CONVOY_heavy-2",
+		["start_time"] = 0,
+	}, -- end of ["CONVOY_heavy-2"]
+	["CONVOY_heavy-3"] = {
+		["category"] = Group.Category.GROUND,
+		["visible"] = false,
+		["lateActivation"] = true,
+		["tasks"] = 
+		{
+		}, -- end of ["tasks"]
+		["uncontrollable"] = false,
+		["task"] = "Ground Nothing",
+		["taskSelected"] = true,
+		["route"] = 
+		{
+			["spans"] = 
+			{
+				[1] = 
+				{
+					[1] = 
+					{
+						["y"] = 304414.77669086,
+						["x"] = 37276.865434798,
+					}, -- end of [1]
+					[2] = 
+					{
+						["y"] = 304414.77669086,
+						["x"] = 37276.865434798,
+					}, -- end of [2]
+				}, -- end of [1]
+			}, -- end of ["spans"]
+			["points"] = 
+			{
+				[1] = 
+				{
+					["alt"] = 51,
+					["type"] = "Turning Point",
+					["ETA"] = 0,
+					["alt_type"] = "BARO",
+					["formation_template"] = "",
+					["y"] = 427529.34149148,
+					["x"] = 13561.906228033,
+					["name"] = "",
+					["ETA_locked"] = true,
+					["speed"] = 9.25,
+					["action"] = "Custom",
+					["task"] = 
+					{
+						["id"] = "ComboTask",
+						["params"] = 
+						{
+							["tasks"] = 
+							{
+								[1] = 
+								{
+									["number"] = 1,
+									["auto"] = false,
+									["id"] = "WrappedAction",
+									["enabled"] = true,
+									["params"] = 
+									{
+										["action"] = 
+										{
+											["id"] = "Option",
+											["params"] = 
+											{
+												["value"] = 0,
+												["name"] = 0,
+											}, -- end of ["params"]
+										}, -- end of ["action"]
+									}, -- end of ["params"]
+								}, -- end of [1]
+								[2] = 
+								{
+									["number"] = 2,
+									["auto"] = false,
+									["id"] = "WrappedAction",
+									["enabled"] = true,
+									["params"] = 
+									{
+										["action"] = 
+										{
+											["id"] = "Option",
+											["params"] = 
+											{
+												["value"] = 0,
+												["name"] = 9,
+											}, -- end of ["params"]
+										}, -- end of ["action"]
+									}, -- end of ["params"]
+								}, -- end of [2]
+							}, -- end of ["tasks"]
+						}, -- end of ["params"]
+					}, -- end of ["task"]
+					["speed_locked"] = true,
+				}, -- end of [1]
+			}, -- end of ["points"]
+			["routeRelativeTOT"] = true,
+		}, -- end of ["route"]
+		["groupId"] = 325,
+		["hidden"] = false,
+		["units"] = 
+		{
+			[1] = 
+			{
+				["skill"] = "Excellent",
+				["coldAtStart"] = false,
+				["type"] = "Tigr_233036",
+				["unitId"] = 3166,
+				["y"] = 427529.34149148,
+				["x"] = 13561.906228033,
+				["name"] = "CONVOY_heavy-3-1",
+				["heading"] = 1.8675022996339,
+				["playerCanDrive"] = false,
+			}, -- end of [1]
+			[2] = 
+			{
+				["skill"] = "Excellent",
+				["coldAtStart"] = false,
+				["type"] = "UAZ-469",
+				["unitId"] = 3167,
+				["y"] = 427534.06119693,
+				["x"] = 13566.728535773,
+				["name"] = "CONVOY_heavy-3-2",
+				["heading"] = 1.8782668196037,
+				["playerCanDrive"] = false,
+			}, -- end of [2]
+			[3] = 
+			{
+				["skill"] = "Excellent",
+				["coldAtStart"] = false,
+				["type"] = "ATZ-5",
+				["unitId"] = 3168,
+				["y"] = 427539.39651613,
+				["x"] = 13579.348617732,
+				["name"] = "CONVOY_heavy-3-3",
+				["heading"] = 1.8784381995326,
+				["playerCanDrive"] = false,
+			}, -- end of [3]
+			[4] = 
+			{
+				["skill"] = "Excellent",
+				["coldAtStart"] = false,
+				["type"] = "Ural-375 ZU-23",
+				["unitId"] = 3169,
+				["y"] = 427536.11324277,
+				["x"] = 13573.397684776,
+				["name"] = "CONVOY_heavy-3-4",
+				["heading"] = 1.8785398765432,
+				["playerCanDrive"] = true,
+			}, -- end of [4]
+			[5] = 
+			{
+				["skill"] = "Average",
+				["coldAtStart"] = false,
+				["type"] = "ATZ-5",
+				["unitId"] = 3170,
+				["y"] = 427520.31248975,
+				["x"] = 13565.292103681,
+				["name"] = "CONVOY_heavy-3-5",
+				["heading"] = 1.8783470362892,
+				["playerCanDrive"] = false,
+			}, -- end of [5]
+			[6] = 
+			{
+				["skill"] = "Average",
+				["coldAtStart"] = false,
+				["type"] = "T-90",
+				["unitId"] = 3171,
+				["y"] = 427522.67234248,
+				["x"] = 13570.832627467,
+				["name"] = "CONVOY_heavy-3-6",
+				["heading"] = 1.877645336169,
+				["playerCanDrive"] = true,
+			}, -- end of [6]
+			[7] = 
+			{
+				["skill"] = "Average",
+				["coldAtStart"] = false,
+				["type"] = "T-90",
+				["unitId"] = 3172,
+				["y"] = 427525.54520666,
+				["x"] = 13577.296571885,
+				["name"] = "CONVOY_heavy-3-7",
+				["heading"] = 1.877473355351,
+				["playerCanDrive"] = true,
+			}, -- end of [7]
+			[8] = 
+			{
+				["skill"] = "Average",
+				["coldAtStart"] = false,
+				["type"] = "T-90",
+				["unitId"] = 3173,
+				["y"] = 427528.31546855,
+				["x"] = 13583.760516302,
+				["name"] = "CONVOY_heavy-3-8",
+				["heading"] = 1.8773984159304,
+				["playerCanDrive"] = true,
+			}, -- end of [8]
+			[9] = 
+			{
+				["skill"] = "Random",
+				["coldAtStart"] = false,
+				["type"] = "Osa 9A33 ln",
+				["unitId"] = 3174,
+				["y"] = 427508.9236353,
+				["x"] = 13568.985786205,
+				["name"] = "CONVOY_heavy-3-9",
+				["heading"] = 1.8773291465698,
+				["playerCanDrive"] = false,
+			}, -- end of [9]
+			[10] = 
+			{
+				["skill"] = "Average",
+				["coldAtStart"] = false,
+				["type"] = "T-90",
+				["unitId"] = 3175,
+				["y"] = 427511.18088573,
+				["x"] = 13574.731514576,
+				["name"] = "CONVOY_heavy-3-10",
+				["heading"] = 1.8772303862861,
+				["playerCanDrive"] = true,
+			}, -- end of [10]
+			[11] = 
+			{
+				["skill"] = "Average",
+				["coldAtStart"] = false,
+				["type"] = "T-90",
+				["unitId"] = 3176,
+				["y"] = 427514.05374992,
+				["x"] = 13581.605868163,
+				["name"] = "CONVOY_heavy-3-11",
+				["heading"] = 1.8769893046105,
+				["playerCanDrive"] = true,
+			}, -- end of [11]
+			[12] = 
+			{
+				["skill"] = "Average",
+				["coldAtStart"] = false,
+				["type"] = "T-90",
+				["unitId"] = 3177,
+				["y"] = 427517.13181869,
+				["x"] = 13587.967210288,
+				["name"] = "CONVOY_heavy-3-12",
+				["heading"] = 1.8757472778833,
+				["playerCanDrive"] = true,
+			}, -- end of [12]
+			[13] = 
+			{
+				["skill"] = "Average",
+				["coldAtStart"] = false,
+				["type"] = "T-90",
+				["unitId"] = 3178,
+				["y"] = 427496.30355334,
+				["x"] = 13573.60288936,
+				["name"] = "CONVOY_heavy-3-13",
+				["heading"] = 1.8730157673716,
+				["playerCanDrive"] = true,
+			}, -- end of [13]
+			[14] = 
+			{
+				["skill"] = "Excellent",
+				["coldAtStart"] = false,
+				["type"] = "Ural-375 ZU-23",
+				["unitId"] = 3179,
+				["y"] = 427498.35559919,
+				["x"] = 13579.348617732,
+				["name"] = "CONVOY_heavy-3-14",
+				["heading"] = 1.8708689503781,
+				["playerCanDrive"] = true,
+			}, -- end of [14]
+			[15] = 
+			{
+				["skill"] = "Random",
+				["coldAtStart"] = false,
+				["type"] = "BTR-80",
+				["unitId"] = 3180,
+				["y"] = 427501.43366796,
+				["x"] = 13585.299550688,
+				["name"] = "CONVOY_heavy-3-15",
+				["heading"] = 1.8679285264736,
+				["playerCanDrive"] = true,
+			}, -- end of [15]
+			[16] = 
+			{
+				["skill"] = "Excellent",
+				["coldAtStart"] = false,
+				["type"] = "BTR-80",
+				["unitId"] = 3181,
+				["y"] = 427505.02474819,
+				["x"] = 13592.276506567,
+				["name"] = "CONVOY_heavy-3-16",
+				["heading"] = 1.8637875013618,
+				["playerCanDrive"] = true,
+			}, -- end of [16]
+			[17] = 
+			{
+				["skill"] = "Excellent",
+				["coldAtStart"] = false,
+				["type"] = "BTR-80",
+				["unitId"] = 3182,
+				["y"] = 427485.63291494,
+				["x"] = 13577.0913673,
+				["name"] = "CONVOY_heavy-3-17",
+				["heading"] = 1.8575911919256,
+				["playerCanDrive"] = true,
+			}, -- end of [17]
+			[18] = 
+			{
+				["skill"] = "Random",
+				["coldAtStart"] = false,
+				["type"] = "BTR-80",
+				["unitId"] = 3183,
+				["y"] = 427488.813586,
+				["x"] = 13582.939697964,
+				["name"] = "CONVOY_heavy-3-18",
+				["heading"] = 1.8495312285784,
+				["playerCanDrive"] = true,
+			}, -- end of [18]
+			[19] = 
+			{
+				["skill"] = "Random",
+				["coldAtStart"] = false,
+				["type"] = "T-90",
+				["unitId"] = 3184,
+				["y"] = 427491.07083643,
+				["x"] = 13589.608846966,
+				["name"] = "CONVOY_heavy-3-19",
+				["heading"] = 1.846427458863,
+				["playerCanDrive"] = true,
+			}, -- end of [19]
+			[20] = 
+			{
+				["skill"] = "Random",
+				["coldAtStart"] = false,
+				["type"] = "Osa 9A33 ln",
+				["unitId"] = 3185,
+				["y"] = 427494.66191667,
+				["x"] = 13596.483200553,
+				["name"] = "CONVOY_heavy-3-20",
+				["heading"] = 1.8562698946798,
+				["playerCanDrive"] = true,
+			}, -- end of [20]
+		}, -- end of ["units"]
+		["y"] = 427529.34149148,
+		["x"] = 13561.906228033,
+		["name"] = "CONVOY_heavy-3",
+		["start_time"] = 0,
+	}, -- end of ["CONVOY_heavy-3"]
+	------------------------ ARMOUR ------------------------
+	["ARMOUR_Heavy_01"] = {
+		["category"] = Group.Category.GROUND,
+		["visible"] = false,
+		["tasks"] = 
+		{
+		}, -- end of ["tasks"]
+		["uncontrollable"] = false,
+		["route"] = 
+		{
+			["spans"] = 
+			{
+			}, -- end of ["spans"]
+			["points"] = 
+			{
+				[1] = 
+				{
+					["alt"] = 51,
+					["type"] = "Turning Point",
+					["ETA"] = 0,
+					["alt_type"] = "BARO",
+					["formation_template"] = "",
+					["y"] = 427361.00279172,
+					["x"] = 13655.375481588,
+					["ETA_locked"] = true,
+					["speed"] = 5.5555555555556,
+					["action"] = "Off Road",
+					["task"] = 
+					{
+						["id"] = "ComboTask",
+						["params"] = 
+						{
+							["tasks"] = 
+							{
+							}, -- end of ["tasks"]
+						}, -- end of ["params"]
+					}, -- end of ["task"]
+					["speed_locked"] = true,
+				}, -- end of [1]
+			}, -- end of ["points"]
+		}, -- end of ["route"]
+		["groupId"] = 328,
+		["hidden"] = false,
+		["units"] = 
+		{
+			[1] = 
+			{
+				["skill"] = "Random",
+				["coldAtStart"] = false,
+				["type"] = "BTR-80",
+				["unitId"] = 3204,
+				["y"] = 427361.00279172,
+				["x"] = 13655.375481588,
+				["name"] = "ARMOUR_Heavy_01-1",
+				["heading"] = 0,
+				["playerCanDrive"] = true,
+			}, -- end of [1]
+			[2] = 
+			{
+				["skill"] = "Random",
+				["coldAtStart"] = false,
+				["type"] = "Ural-375 ZU-23",
+				["unitId"] = 3205,
+				["y"] = 427374.10326346,
+				["x"] = 13672.296924251,
+				["name"] = "ARMOUR_Heavy_01-2",
+				["heading"] = 0.97738438111682,
+				["playerCanDrive"] = true,
+			}, -- end of [2]
+			[3] = 
+			{
+				["skill"] = "Random",
+				["coldAtStart"] = false,
+				["type"] = "T-55",
+				["unitId"] = 3206,
+				["y"] = 427350.44963393,
+				["x"] = 13641.183303871,
+				["name"] = "ARMOUR_Heavy_01-3",
+				["heading"] = 5.6723200689816,
+				["playerCanDrive"] = true,
+			}, -- end of [3]
+			[4] = 
+			{
+				["skill"] = "Random",
+				["coldAtStart"] = false,
+				["type"] = "T-72B",
+				["unitId"] = 3207,
+				["y"] = 427375.16857515,
+				["x"] = 13643.556231586,
+				["name"] = "ARMOUR_Heavy_01-4",
+				["heading"] = 3.3161255787892,
+				["playerCanDrive"] = true,
+			}, -- end of [4]
+			[5] = 
+			{
+				["skill"] = "Random",
+				["coldAtStart"] = false,
+				["type"] = "tt_KORD",
+				["unitId"] = 3208,
+				["y"] = 427366.1364002,
+				["x"] = 13635.675859695,
+				["name"] = "ARMOUR_Heavy_01-5",
+				["heading"] = 2.3038346126325,
+				["playerCanDrive"] = true,
+			}, -- end of [5]
+			[6] = 
+			{
+				["skill"] = "Random",
+				["coldAtStart"] = false,
+				["type"] = "Ural-375 ZU-23",
+				["unitId"] = 3209,
+				["y"] = 427354.87215213,
+				["x"] = 13676.544862285,
+				["name"] = "ARMOUR_Heavy_01-6",
+				["heading"] = 2.8448866807508,
+				["playerCanDrive"] = true,
+			}, -- end of [6]
+			[7] = 
+			{
+				["skill"] = "Random",
+				["coldAtStart"] = false,
+				["type"] = "GAZ-66",
+				["unitId"] = 3210,
+				["y"] = 427340.72621724,
+				["x"] = 13668.783119687,
+				["name"] = "ARMOUR_Heavy_01-7",
+				["heading"] = 1.5707963267949,
+				["playerCanDrive"] = false,
+			}, -- end of [7]
+			[8] = 
+			{
+				["skill"] = "Random",
+				["coldAtStart"] = false,
+				["type"] = "HL_DSHK",
+				["unitId"] = 3211,
+				["y"] = 427343.00011621,
+				["x"] = 13655.730186682,
+				["name"] = "ARMOUR_Heavy_01-8",
+				["heading"] = 1.7627825445143,
+				["playerCanDrive"] = true,
+			}, -- end of [8]
+		}, -- end of ["units"]
+		["y"] = 427361.00279172,
+		["x"] = 13655.375481588,
+		["name"] = "ARMOUR_Heavy_01",
+		["start_time"] = 0,
+	}, -- end of ["ARMOUR_Heavy_01"]
+	["ARMOUR_Heavy_02"] = {
+		["category"] = Group.Category.GROUND,
+		["visible"] = false,
+		["tasks"] = 
+		{
+		}, -- end of ["tasks"]
+		["uncontrollable"] = false,
+		["route"] = 
+		{
+			["spans"] = 
+			{
+			}, -- end of ["spans"]
+			["points"] = 
+			{
+				[1] = 
+				{
+					["alt"] = 51,
+					["type"] = "Turning Point",
+					["ETA"] = 0,
+					["alt_type"] = "BARO",
+					["formation_template"] = "",
+					["y"] = 427408.8264185,
+					["x"] = 13776.126967418,
+					["ETA_locked"] = true,
+					["speed"] = 5.5555555555556,
+					["action"] = "Off Road",
+					["task"] = 
+					{
+						["id"] = "ComboTask",
+						["params"] = 
+						{
+							["tasks"] = 
+							{
+							}, -- end of ["tasks"]
+						}, -- end of ["params"]
+					}, -- end of ["task"]
+					["speed_locked"] = true,
+				}, -- end of [1]
+			}, -- end of ["points"]
+		}, -- end of ["route"]
+		["groupId"] = 329,
+		["hidden"] = false,
+		["units"] = 
+		{
+			[1] = 
+			{
+				["skill"] = "Random",
+				["coldAtStart"] = false,
+				["type"] = "BRDM-2",
+				["unitId"] = 3212,
+				["y"] = 427408.8264185,
+				["x"] = 13776.126967418,
+				["name"] = "ARMOUR_Heavy_02-1",
+				["heading"] = 0,
+				["playerCanDrive"] = true,
+			}, -- end of [1]
+			[2] = 
+			{
+				["skill"] = "Random",
+				["coldAtStart"] = false,
+				["type"] = "BRDM-2",
+				["unitId"] = 3213,
+				["y"] = 427423.59508475,
+				["x"] = 13759.512217893,
+				["name"] = "ARMOUR_Heavy_02-2",
+				["heading"] = 2.460914245312,
+				["playerCanDrive"] = true,
+			}, -- end of [2]
+			[3] = 
+			{
+				["skill"] = "Random",
+				["coldAtStart"] = false,
+				["type"] = "Ural-375 ZU-23",
+				["unitId"] = 3214,
+				["y"] = 427394.00817584,
+				["x"] = 13756.64621542,
+				["name"] = "ARMOUR_Heavy_02-3",
+				["heading"] = 3.5604716740684,
+				["playerCanDrive"] = true,
+			}, -- end of [3]
+			[4] = 
+			{
+				["skill"] = "Random",
+				["coldAtStart"] = false,
+				["type"] = "HL_KORD",
+				["unitId"] = 3215,
+				["y"] = 427405.13425194,
+				["x"] = 13797.356925145,
+				["name"] = "ARMOUR_Heavy_02-4",
+				["heading"] = 6.2308254296198,
+				["playerCanDrive"] = true,
+			}, -- end of [4]
+			[5] = 
+			{
+				["skill"] = "Random",
+				["coldAtStart"] = false,
+				["type"] = "HL_DSHK",
+				["unitId"] = 3216,
+				["y"] = 427409.0083695,
+				["x"] = 13762.298691693,
+				["name"] = "ARMOUR_Heavy_02-5",
+				["heading"] = 0.78539816339745,
+				["playerCanDrive"] = true,
+			}, -- end of [5]
+			[6] = 
+			{
+				["skill"] = "Random",
+				["coldAtStart"] = false,
+				["type"] = "SAU Gvozdika",
+				["unitId"] = 3217,
+				["y"] = 427387.36143465,
+				["x"] = 13778.253415243,
+				["name"] = "ARMOUR_Heavy_02-6",
+				["heading"] = 4.2411500823462,
+				["playerCanDrive"] = true,
+			}, -- end of [6]
+			[7] = 
+			{
+				["skill"] = "Random",
+				["coldAtStart"] = false,
+				["type"] = "ATMZ-5",
+				["unitId"] = 3218,
+				["y"] = 427438.02248791,
+				["x"] = 13774.677151143,
+				["name"] = "ARMOUR_Heavy_02-7",
+				["heading"] = 3.1415926535898,
+				["playerCanDrive"] = false,
+			}, -- end of [7]
+			[8] = 
+			{
+				["skill"] = "Random",
+				["coldAtStart"] = false,
+				["type"] = "ATMZ-5",
+				["unitId"] = 3219,
+				["y"] = 427428.71757453,
+				["x"] = 13775.224498989,
+				["name"] = "ARMOUR_Heavy_02-8",
+				["heading"] = 3.0194196059502,
+				["playerCanDrive"] = false,
+			}, -- end of [8]
+		}, -- end of ["units"]
+		["y"] = 427408.8264185,
+		["x"] = 13776.126967418,
+		["name"] = "ARMOUR_Heavy_02",
+		["start_time"] = 0,
+	}, -- end of ["ARMOUR_Heavy_02"]
+	["ARMOUR_Heavy_03"] = {
+		["category"] = Group.Category.GROUND,
+		["visible"] = false,
+		["tasks"] = 
+		{
+		}, -- end of ["tasks"]
+		["uncontrollable"] = false,
+		["route"] = 
+		{
+			["spans"] = 
+			{
+			}, -- end of ["spans"]
+			["points"] = 
+			{
+				[1] = 
+				{
+					["alt"] = 51,
+					["type"] = "Turning Point",
+					["ETA"] = 0,
+					["alt_type"] = "BARO",
+					["formation_template"] = "",
+					["y"] = 427443.12239686,
+					["x"] = 13868.726108977,
+					["ETA_locked"] = true,
+					["speed"] = 5.5555555555556,
+					["action"] = "Off Road",
+					["task"] = 
+					{
+						["id"] = "ComboTask",
+						["params"] = 
+						{
+							["tasks"] = 
+							{
+							}, -- end of ["tasks"]
+						}, -- end of ["params"]
+					}, -- end of ["task"]
+					["speed_locked"] = true,
+				}, -- end of [1]
+			}, -- end of ["points"]
+		}, -- end of ["route"]
+		["groupId"] = 330,
+		["hidden"] = false,
+		["units"] = 
+		{
+			[1] = 
+			{
+				["skill"] = "Random",
+				["coldAtStart"] = false,
+				["type"] = "BTR-80",
+				["unitId"] = 3220,
+				["y"] = 427443.12239686,
+				["x"] = 13868.726108977,
+				["name"] = "ARMOUR_Heavy_03-1",
+				["heading"] = 0,
+				["playerCanDrive"] = true,
+			}, -- end of [1]
+			[2] = 
+			{
+				["skill"] = "Random",
+				["coldAtStart"] = false,
+				["type"] = "BMP-3",
+				["unitId"] = 3221,
+				["y"] = 427426.48202961,
+				["x"] = 13874.447449118,
+				["name"] = "ARMOUR_Heavy_03-2",
+				["heading"] = 5.1836278784232,
+				["playerCanDrive"] = true,
+			}, -- end of [2]
+			[3] = 
+			{
+				["skill"] = "Random",
+				["coldAtStart"] = false,
+				["type"] = "tt_DSHK",
+				["unitId"] = 3222,
+				["y"] = 427434.7049642,
+				["x"] = 13859.505775276,
+				["name"] = "ARMOUR_Heavy_03-3",
+				["heading"] = 5.6723200689816,
+				["playerCanDrive"] = true,
+			}, -- end of [3]
+			[4] = 
+			{
+				["skill"] = "Random",
+				["coldAtStart"] = false,
+				["type"] = "T-72B",
+				["unitId"] = 3223,
+				["y"] = 427461.10612843,
+				["x"] = 13850.017846548,
+				["name"] = "ARMOUR_Heavy_03-4",
+				["heading"] = 2.4434609527921,
+				["playerCanDrive"] = true,
+			}, -- end of [4]
+			[5] = 
+			{
+				["skill"] = "Random",
+				["coldAtStart"] = false,
+				["type"] = "T-55",
+				["unitId"] = 3224,
+				["y"] = 427442.93347736,
+				["x"] = 13848.021893743,
+				["name"] = "ARMOUR_Heavy_03-5",
+				["heading"] = 3.1415926535898,
+				["playerCanDrive"] = true,
+			}, -- end of [5]
+			[6] = 
+			{
+				["skill"] = "Random",
+				["coldAtStart"] = false,
+				["type"] = "BTR-80",
+				["unitId"] = 3225,
+				["y"] = 427429.79125938,
+				["x"] = 13883.873739997,
+				["name"] = "ARMOUR_Heavy_03-6",
+				["heading"] = 4.9741883681838,
+				["playerCanDrive"] = true,
+			}, -- end of [6]
+			[7] = 
+			{
+				["skill"] = "Random",
+				["coldAtStart"] = false,
+				["type"] = "Ural-4320T",
+				["unitId"] = 3226,
+				["y"] = 427419.39591553,
+				["x"] = 13854.483185225,
+				["name"] = "ARMOUR_Heavy_03-7",
+				["heading"] = 3.1415926535898,
+				["playerCanDrive"] = false,
+			}, -- end of [7]
+			[8] = 
+			{
+				["skill"] = "Random",
+				["coldAtStart"] = false,
+				["type"] = "Ural-4320T",
+				["unitId"] = 3227,
+				["y"] = 427459.51509729,
+				["x"] = 13869.527886334,
+				["name"] = "ARMOUR_Heavy_03-8",
+				["heading"] = 2.3561944901923,
+				["playerCanDrive"] = false,
+			}, -- end of [8]
+		}, -- end of ["units"]
+		["y"] = 427443.12239686,
+		["x"] = 13868.726108977,
+		["name"] = "ARMOUR_Heavy_03",
+		["start_time"] = 0,
+	}, -- end of ["ARMOUR_Heavy_03"]
+	["ARMOUR_Heavy_04"] = {
+		["category"] = Group.Category.GROUND,
+		["visible"] = false,
+		["tasks"] = 
+		{
+		}, -- end of ["tasks"]
+		["uncontrollable"] = false,
+		["route"] = 
+		{
+			["spans"] = 
+			{
+			}, -- end of ["spans"]
+			["points"] = 
+			{
+				[1] = 
+				{
+					["alt"] = 51,
+					["type"] = "Turning Point",
+					["ETA"] = 0,
+					["alt_type"] = "BARO",
+					["formation_template"] = "",
+					["y"] = 427472.82671015,
+					["x"] = 13929.914313022,
+					["ETA_locked"] = true,
+					["speed"] = 4,
+					["action"] = "Off Road",
+					["task"] = 
+					{
+						["id"] = "ComboTask",
+						["params"] = 
+						{
+							["tasks"] = 
+							{
+							}, -- end of ["tasks"]
+						}, -- end of ["params"]
+					}, -- end of ["task"]
+					["speed_locked"] = true,
+				}, -- end of [1]
+			}, -- end of ["points"]
+		}, -- end of ["route"]
+		["groupId"] = 331,
+		["hidden"] = false,
+		["units"] = 
+		{
+			[1] = 
+			{
+				["skill"] = "Random",
+				["coldAtStart"] = false,
+				["type"] = "BTR-80",
+				["unitId"] = 3228,
+				["y"] = 427472.82671015,
+				["x"] = 13929.914313022,
+				["name"] = "ARMOUR_Heavy_04-1",
+				["heading"] = 0.66322511575785,
+				["playerCanDrive"] = true,
+			}, -- end of [1]
+			[2] = 
+			{
+				["skill"] = "Random",
+				["coldAtStart"] = false,
+				["type"] = "BTR-80",
+				["unitId"] = 3229,
+				["y"] = 427485.92718189,
+				["x"] = 13946.835755685,
+				["name"] = "ARMOUR_Heavy_04-2",
+				["heading"] = 0.97738438111682,
+				["playerCanDrive"] = true,
+			}, -- end of [2]
+			[3] = 
+			{
+				["skill"] = "Random",
+				["coldAtStart"] = false,
+				["type"] = "T-55",
+				["unitId"] = 3230,
+				["y"] = 427486.23645544,
+				["x"] = 13909.617784168,
+				["name"] = "ARMOUR_Heavy_04-3",
+				["heading"] = 2.3212879051525,
+				["playerCanDrive"] = true,
+			}, -- end of [3]
+			[4] = 
+			{
+				["skill"] = "Random",
+				["coldAtStart"] = false,
+				["type"] = "T-72B",
+				["unitId"] = 3231,
+				["y"] = 427492.18328451,
+				["x"] = 13917.321736417,
+				["name"] = "ARMOUR_Heavy_04-4",
+				["heading"] = 1.6231562043547,
+				["playerCanDrive"] = true,
+			}, -- end of [4]
+			[5] = 
+			{
+				["skill"] = "Random",
+				["coldAtStart"] = false,
+				["type"] = "Paratrooper RPG-16",
+				["unitId"] = 3232,
+				["y"] = 427489.95224552,
+				["x"] = 13930.782546537,
+				["name"] = "ARMOUR_Heavy_04-5",
+				["heading"] = 0,
+				["playerCanDrive"] = false,
+			}, -- end of [5]
+			[6] = 
+			{
+				["skill"] = "Random",
+				["coldAtStart"] = false,
+				["type"] = "T-72B",
+				["unitId"] = 3233,
+				["y"] = 427470.26104556,
+				["x"] = 13942.243860705,
+				["name"] = "ARMOUR_Heavy_04-6",
+				["heading"] = 4.9043751981041,
+				["playerCanDrive"] = true,
+			}, -- end of [6]
+			[7] = 
+			{
+				["skill"] = "Random",
+				["coldAtStart"] = false,
+				["type"] = "HL_DSHK",
+				["unitId"] = 3234,
+				["y"] = 427459.67336677,
+				["x"] = 13917.222490468,
+				["name"] = "ARMOUR_Heavy_04-7",
+				["heading"] = 4.1189770347066,
+				["playerCanDrive"] = true,
+			}, -- end of [7]
+			[8] = 
+			{
+				["skill"] = "Random",
+				["coldAtStart"] = false,
+				["type"] = "GAZ-66",
+				["unitId"] = 3235,
+				["y"] = 427480.77247503,
+				["x"] = 13925.633609156,
+				["name"] = "ARMOUR_Heavy_04-8",
+				["heading"] = 0.62831853071796,
+				["playerCanDrive"] = false,
+			}, -- end of [8]
+		}, -- end of ["units"]
+		["y"] = 427472.82671015,
+		["x"] = 13929.914313022,
+		["name"] = "ARMOUR_Heavy_04",
+		["start_time"] = 0,
+	}, -- end of ["ARMOUR_Heavy_04"]
+    ------------------------ ARTILLERY ------------------------
 	------------------------ INFANTRY ------------------------
 	------------------------ SHIP ------------------------
-}
 
-
--- call the function that initialises the SUPPORTAC module
--- comment out these five lines if markspawn_data.lua is used.
-if MARKSPAWN.Start ~= nil then
-    _msg = MARKSPAWN.traceTitle .. "MARKSPAWN_DATA - call MARKSPAWN:Start()."
-    BASE:I(_msg)
-    MARKSPAWN:Start()
-end
+}  
   
-  
---------------------------------[core\missionatis.lua]-------------------------------- 
+--------------------------------[core\supportaircraft_templates.lua]-------------------------------- 
  
-env.info( "[JTF-1] missionatis.lua" )
--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
---- BEGIN ATIS SECTION
--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+env.info( "[JTF-1] supportaircraft_templates" )
+--------------------------------------------
+--- SUPPORTAIRCRAFT Spawn Spawn Templates Defined in this file
+--------------------------------------------
 --
--- NELLIS 270.100
--- CREECH 290.450
--- GROOM LAKE 123.500
--- TONOPAH TEST RANGE 113.000
-MISSIONATIS = {}
-
--- inherit methods,  properties etc from BASE for event handler, trace etc
-MISSIONATIS = BASE:Inherit( MISSIONATIS, BASE:New() )
-
-MISSIONATIS.ClassName = "MISSIONATIS"
-MISSIONATIS.version = "0.1"
-MISSIONATIS.traceTitle = "[JTF-1]"
-
--- container for airfield ATIS
-MISSIONATIS.atis = {}
-
--- default settings. Can be overwritten by values in missionatis_data.lua
-MISSIONATIS.default = {
-    srsPath = "C:/Program Files/DCS-SimpleRadio-Standalone",
-    srsPort = 5002,
-    sex = "male",
-    nationality = "en-US",
-    transmitOnlyWithPlayers = true,
-    transmitInterval = 60
-}
-
-
-function MISSIONATIS:Start()
-
-    _msg = string.format("%s Starting MISSIONATIS version %s", 
-        self.traceTitle,
-        self.version
-    )
-    self:T(_msg)
-
-    -- setup SRS
-    -- initialise SRS in standalone
-    self.srsPath = self.srsPath or self.default.srsPath
-    self.srsPort = self.srsPort or self.default.srsPort
-    if JTF1.useSRS then
-        -- MISSIONSRS module is active so override the intialisation
-        self.srsPath = JTF1.srsPath
-        self.srsPort = JTF1.srsPort
-    end
-
-    _msg = string.format("%s SRS Config:\nPath: %s\nPort: %d\n",
-        MISSIONATIS.traceTitle,
-        MISSIONATIS.srsPath, 
-        MISSIONATIS.srsPort
-    )
-    self:I(_msg)
-
-    -- set if ATIS should transmit only when players are present
-    self.transmitOnlyWithPlayers = self.transmitOnlyWithPlayers or self.default.transmitOnlyWithPlayers
-    -- set default transmit interval
-    self.transmitInterval = self.transmitInterval or self.default.transmitInterval
-
-    -- add ATIS for each airfield defined in MISSIONATIS.airfields
-    for index, airfield in ipairs(self.airfields) do
-        self:AddAtis(airfield)
-    end
-
-end
-
--- add ATIS for the airfield
-function MISSIONATIS:AddAtis(airfield)
-
-    _msg = string.format("%s adding ATIS for airfield: %s.", 
-        self.traceTitle, 
-        airfield.name
-    )
-    self:T(_msg)
-
-    local atisSrsPath = self.srsPath
-    local atisSrsPort = self.srsPort
-    local atisSex = airfield.sex or self.default.sex
-    local atisNationality = airfield.nationality or self.default.nationality
-    local transmitInterval = airfield.transmitInterval or self.transmitInterval
-
-    -- create new ATIS object for airfield
-    self.atis[airfield.name] = ATIS:New(airfield.name, airfield.frequency, airfield.modulation)
-
-    -- add SRS to airfield
-    self.atis[airfield.name]:SetSRS(atisSrsPath,atisSex,atisNationality,nil,atisSrsPort)
-
-    -- set interval between ATIS transmissions
-    self.atis[airfield.name]:SetQueueUpdateTime(transmitInterval)
-    
-    -- set takeoff runway
-    if airfield.activeRunwayTakeoff then
-        local activeRunwayTakeoffPreferLeft = airfield.activeRunwayLandingPreferleft or nil
-        self.atis[airfield.name]:SetActiveRunwayTakeoff(airfield.activeRunwayTakeoff, activeRunwayTakeoffPreferLeft)
-    end
-    
-    -- set landing runway
-    if airfield.activeRunwayLanding then
-        local activeRunwayLandingPreferLeft = airfield.activeRunwayLandingPreferLeft or nil
-        self.atis[airfield.name]:SetActiveRunwayLanding(airfield.activeRunwayLanding, activeRunwayLandingPreferLeft)
-    end
-    
-    -- set ILS
-    if airfield.ILS then
-        local ILSName = airfield.ILSName or nil
-        self.atis[airfield.name]:AddILS(airfield.ILSFreq, ILSName)
-    end
-    
-    -- set TACAN
-    if airfield.TACAN then
-        self.atis[airfield.name]:SetTACAN(airfield.TACAN)
-    end
-    
-    -- set tower freq(s)
-    self.atis[airfield.name]:SetTowerFrequencies(airfield.towerFrequencies)
-    
-    -- report in metric units
-    if airfield.metricUnits then
-        self.atis[airfield.name]:SetMetricUnits()
-    end
-
-    -- report pressure mB
-    if airfield.reportmBar then
-        self.atis[airfield.name]:SetReportmBar()
-    end
-    
-    -- set additional information
-    if airfield.additionalInformation then
-        self.atis[airfield.name]:SetAdditionalInformation(airfield.additionalInformation)
-    end
-    
-    -- set whether to only transmit when players are present
-    self.atis[airfield.name]:SetTransmitOnlyWithPlayers(self.transmitOnlyWithPlayers)
-    
-    -- start the airfield ATIS
-    self.atis[airfield.name]:Start()
-
-end
-  
---------------------------------[missionatis_data.lua]-------------------------------- 
- 
-env.info( "[JTF-1] missionatis_data.lua" )
--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
---- MISSIONATIS SETTINGS FOR MIZ
--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+-- **NOTE**
+-- SUPPORTAIRCRAFT.LUA MUST BE LOADED *BEFORE* THIS FILE IS LOADED!
+-- THIS FILE MUST BE LOADED *BEFORE* SUPPORTAIRCRAFT_DATA.LUA IS LOADED!
 --
--- This file MUST be loaded AFTER missionatis.lua
+-- This file contains the built-in templates used for spawning support aircraft 
 --
--- These values are specific to the miz and will override the default values in MISSIONATIS.default
+-- All functions and key values are in SUPPORTAIRCRAFT.LUA, which should be loaded first.
 --
+-- Load order in miz MUST be;
+--     1. supportaircraft.lua
+--     2. supportaircraft_templates.lua
+--     3. supportaircraft_data.lua
 --
--- NELLIS 270.100
--- CREECH 290.450
--- GROOM LAKE 123.500
--- TONOPAH TEST RANGE 113.000
 
--- Error prevention. Create empty container if module core lua not loaded.
-if not MISSIONATIS then 
-	_msg = "[JTF-1 MISSIONATIS] CORE FILE NOT LOADED!"
+-- Error prevention. Create empty container if SUPPORTAIRCRAFT.LUA is not loaded or has failed.
+if not SUPPORTAC then 
+	SUPPORTAC = {}
+	SUPPORTAC.traceTitle = "[JTF-1 SUPPORTAC] "
+	_msg = SUPPORTAC.traceTitle .. "CORE FILE NOT LOADED!"
 	BASE:E(_msg)
-	MISSIONATIS = {}
 end
 
--- only transmit ATIS if players are present
-MISSIONATIS.transmitOnlyWithPlayers = true -- default value is true
-MISSIONATIS.transmitInterval = 55 -- interval, in seconds, between ATIS transmissions. From start of transmission to start of next
+-- pre-defined spawn templates to be used as an alternative to placing late activated templates in the miz
+SUPPORTAC.template = {
+	["KC-135"] = {
+		["category"] = Group.Category.AIRPLANE,
+		["lateActivation"] = true,
+		["tasks"] = 
+		{
+		}, -- end of ["tasks"]
+		["radioSet"] = false,
+		["task"] = "Refueling",
+		["uncontrolled"] = false,
+		["route"] = 
+		{
+			["routeRelativeTOT"] = true,
+			["points"] = 
+			{
+				[1] = 
+				{
+					["alt"] = 2000,
+					["action"] = "Turning Point",
+					["alt_type"] = "BARO",
+					["speed"] = 220.97222222222,
+					["task"] = 
+					{
+						["id"] = "ComboTask",
+						["params"] = 
+						{
+							["tasks"] = 
+							{
+								[1] = 
+								{
+									["enabled"] = true,
+									["auto"] = false,
+									["id"] = "WrappedAction",
+									["number"] = 1,
+									["params"] = 
+									{
+										["action"] = 
+										{
+											["id"] = "SetUnlimitedFuel",
+											["params"] = 
+											{
+												["value"] = true,
+											}, -- end of ["params"]
+										}, -- end of ["action"]
+									}, -- end of ["params"]
+								}, -- end of [1]
+								[2] = 
+								{
+									["enabled"] = true,
+									["auto"] = false,
+									["id"] = "WrappedAction",
+									["number"] = 2,
+									["params"] = 
+									{
+										["action"] = 
+										{
+											["id"] = "SetInvisible",
+											["params"] = 
+											{
+												["value"] = true,
+											}, -- end of ["params"]
+										}, -- end of ["action"]
+									}, -- end of ["params"]
+								}, -- end of [2]
+								[3] = 
+								{
+									["number"] = 3,
+									["auto"] = true,
+									["id"] = "Tanker",
+									["enabled"] = true,
+									["params"] = 
+									{
+									}, -- end of ["params"]
+								}, -- end of [3]
+								[4] = 
+								{
+									["number"] = 4,
+									["auto"] = true,
+									["id"] = "WrappedAction",
+									["enabled"] = true,
+									["params"] = 
+									{
+										["action"] = 
+										{
+											["id"] = "ActivateBeacon",
+											["params"] = 
+											{
+												["type"] = 4,
+												["AA"] = false,
+												["callsign"] = "TKR",
+												["system"] = 4,
+												["channel"] = 1,
+												["modeChannel"] = "X",
+												["bearing"] = true,
+												["frequency"] = 962000000,
+											}, -- end of ["params"]
+										}, -- end of ["action"]
+									}, -- end of ["params"]
+								}, -- end of [4]
+								[5] = 
+								{
+									["number"] = 5,
+									["auto"] = true,
+									["id"] = "WrappedAction",
+									["enabled"] = true,
+									["params"] = 
+									{
+										["action"] = 
+										{
+											["id"] = "EPLRS",
+											["params"] = 
+											{
+												["value"] = true,
+												["groupId"] = 1,
+											}, -- end of ["params"]
+										}, -- end of ["action"]
+									}, -- end of ["params"]
+								}, -- end of [5]
+							}, -- end of ["tasks"]
+						}, -- end of ["params"]
+					}, -- end of ["task"]
+					["type"] = "Turning Point",
+					["ETA"] = 0,
+					["ETA_locked"] = true,
+					["y"] = -8563.6832781353,
+					["x"] = -395281.46534495,
+					["speed_locked"] = true,
+					["formation_template"] = "",
+				}, -- end of [1]
+			}, -- end of ["points"]
+		}, -- end of ["route"]
+		["groupId"] = 1,
+		["hidden"] = false,
+		["units"] = 
+		{
+			[1] = 
+			{
+				["alt"] = 2000,
+				["alt_type"] = "BARO",
+				["livery_id"] = "Standard USAF",
+				["skill"] = "High",
+				["speed"] = 220.97222222222,
+				["AddPropAircraft"] = 
+				{
+					["VoiceCallsignLabel"] = "TO",
+					["VoiceCallsignNumber"] = "11",
+					["STN_L16"] = "07101",
+				}, -- end of ["AddPropAircraft"]
+				["type"] = "KC-135",
+				["unitId"] = 1,
+				["psi"] = 0,
+				["onboard_num"] = "010",
+				["y"] = -8563.6832781353,
+				["x"] = -395281.46534495,
+				["name"] = "KC-135-1",
+				["payload"] = 
+				{
+					["pylons"] = 
+					{
+					}, -- end of ["pylons"]
+					["fuel"] = 90700,
+					["flare"] = 0,
+					["chaff"] = 0,
+					["gun"] = 100,
+				}, -- end of ["payload"]
+				["heading"] = 0,
+				["callsign"] = 
+				{
+					[1] = 1,
+					[2] = 1,
+					["name"] = "Texaco11",
+					[3] = 1,
+				}, -- end of ["callsign"]
+			}, -- end of [1]
+		}, -- end of ["units"]
+		["y"] = -8563.6832781353,
+		["x"] = -395281.46534495,
+		["name"] = "KC-135",
+		["communication"] = true,
+		["start_time"] = 0,
+		["modulation"] = 0,
+		["frequency"] = 251,
+	}, -- end of [KC-135]
+	["KC-135MPRS"] = {
+		["category"] = Group.Category.AIRPLANE,
+		["lateActivation"] = true,
+		["tasks"] = 
+		{
+		}, -- end of ["tasks"]
+		["radioSet"] = true,
+		["task"] = "Refueling",
+		["uncontrolled"] = false,
+		["route"] = 
+		{
+			["routeRelativeTOT"] = true,
+			["points"] = 
+			{
+				[1] = 
+				{
+					["alt"] = 6096,
+					["action"] = "Fly Over Point",
+					["alt_type"] = "BARO",
+					["speed"] = 164.44444444444,
+					["task"] = 
+					{
+						["id"] = "ComboTask",
+						["params"] = 
+						{
+							["tasks"] = 
+							{
+								[1] = 
+								{
+									["enabled"] = true,
+									["auto"] = true,
+									["id"] = "Tanker",
+									["number"] = 1,
+									["params"] = 
+									{
+									}, -- end of ["params"]
+								}, -- end of [1]
+								[2] = 
+								{
+									["enabled"] = true,
+									["auto"] = true,
+									["id"] = "WrappedAction",
+									["number"] = 2,
+									["params"] = 
+									{
+										["action"] = 
+										{
+											["id"] = "ActivateBeacon",
+											["params"] = 
+											{
+												["type"] = 4,
+												["AA"] = false,
+												["callsign"] = "RTB",
+												["modeChannel"] = "Y",
+												["channel"] = 60,
+												["system"] = 5,
+												["unitId"] = 20565,
+												["bearing"] = true,
+												["frequency"] = 1147000000,
+											}, -- end of ["params"]
+										}, -- end of ["action"]
+									}, -- end of ["params"]
+								}, -- end of [2]
+								[3] = 
+								{
+									["number"] = 3,
+									["auto"] = false,
+									["id"] = "WrappedAction",
+									["enabled"] = true,
+									["params"] = 
+									{
+										["action"] = 
+										{
+											["id"] = "SetInvisible",
+											["params"] = 
+											{
+												["value"] = true,
+											}, -- end of ["params"]
+										}, -- end of ["action"]
+									}, -- end of ["params"]
+								}, -- end of [3]
+								[4] = 
+								{
+									["number"] = 4,
+									["auto"] = false,
+									["id"] = "WrappedAction",
+									["enabled"] = true,
+									["params"] = 
+									{
+										["action"] = 
+										{
+											["id"] = "Option",
+											["params"] = 
+											{
+												["value"] = true,
+												["name"] = 6,
+											}, -- end of ["params"]
+										}, -- end of ["action"]
+									}, -- end of ["params"]
+								}, -- end of [4]
+							}, -- end of ["tasks"]
+						}, -- end of ["params"]
+					}, -- end of ["task"]
+					["type"] = "Turning Point",
+					["ETA"] = 0,
+					["ETA_locked"] = true,
+					["y"] = -87560.730212787,
+					["x"] = -129296.58141675,
+					["name"] = "",
+					["formation_template"] = "",
+					["speed_locked"] = true,
+				}, -- end of [1]
+			}, -- end of ["points"]
+		}, -- end of ["route"]
+		["groupId"] = 1,
+		["hidden"] = false,
+		["units"] = 
+		{
+			[1] = 
+			{
+				["alt"] = 6096,
+				["alt_type"] = "BARO",
+				["livery_id"] = "22nd ARW",
+				["skill"] = "Excellent",
+				["speed"] = 164.44444444444,
+				["type"] = "KC135MPRS",
+				["unitId"] = 1,
+				["psi"] = 1.0660373467781,
+				["y"] = -87560.730212787,
+				["x"] = -129296.58141675,
+				["name"] = "KC-135MPRS",
+				["payload"] = 
+				{
+					["pylons"] = 
+					{
+					}, -- end of ["pylons"]
+					["fuel"] = 90700,
+					["flare"] = 60,
+					["chaff"] = 120,
+					["gun"] = 100,
+				}, -- end of ["payload"]
+				["heading"] = -1.0660373467782,
+				["callsign"] = 
+				{
+					[1] = 3,
+					[2] = 1,
+					["name"] = "Shell11",
+					[3] = 1,
+				}, -- end of ["callsign"]
+				["onboard_num"] = "089",
+			}, -- end of [1]
+		}, -- end of ["units"]
+		["y"] = -87560.730212787,
+		["x"] = -129296.58141675,
+		["name"] = "KC-135MPRS",
+		["communication"] = true,
+		["start_time"] = 0,
+		["modulation"] = 0,
+		["frequency"] = 251,
+	}, -- end of [KC-135MPRS]
+	["KC-130"] = {
+		["category"] = Group.Category.AIRPLANE,
+		["lateActivation"] = true,
+		["tasks"] = 
+		{
+		}, -- end of ["tasks"]
+		["radioSet"] = true,
+		["task"] = "Refueling",
+		["uncontrolled"] = false,
+		["route"] = 
+		{
+			["routeRelativeTOT"] = true,
+			["points"] = 
+			{
+				[1] = 
+				{
+					["alt"] = 2438.4,
+					["action"] = "Turning Point",
+					["alt_type"] = "BARO",
+					["speed"] = 172.5,
+					["task"] = 
+					{
+						["id"] = "ComboTask",
+						["params"] = 
+						{
+							["tasks"] = 
+							{
+								[1] = 
+								{
+									["number"] = 1,
+									["auto"] = true,
+									["id"] = "Tanker",
+									["enabled"] = true,
+									["params"] = 
+									{
+									}, -- end of ["params"]
+								}, -- end of [1]
+								[2] = 
+								{
+									["number"] = 2,
+									["auto"] = true,
+									["id"] = "WrappedAction",
+									["enabled"] = true,
+									["params"] = 
+									{
+										["action"] = 
+										{
+											["id"] = "ActivateBeacon",
+											["params"] = 
+											{
+												["type"] = 4,
+												["AA"] = false,
+												["unitId"] = 16683,
+												["modeChannel"] = "Y",
+												["channel"] = 60,
+												["system"] = 5,
+												["callsign"] = "ARC",
+												["bearing"] = true,
+												["frequency"] = 1147000000,
+											}, -- end of ["params"]
+										}, -- end of ["action"]
+									}, -- end of ["params"]
+								}, -- end of [2]
+								[3] = 
+								{
+									["enabled"] = true,
+									["auto"] = false,
+									["id"] = "WrappedAction",
+									["number"] = 3,
+									["params"] = 
+									{
+										["action"] = 
+										{
+											["id"] = "SetInvisible",
+											["params"] = 
+											{
+												["value"] = true,
+											}, -- end of ["params"]
+										}, -- end of ["action"]
+									}, -- end of ["params"]
+								}, -- end of [3]
+							}, -- end of ["tasks"]
+						}, -- end of ["params"]
+					}, -- end of ["task"]
+					["type"] = "Turning Point",
+					["ETA"] = 0,
+					["ETA_locked"] = true,
+					["y"] = -11585.313345172,
+					["x"] = -399323.02717468,
+					["name"] = "",
+					["formation_template"] = "",
+					["speed_locked"] = true,
+				}, -- end of [1]
+			}, -- end of ["points"]
+		}, -- end of ["route"]
+		["groupId"] = 2447,
+		["hidden"] = false,
+		["units"] = 
+		{
+			[1] = 
+			{
+				["alt"] = 2438.4,
+				["alt_type"] = "BARO",
+				["livery_id"] = "default",
+				["skill"] = "Excellent",
+				["speed"] = 172.5,
+				["type"] = "KC130",
+				["unitId"] = 16683,
+				["psi"] = 1.4236457627903,
+				["y"] = -11585.313345172,
+				["x"] = -399323.02717468,
+				["name"] = "KC-130",
+				["payload"] = 
+				{
+					["pylons"] = 
+					{
+					}, -- end of ["pylons"]
+					["fuel"] = 30000,
+					["flare"] = 60,
+					["chaff"] = 120,
+					["gun"] = 100,
+				}, -- end of ["payload"]
+				["heading"] = -1.4236457627903,
+				["callsign"] = 
+				{
+					[1] = 2,
+					[2] = 1,
+					["name"] = "Arco11",
+					[3] = 1,
+				}, -- end of ["callsign"]
+				["onboard_num"] = "139",
+			}, -- end of [1]
+		}, -- end of ["units"]
+		["y"] = -11585.313345172,
+		["x"] = -399323.02717468,
+		["name"] = "KC-130",
+		["communication"] = true,
+		["start_time"] = 0,
+		["modulation"] = 0,
+		["frequency"] = 251,		
+	}, -- end of ["KC-130"]
+	["AWACS-E3A"] = {
+		["category"] = Group.Category.AIRPLANE,
+		["lateActivation"] = true,
+		["tasks"] = 
+		{
+		}, -- end of ["tasks"]
+		["radioSet"] = true,
+		["task"] = "AWACS",
+		["uncontrolled"] = false,
+		["route"] = 
+		{
+			["routeRelativeTOT"] = true,
+			["points"] = 
+			{
+				[1] = 
+				{
+					["alt"] = 6096,
+					["action"] = "Fly Over Point",
+					["alt_type"] = "BARO",
+					["speed"] = 164.44444444444,
+					["task"] = 
+					{
+						["id"] = "ComboTask",
+						["params"] = 
+						{
+							["tasks"] = 
+							{
+								[1] = 
+								{
+									["number"] = 1,
+									["auto"] = true,
+									["id"] = "AWACS",
+									["enabled"] = true,
+									["params"] = 
+									{
+									}, -- end of ["params"]
+								}, -- end of [1]
+								[2] = 
+								{
+									["enabled"] = true,
+									["auto"] = false,
+									["id"] = "WrappedAction",
+									["number"] = 2,
+									["params"] = 
+									{
+										["action"] = 
+										{
+											["id"] = "SetInvisible",
+											["params"] = 
+											{
+												["value"] = true,
+											}, -- end of ["params"]
+										}, -- end of ["action"]
+									}, -- end of ["params"]
+								}, -- end of [2]
+								[3] = 
+								{
+									["number"] = 3,
+									["auto"] = false,
+									["id"] = "WrappedAction",
+									["enabled"] = true,
+									["params"] = 
+									{
+										["action"] = 
+										{
+											["id"] = "EPLRS",
+											["params"] = 
+											{
+												["value"] = true,
+												["groupId"] = 46,
+											}, -- end of ["params"]
+										}, -- end of ["action"]
+									}, -- end of ["params"]
+								}, -- end of [3]
+							}, -- end of ["tasks"]
+						}, -- end of ["params"]
+					}, -- end of ["task"]
+					["type"] = "Turning Point",
+					["ETA"] = 0,
+					["ETA_locked"] = true,
+					["y"] = -88627.624510964,
+					["x"] = -129296.58141675,
+					["name"] = "",
+					["formation_template"] = "",
+					["speed_locked"] = true,
+				}, -- end of [1]
+			}, -- end of ["points"]
+		}, -- end of ["route"]
+		["groupId"] = 17446,
+		["hidden"] = false,
+		["units"] = 
+		{
+			[1] = 
+			{
+				["alt"] = 6096,
+				["alt_type"] = "BARO",
+				["livery_id"] = "nato",
+				["skill"] = "Excellent",
+				["speed"] = 164.44444444444,
+				["type"] = "E-3A",
+				["unitId"] = 20566,
+				["psi"] = 1.1124120783257,
+				["y"] = -88627.624510964,
+				["x"] = -129296.58141675,
+				["name"] = "AWACS-E3A",
+				["payload"] = 
+				{
+					["pylons"] = 
+					{
+					}, -- end of ["pylons"]
+					["fuel"] = 65000,
+					["flare"] = 60,
+					["chaff"] = 120,
+					["gun"] = 100,
+				}, -- end of ["payload"]
+				["heading"] = -1.1124120783257,
+				["callsign"] = 
+				{
+					[1] = 1,
+					[2] = 1,
+					["name"] = "Overlord11",
+					[3] = 1,
+				}, -- end of ["callsign"]
+				["onboard_num"] = "090",
+			}, -- end of [1]
+		}, -- end of ["units"]
+		["y"] = -88627.624510964,
+		["x"] = -129296.58141675,
+		["name"] = "AWACS-E3A",
+		["communication"] = true,
+		["start_time"] = 0,
+		["modulation"] = 0,
+		["frequency"] = 251,
+	}, -- end of [AWACS-E3A]
+  	["AWACS-E2D"] = {
+		["category"] = Group.Category.AIRPLANE,
+		["lateActivation"] = true,
+		["tasks"] = 
+		{
+		}, -- end of ["tasks"]
+		["radioSet"] = true,
+		["task"] = "AWACS",
+		["uncontrolled"] = false,
+		["route"] = 
+		{
+			["routeRelativeTOT"] = true,
+			["points"] = 
+			{
+				[1] = 
+				{
+					["alt"] = 9144,
+					["action"] = "Turning Point",
+					["alt_type"] = "BARO",
+					["speed"] = 133.61111111111,
+					["task"] = 
+					{
+						["id"] = "ComboTask",
+						["params"] = 
+						{
+							["tasks"] = 
+							{
+								[1] = 
+								{
+									["enabled"] = true,
+									["auto"] = true,
+									["id"] = "AWACS",
+									["number"] = 1,
+									["params"] = 
+									{
+									}, -- end of ["params"]
+								}, -- end of [1]
+								[2] = 
+								{
+									["enabled"] = true,
+									["auto"] = true,
+									["id"] = "WrappedAction",
+									["number"] = 2,
+									["params"] = 
+									{
+										["action"] = 
+										{
+											["id"] = "EPLRS",
+											["params"] = 
+											{
+												["value"] = true,
+												["groupId"] = 38,
+											}, -- end of ["params"]
+										}, -- end of ["action"]
+									}, -- end of ["params"]
+								}, -- end of [2]
+								[3] = 
+								{
+									["enabled"] = true,
+									["auto"] = false,
+									["id"] = "WrappedAction",
+									["number"] = 3,
+									["params"] = 
+									{
+										["action"] = 
+										{
+											["id"] = "SetInvisible",
+											["params"] = 
+											{
+												["value"] = true,
+											}, -- end of ["params"]
+										}, -- end of ["action"]
+									}, -- end of ["params"]
+								}, -- end of [3]
+							}, -- end of ["tasks"]
+						}, -- end of ["params"]
+					}, -- end of ["task"]
+					["type"] = "Turning Point",
+					["ETA"] = 0,
+					["ETA_locked"] = true,
+					["y"] = -12187.736469214,
+					["x"] = -399320.85899169,
+					["name"] = "",
+					["formation_template"] = "",
+					["speed_locked"] = true,
+				}, -- end of [1]
+			}, -- end of ["points"]
+		}, -- end of ["route"]
+		["groupId"] = 2452,
+		["hidden"] = false,
+		["units"] = 
+		{
+			[1] = 
+			{
+				["alt"] = 9144,
+				["alt_type"] = "BARO",
+				["livery_id"] = "E-2D Demo",
+				["skill"] = "High",
+				["speed"] = 133.61111111111,
+				["type"] = "E-2C",
+				["unitId"] = 16697,
+				["psi"] = 1.3887207292845,
+				["y"] = -12187.736469214,
+				["x"] = -399320.85899169,
+				["name"] = "AWACS-E2D-1",
+				["payload"] = 
+				{
+					["pylons"] = 
+					{
+					}, -- end of ["pylons"]
+					["fuel"] = "5624",
+					["flare"] = 60,
+					["chaff"] = 120,
+					["gun"] = 100,
+				}, -- end of ["payload"]
+				["heading"] = -1.3887207292845,
+				["callsign"] = 
+				{
+					[1] = 1,
+					[2] = 1,
+					["name"] = "Overlord11",
+					[3] = 1,
+				}, -- end of ["callsign"]
+				["onboard_num"] = "143",
+			}, -- end of [1]
+		}, -- end of ["units"]
+		["y"] = -12187.736469214,
+		["x"] = -399320.85899169,
+		["name"] = "AWACS-E2D",
+		["communication"] = true,
+		["start_time"] = 0,
+		["modulation"] = 0,
+		["frequency"] = 251,		
+	}, -- end of ["AWACS-E2D"]
+	["AWACS-A50"] = {
+		["category"] = Group.Category.AIRPLANE,
+		["lateActivation"] = true,
+		["tasks"] = 
+		{
+		}, -- end of ["tasks"]
+		["radioSet"] = false,
+		["task"] = "AWACS",
+		["uncontrolled"] = false,
+		["taskSelected"] = true,
+		["route"] = 
+		{
+			["routeRelativeTOT"] = true,
+			["points"] = 
+			{
+				[1] = 
+				{
+					["alt"] = 10972.8,
+					["action"] = "Turning Point",
+					["alt_type"] = "BARO",
+					["speed"] = 220.97222222222,
+					["task"] = 
+					{
+						["id"] = "ComboTask",
+						["params"] = 
+						{
+							["tasks"] = 
+							{
+								[1] = 
+								{
+									["enabled"] = true,
+									["auto"] = true,
+									["id"] = "AWACS",
+									["number"] = 1,
+									["params"] = 
+									{
+									}, -- end of ["params"]
+								}, -- end of [1]
+								[2] = 
+								{
+									["enabled"] = true,
+									["auto"] = false,
+									["id"] = "WrappedAction",
+									["number"] = 2,
+									["params"] = 
+									{
+										["action"] = 
+										{
+											["id"] = "SetInvisible",
+											["params"] = 
+											{
+												["value"] = true,
+											}, -- end of ["params"]
+										}, -- end of ["action"]
+									}, -- end of ["params"]
+								}, -- end of [2]
+								[3] = 
+								{
+									["enabled"] = true,
+									["auto"] = false,
+									["id"] = "WrappedAction",
+									["number"] = 3,
+									["params"] = 
+									{
+										["action"] = 
+										{
+											["id"] = "Option",
+											["params"] = 
+											{
+												["value"] = 0,
+												["name"] = 1,
+											}, -- end of ["params"]
+										}, -- end of ["action"]
+									}, -- end of ["params"]
+								}, -- end of [3]
+								[4] = 
+								{
+									["enabled"] = true,
+									["auto"] = false,
+									["id"] = "WrappedAction",
+									["number"] = 4,
+									["params"] = 
+									{
+										["action"] = 
+										{
+											["id"] = "Option",
+											["params"] = 
+											{
+												["value"] = false,
+												["name"] = 19,
+											}, -- end of ["params"]
+										}, -- end of ["action"]
+									}, -- end of ["params"]
+								}, -- end of [4]
+							}, -- end of ["tasks"]
+						}, -- end of ["params"]
+					}, -- end of ["task"]
+					["type"] = "Turning Point",
+					["ETA"] = 0,
+					["ETA_locked"] = true,
+					["y"] = 315953.41096792,
+					["x"] = 63905.857563882,
+					["name"] = "",
+					["formation_template"] = "",
+					["speed_locked"] = true,
+				}, -- end of [1]
+			}, -- end of ["points"]
+		}, -- end of ["route"]
+		["groupId"] = 588,
+		["hidden"] = false,
+		["units"] = 
+		{
+			[1] = 
+			{
+				["alt"] = 10972.8,
+				["alt_type"] = "BARO",
+				["livery_id"] = "RF Air Force new",
+				["skill"] = "High",
+				["speed"] = 220.97222222222,
+				["AddPropAircraft"] = 
+				{
+					["PropellorType"] = 0,
+					["SoloFlight"] = false,
+				}, -- end of ["AddPropAircraft"]
+				["type"] = "A-50",
+				["unitId"] = 1595,
+				["psi"] = -1.7947587772958,
+				["y"] = 315953.41096792,
+				["x"] = 63905.857563882,
+				["name"] = "RED_AWACS",
+				["payload"] = 
+				{
+					["pylons"] = 
+					{
+					}, -- end of ["pylons"]
+					["fuel"] = "70000",
+					["flare"] = 192,
+					["chaff"] = 192,
+					["gun"] = 100,
+				}, -- end of ["payload"]
+				["heading"] = 1.7947587772958,
+				["callsign"] = 666,
+				["onboard_num"] = "027",
+			}, -- end of [1]
+		}, -- end of ["units"]
+		["y"] = 315953.41096792,
+		["x"] = 63905.857563882,
+		["name"] = "RED_AWACS",
+		["communication"] = true,
+		["start_time"] = 0,
+		["modulation"] = 0,
+		["frequency"] = 251,
+	}, -- end of ["AWACS-RED"]
+	["S3BTANKER"] = {
+		["category"] = Group.Category.AIRPLANE,
+		["lateActivation"] = true,
+		["tasks"] = 
+		{
+		}, -- end of ["tasks"]
+		["radioSet"] = false,
+		["task"] = "Refueling",
+		["uncontrolled"] = false,
+		["route"] = 
+		{
+			["routeRelativeTOT"] = true,
+			["points"] = 
+			{
+				[1] = 
+				{
+					["alt"] = 1828.8,
+					["action"] = "Turning Point",
+					["alt_type"] = "BARO",
+					["speed"] = 141.31944444444,
+					["task"] = 
+					{
+						["id"] = "ComboTask",
+						["params"] = 
+						{
+							["tasks"] = 
+							{
+								[1] = 
+								{
+									["number"] = 1,
+									["auto"] = true,
+									["id"] = "Tanker",
+									["enabled"] = true,
+									["params"] = 
+									{
+									}, -- end of ["params"]
+								}, -- end of [1]
+								[2] = 
+								{
+									["number"] = 2,
+									["auto"] = true,
+									["id"] = "WrappedAction",
+									["enabled"] = true,
+									["params"] = 
+									{
+										["action"] = 
+										{
+											["id"] = "ActivateBeacon",
+											["params"] = 
+											{
+												["type"] = 4,
+												["AA"] = false,
+												["callsign"] = "TKR",
+												["system"] = 4,
+												["channel"] = 1,
+												["modeChannel"] = "X",
+												["bearing"] = true,
+												["frequency"] = 962000000,
+											}, -- end of ["params"]
+										}, -- end of ["action"]
+									}, -- end of ["params"]
+								}, -- end of [2]
+								[3] = 
+								{
+									["number"] = 3,
+									["auto"] = false,
+									["id"] = "WrappedAction",
+									["enabled"] = true,
+									["params"] = 
+									{
+										["action"] = 
+										{
+											["id"] = "SetInvisible",
+											["params"] = 
+											{
+												["value"] = true,
+											}, -- end of ["params"]
+										}, -- end of ["action"]
+									}, -- end of ["params"]
+								}, -- end of [3]
+							}, -- end of ["tasks"]
+						}, -- end of ["params"]
+					}, -- end of ["task"]
+					["type"] = "Turning Point",
+					["ETA"] = 0,
+					["ETA_locked"] = true,
+					["y"] = 606748.96393416,
+					["x"] = -358539.84033849,
+					["formation_template"] = "",
+					["speed_locked"] = true,
+				}, -- end of [1]
+			}, -- end of ["points"]
+		}, -- end of ["route"]
+		["groupId"] = 1,
+		["hidden"] = false,
+		["units"] = 
+		{
+			[1] = 
+			{
+				["alt"] = 1828.8,
+				["alt_type"] = "BARO",
+				["livery_id"] = "usaf standard",
+				["skill"] = "High",
+				["speed"] = 141.31944444444,
+				["type"] = "S-3B Tanker",
+				["unitId"] = 1,
+				["psi"] = 0,
+				["y"] = 606748.96393416,
+				["x"] = -358539.84033849,
+				["name"] = "Aerial-1-1",
+				["payload"] = 
+				{
+					["pylons"] = 
+					{
+					}, -- end of ["pylons"]
+					["fuel"] = "7813",
+					["flare"] = 30,
+					["chaff"] = 30,
+					["gun"] = 100,
+				}, -- end of ["payload"]
+				["heading"] = 0,
+				["callsign"] = 
+				{
+					[1] = 1,
+					[2] = 1,
+					["name"] = "Texaco11",
+					[3] = 1,
+				}, -- end of ["callsign"]
+				["onboard_num"] = "010",
+			}, -- end of [1]
+		}, -- end of ["units"]
+		["y"] = 606748.96393416,
+		["x"] = -358539.84033849,
+		["name"] = "S3BTANKER",
+		["communication"] = true,
+		["start_time"] = 0,
+		["modulation"] = 0,
+		["frequency"] = 251,
+	}, -- end of ["S3BTANKER"]
+} -- end SUPPORTAC.template
+  
+--------------------------------[disableai.lua]-------------------------------- 
+ 
+env.info( "[JTF-1] disableai.lua" )
+-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+--- Disable AI for ground targets
+-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
-MISSIONATIS.airfields = {
-    {
-        name = AIRBASE.Nevada.Nellis_AFB,
-        frequency = 327.3,
-        modulation = radio.modulation.AM,
-        sex = "male",
-        nationality = "en-US",
-        transmitInterval = 55,
-        activeRunwayTakeoff = "03",
-        activeRunwayTakeoffPreferLeft = true,
-        activeRunwayLanding = "21",
-        activeRunwayLandingPreferLeft = true,
-        ILSFreq = 109.10,
-        ILSName = "21L",
-        TACAN = 12,
-        towerFrequencies = 327.3, -- table of freqs. A single freq MUST be given as a plain number, NOT a atable.
-        metricUnits = false,
-        reportmBar = false,
-        additionalInformation = "All aircraft report hold-short.",
-    },
-    {
-        name = AIRBASE.Nevada.Creech_AFB,
-        frequency = 290.45,
-        modulation = radio.modulation.AM,
-        sex = "female",
-        nationality = "en-US",
-        TACAN = 87,
-        towerFrequencies = 360.6, -- table of freqs. A single freq MUST be given as a plain number, NOT a atable.
-        metricUnits = false,
-        reportmBar = false,
-        transmitInterval = 50,
-    },
-    {
-        name = AIRBASE.Nevada.Tonopah_Test_Range_Airfield,
-        frequency = 113,
-        modulation = radio.modulation.AM,
-        sex = "female",
-        nationality = "en-US",
-        TACAN = 77,
-        towerFrequencies = 257.95, -- table of freqs. A single freq MUST be given as a plain number, NOT a atable.
-        metricUnits = false,
-        reportmBar = false,
-        transmitInterval = 50,
-    },
-    {
-        name = AIRBASE.Nevada.Groom_Lake_AFB,
-        frequency = 123,
-        modulation = radio.modulation.AM,
-        sex = "male",
-        nationality = "en-US",
-        TACAN = 18,
-        towerFrequencies = 120.1, -- table of freqs. A single freq MUST be given as a plain number, NOT a atable.
-        metricUnits = false,
-        reportmBar = false,
-        transmitInterval = 50,
-    },
-    -- EXAMPLE AIRFIELD CONFIG
-    -- {
-    --     name = AIRBASE.Nevada.Nellis_AFB,
-    --     frequency = 327.3,
-    --     modulation = radio.modulation.AM,
-    --     sex = "male",
-    --     nationality = "en-US",
-    --     transmitInterval = 55,
-    --     activeRunwayTakeoff = "03",
-    --     activeRunwayTakeoffPreferLeft = true,
-    --     activeRunwayLanding = "21",
-    --     activeRunwayLandingPreferLeft = true,
-    --     ILSFreq = 109.10,
-    --     ILSName = "21L",
-    --     TACAN = 12,
-    --     towerFrequencies = 327.3, -- table of freqs. A single freq MUST be given as a plain number, NOT a atable.
-    --     metricUnits = false,
-    --     reportmBar = false,
-    --     additionalInformation = "All aircraft report hold-short.",
-    -- },
-}
+DISABLEAI = {}
+DISABLEAI.traceTitle = "[JTF-1 DISABLEAI] "
+DISABLEAI.setGroupGroundActive = SET_GROUP:New()
+  :FilterActive()
+  :FilterCategoryGround()
+  :FilterOnce()
+--local setGroupGroundActive = SET_GROUP:New():FilterActive():FilterCategoryGround():FilterOnce()
 
--- start the misison ATIS
-if MISSIONATIS.Start then
-	MISSIONATIS:Start()
-end  
+-- table of Prefixes for groups for which AI should NOT be disabled
+DISABLEAI.excludeAI = {"BLUFOR", "FAC", "JTAC", "66%-"}
+--local excludeAI = "BLUFOR"
+
+_msg = string.format("%sStart Disable AI.", DISABLEAI.traceTitle)
+BASE:T({_msg, Exclude_List = DISABLEAI.excludeAI})
+
+
+DISABLEAI.setGroupGroundActive:ForEachGroup(
+  function(activeGroup)
+
+    -- name of the group we're checking
+    local activeGroupName = activeGroup:GetName()
+    -- list of group name prefixes to exclude
+    local excludeAI = DISABLEAI.excludeAI
+    -- flag to trigger disabling AI
+    local disableGroup = true
+
+    -- check if group name prefix is in exclusion list
+    for _, stringExclude in pairs(excludeAI) do
+      if string.find(activeGroupName, stringExclude) ~= nil then
+        disableGroup = false
+        _msg = string.format("%sSkip group: %s", DISABLEAI.traceTitle, activeGroupName)
+        break
+      end
+    end
+
+    -- Disable AI if group was not in exclusion list
+    if disableGroup == true then
+      activeGroup:SetAIOnOff(false)
+      _msg = string.format("%sDisable group: %s", DISABLEAI.traceTitle, activeGroupName)
+    end
+
+    BASE:T(_msg)
+
+  end
+)
+
+-- remove set object
+DISABLEAI.setGroupGroundActive = nil
+
+---  END DISABLE AI  
 --------------------------------[movingtargets.lua]-------------------------------- 
  
 env.info( "[JTF-1] movingtargets" )
@@ -11503,696 +14801,966 @@ local function rangeMovingTarget(targetId)
   -- END R62 T6208
 
 --- END MOVING TARGETS   
---------------------------------[core\Hercules_Cargo.lua]-------------------------------- 
+--------------------------------[ecs.lua]-------------------------------- 
  
-env.info( "[JTF-1] Hercules_Cargo.lua" )
--- Hercules Cargo Drop Events by Anubis Yinepu
+env.info( "[JTF-1] ecs" )
+-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+--- BEGIN ELECTRONIC COMBAT SIMULATOR RANGE
+-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
--- This script will only work for the Herculus mod by Anubis
--- Payloads carried by pylons 11, 12 and 13 need to be declared in the Herculus_Loadout.lua file
--- Except for Ammo pallets, this script will spawn whatever payload gets launched from pylons 11, 12 and 13
--- Pylons 11, 12 and 13 are moveable within the Herculus cargobay area
--- Ammo pallets can only be jettisoned from these pylons with no benefit to DCS world
--- To benefit DCS world, Ammo pallets need to be off/on loaded using DCS arming and refueling window
--- Cargo_Container_Enclosed = true: Cargo enclosed in container with parachute, need to be dropped from 100m (300ft) or more, except when parked on ground
--- Cargo_Container_Enclosed = false: Open cargo with no parachute, need to be dropped from 10m (30ft) or less
+--- IADS
+-- REQUIRES MIST
 
-Hercules_Cargo = {}
-Hercules_Cargo.Hercules_Cargo_Drop_Events = {}
-local GT_DisplayName = ""
-local GT_Name = ""
-local Cargo_Drop_initiator = ""
-local Cargo_Container_Enclosed = false
-local SoldierGroup = false
-local ParatrooperCount = 1
-local ParatrooperGroupSpawnInit = false
-local ParatrooperGroupSpawn = false
+local ECS = {}
+ECS.ActiveSite = {}
+ECS.rIADS = nil
 
-local Herc_j = 0
-local Herc_Cargo = {}
-Herc_Cargo.Cargo_Drop_Direction = 0
-Herc_Cargo.Cargo_Contents = ""
-Herc_Cargo.Cargo_Type_name = ""
-Herc_Cargo.Cargo_over_water = false
-Herc_Cargo.Container_Enclosed = false
-Herc_Cargo.offload_cargo = false
-Herc_Cargo.all_cargo_survive_to_the_ground = false
-Herc_Cargo.all_cargo_gets_destroyed = false
-Herc_Cargo.destroy_cargo_dropped_without_parachute = false
-Herc_Cargo.scheduleFunctionID = 0
+ECS.menuEscTop = MENU_COALITION:New(coalition.side.BLUE, "EC South")
 
-local CargoHeading = 0
-local Cargo_Drop_Position = {}
-
-local SoldierUnitID = 12000
-local SoldierGroupID = 12000
-local GroupSpacing = 0
---added by wrench
-Hercules_Cargo.types = {
-	["ATGM M1045 HMMWV TOW Air [7183lb]"] = {['name'] = "M1045 HMMWV TOW", ['container'] = true},
-	["ATGM M1045 HMMWV TOW Skid [7073lb]"] = {['name'] = "M1045 HMMWV TOW", ['container'] = false},
-	["APC M1043 HMMWV Armament Air [7023lb]"] = {['name'] = "M1043 HMMWV Armament", ['container'] = true},
-	["APC M1043 HMMWV Armament Skid [6912lb]"] = {['name'] = "M1043 HMMWV Armament", ['container'] = false},
-	["SAM Avenger M1097 Air [7200lb]"] = {['name'] = "M1097 Avenger", ['container'] = true},
-	["SAM Avenger M1097 Skid [7090lb]"] = {['name'] = "M1097 Avenger", ['container'] = false},
-	["APC Cobra Air [10912lb]"] = {['name'] = "Cobra", ['container'] = true},
-	["APC Cobra Skid [10802lb]"] = {['name'] = "Cobra", ['container'] = false},
-	["APC M113 Air [21624lb]"] = {['name'] = "M-113", ['container'] = true},
-	["APC M113 Skid [21494lb]"] = {['name'] = "M-113", ['container'] = false},
-	["Tanker M978 HEMTT [34000lb]"] = {['name'] = "M978 HEMTT Tanker", ['container'] = false},
-	["HEMTT TFFT [34400lb]"] = {['name'] = "HEMTT TFFT", ['container'] = false},
-	["SPG M1128 Stryker MGS [33036lb]"] = {['name'] = "M1128 Stryker MGS", ['container'] = false},
-	["AAA Vulcan M163 Air [21666lb]"] = {['name'] = "Vulcan", ['container'] = true},
-	["AAA Vulcan M163 Skid [21577lb]"] = {['name'] = "Vulcan", ['container'] = false},
-	["APC M1126 Stryker ICV [29542lb]"] = {['name'] = "M1126 Stryker ICV", ['container'] = false},
-	["ATGM M1134 Stryker [30337lb]"] = {['name'] = "M1134 Stryker ATGM", ['container'] = false},
-	["APC LAV-25 Air [22520lb]"] = {['name'] = "LAV-25", ['container'] = true},
-	["APC LAV-25 Skid [22514lb]"] = {['name'] = "LAV-25", ['container'] = false},
-	["M1025 HMMWV Air [6160lb]"] = {['name'] = "Hummer", ['container'] = true},
-	["M1025 HMMWV Skid [6050lb]"] = {['name'] = "Hummer", ['container'] = false},
-	["IFV M2A2 Bradley [34720lb]"] = {['name'] = "M-2 Bradley", ['container'] = false},
-	["IFV MCV-80 [34720lb]"] = {['name'] = "MCV-80", ['container'] = false},
-	["IFV BMP-1 [23232lb]"] = {['name'] = "BMP-1", ['container'] = false},
-	["IFV BMP-2 [25168lb]"] = {['name'] = "BMP-2", ['container'] = false},
-	["IFV BMP-3 [32912lb]"] = {['name'] = "BMP-3", ['container'] = false},
-	["ARV BRDM-2 Air [12320lb]"] = {['name'] = "BRDM-2", ['container'] = true},
-	["ARV BRDM-2 Skid [12210lb]"] = {['name'] = "BRDM-2", ['container'] = false},
-	["APC BTR-80 Air [23936lb]"] = {['name'] = "BTR-80", ['container'] = true},
-	["APC BTR-80 Skid [23826lb]"] = {['name'] = "BTR-80", ['container'] = false},
-	["APC BTR-82A Air [24998lb]"] = {['name'] = "BTR-82A", ['container'] = true},
-	["APC BTR-82A Skid [24888lb]"] = {['name'] = "BTR-82A", ['container'] = false},
-	["SAM ROLAND ADS [34720lb]"] = {['name'] = "Roland Radar", ['container'] = false},
-	["SAM ROLAND LN [34720b]"] = {['name'] = "Roland ADS", ['container'] = false},
-	["SAM SA-13 STRELA [21624lb]"] = {['name'] = "Strela-10M3", ['container'] = false},
-	["AAA ZSU-23-4 Shilka [32912lb]"] = {['name'] = "ZSU-23-4 Shilka", ['container'] = false},
-	["SAM SA-19 Tunguska 2S6 [34720lb]"] = {['name'] = "2S6 Tunguska", ['container'] = false},
-	["Transport UAZ-469 Air [3747lb]"] = {['name'] = "UAZ-469", ['container'] = true},
-	["Transport UAZ-469 Skid [3630lb]"] = {['name'] = "UAZ-469", ['container'] = false},
-	["AAA GEPARD [34720lb]"] = {['name'] = "Gepard", ['container'] = false},
-	["SAM CHAPARRAL Air [21624lb]"] = {['name'] = "M48 Chaparral", ['container'] = true},
-	["SAM CHAPARRAL Skid [21516lb]"] = {['name'] = "M48 Chaparral", ['container'] = false},
-	["SAM LINEBACKER [34720lb]"] = {['name'] = "M6 Linebacker", ['container'] = false},
-	["Transport URAL-375 [14815lb]"] = {['name'] = "Ural-375", ['container'] = false},
-	["Transport M818 [16000lb]"] = {['name'] = "M 818", ['container'] = false},
-	["IFV MARDER [34720lb]"] = {['name'] = "Marder", ['container'] = false},
-	["Transport Tigr Air [15900lb]"] = {['name'] = "Tigr_233036", ['container'] = true},
-	["Transport Tigr Skid [15730lb]"] = {['name'] = "Tigr_233036", ['container'] = false},
-	["IFV TPZ FUCH [33440lb]"] = {['name'] = "TPZ", ['container'] = false},
-	["IFV BMD-1 Air [18040lb]"] = {['name'] = "BMD-1", ['container'] = true},
-	["IFV BMD-1 Skid [17930lb]"] = {['name'] = "BMD-1", ['container'] = false},
-	["IFV BTR-D Air [18040lb]"] = {['name'] = "BTR_D", ['container'] = true},
-	["IFV BTR-D Skid [17930lb]"] = {['name'] = "BTR_D", ['container'] = false},
-	["EWR SBORKA Air [21624lb]"] = {['name'] = "Dog Ear radar", ['container'] = true},
-	["EWR SBORKA Skid [21624lb]"] = {['name'] = "Dog Ear radar", ['container'] = false},
-	["ART 2S9 NONA Air [19140lb]"] = {['name'] = "SAU 2-C9", ['container'] = true},
-	["ART 2S9 NONA Skid [19030lb]"] = {['name'] = "SAU 2-C9", ['container'] = false},
-	["ART GVOZDIKA [34720lb]"] = {['name'] = "SAU Gvozdika", ['container'] = false},
-	["APC MTLB Air [26400lb]"] = {['name'] = "MTLB", ['container'] = true},
-	["APC MTLB Skid [26290lb]"] = {['name'] = "MTLB", ['container'] = false},
-	--["Generic Crate [20000lb]"] = {['name'] =  "Hercules_Container_Parachute", ['container'] = true}
+-- SAM spawn emplates
+ECS.templates = {
+  {templateName = "ECS_SA11", threatName = "SA-11"},
+  {templateName = "ECS_SA10", threatName = "SA-10"},
+  {templateName = "ECS_SA2",  threatName = "SA-2"},
+  {templateName = "ECS_SA3",  threatName = "SA-3"},
+  {templateName = "ECS_SA6",  threatName = "SA-6"},
+  {templateName = "ECS_SA8",  threatName = "SA-8"},
+  {templateName = "ECS_SA15", threatName = "SA-15"},
 }
-function Hercules_Cargo.Soldier_SpawnGroup(Cargo_Drop_Position, Cargo_Type_name, CargoHeading, Cargo_Country, GroupSpacing)
-	SoldierUnitID = SoldierUnitID + 30
-	SoldierGroupID = SoldierGroupID + 1
-	local Herc_Soldier_Spawn = 
-	{
-		["visible"] = false,
-		["tasks"] = 
-		{
-		}, -- end of ["tasks"]
-		["uncontrollable"] = false,
-		["task"] = "Ground Nothing",
-		["taskSelected"] = true,
-		["groupId"] = SoldierGroupID,
-		["hidden"] = false,
-		["units"] = 
-		{
-			[1] = 
-			{
-				["type"] = Cargo_Type_name,
-				["transportable"] = 
-				{
-					["randomTransportable"] = true,
-				}, -- end of ["transportable"]
-				["unitId"] = SoldierUnitID + 1,
-				["skill"] = "Excellent",
-				["y"] = Cargo_Drop_Position.z + 0.5 + GroupSpacing,
-				["x"] = Cargo_Drop_Position.x + 0.5 + GroupSpacing,
-				["name"] = "Soldier Unit "..SoldierUnitID,
-				["heading"] = CargoHeading,
-				["playerCanDrive"] = false,
-			}, -- end of [1]
-			[2] = 
-			{
-				["type"] = Cargo_Type_name,
-				["transportable"] = 
-				{
-					["randomTransportable"] = true,
-				}, -- end of ["transportable"]
-				["unitId"] = SoldierUnitID + 1,
-				["skill"] = "Excellent",
-				["y"] = Cargo_Drop_Position.z + 1.0 + GroupSpacing,
-				["x"] = Cargo_Drop_Position.x + 1.0 + GroupSpacing,
-				["name"] = "Soldier Unit "..SoldierUnitID,
-				["heading"] = CargoHeading,
-				["playerCanDrive"] = false,
-			}, -- end of [2]
-			[3] = 
-			{
-				["type"] = Cargo_Type_name,
-				["transportable"] = 
-				{
-					["randomTransportable"] = true,
-				}, -- end of ["transportable"]
-				["unitId"] = SoldierUnitID + 1,
-				["skill"] = "Excellent",
-				["y"] = Cargo_Drop_Position.z + 1.5 + GroupSpacing,
-				["x"] = Cargo_Drop_Position.x + 1.0 + GroupSpacing,
-				["name"] = "Soldier Unit "..SoldierUnitID,
-				["heading"] = CargoHeading,
-				["playerCanDrive"] = false,
-			}, -- end of [3]
-			[4] = 
-			{
-				["type"] = Cargo_Type_name,
-				["transportable"] = 
-				{
-					["randomTransportable"] = true,
-				}, -- end of ["transportable"]
-				["unitId"] = SoldierUnitID + 1,
-				["skill"] = "Excellent",
-				["y"] = Cargo_Drop_Position.z + 2.0 + GroupSpacing,
-				["x"] = Cargo_Drop_Position.x + 2.0 + GroupSpacing,
-				["name"] = "Soldier Unit "..SoldierUnitID,
-				["heading"] = CargoHeading,
-				["playerCanDrive"] = false,
-			}, -- end of [4]
-			[5] = 
-			{
-				["type"] = Cargo_Type_name,
-				["transportable"] = 
-				{
-					["randomTransportable"] = true,
-				}, -- end of ["transportable"]
-				["unitId"] = SoldierUnitID + 1,
-				["skill"] = "Excellent",
-				["y"] = Cargo_Drop_Position.z + 2.5 + GroupSpacing,
-				["x"] = Cargo_Drop_Position.x + 2.5 + GroupSpacing,
-				["name"] = "Soldier Unit "..SoldierUnitID,
-				["heading"] = CargoHeading,
-				["playerCanDrive"] = false,
-			}, -- end of [5]
-			[6] = 
-			{
-				["type"] = Cargo_Type_name,
-				["transportable"] = 
-				{
-					["randomTransportable"] = true,
-				}, -- end of ["transportable"]
-				["unitId"] = SoldierUnitID + 1,
-				["skill"] = "Excellent",
-				["y"] = Cargo_Drop_Position.z + 3.0 + GroupSpacing,
-				["x"] = Cargo_Drop_Position.x + 3.0 + GroupSpacing,
-				["name"] = "Soldier Unit "..SoldierUnitID,
-				["heading"] = CargoHeading,
-				["playerCanDrive"] = false,
-			}, -- end of [6]
-			[7] = 
-			{
-				["type"] = "Soldier M249",
-				["transportable"] = 
-				{
-					["randomTransportable"] = true,
-				}, -- end of ["transportable"]
-				["unitId"] = SoldierUnitID + 1,
-				["skill"] = "Excellent",
-				["y"] = Cargo_Drop_Position.z + 3.5 + GroupSpacing,
-				["x"] = Cargo_Drop_Position.x + 3.5 + GroupSpacing,
-				["name"] = "Soldier Unit "..SoldierUnitID,
-				["heading"] = CargoHeading,
-				["playerCanDrive"] = false,
-			}, -- end of [7]
-			[8] = 
-			{
-				["type"] = "Soldier M249",
-				["transportable"] = 
-				{
-					["randomTransportable"] = true,
-				}, -- end of ["transportable"]
-				["unitId"] = SoldierUnitID + 1,
-				["skill"] = "Excellent",
-				["y"] = Cargo_Drop_Position.z + 4.0 + GroupSpacing,
-				["x"] = Cargo_Drop_Position.x + 4.0 + GroupSpacing,
-				["name"] = "Soldier Unit "..SoldierUnitID,
-				["heading"] = CargoHeading,
-				["playerCanDrive"] = false,
-			}, -- end of [8]
-			[9] = 
-			{
-				["type"] = Cargo_Type_name,
-				["transportable"] = 
-				{
-					["randomTransportable"] = true,
-				}, -- end of ["transportable"]
-				["unitId"] = SoldierUnitID + 1,
-				["skill"] = "Excellent",
-				["y"] = Cargo_Drop_Position.z + 4.5 + GroupSpacing,
-				["x"] = Cargo_Drop_Position.x + 4.5 + GroupSpacing,
-				["name"] = "Soldier Unit "..SoldierUnitID,
-				["heading"] = CargoHeading,
-				["playerCanDrive"] = false,
-			}, -- end of [9]
-			[10] = 
-			{
-				["type"] = "Paratrooper RPG-16",
-				["transportable"] = 
-				{
-					["randomTransportable"] = true,
-				}, -- end of ["transportable"]
-				["unitId"] = SoldierUnitID + 1,
-				["skill"] = "Excellent",
-				["y"] = Cargo_Drop_Position.z + 5.0 + GroupSpacing,
-				["x"] = Cargo_Drop_Position.x + 5.0 + GroupSpacing,
-				["name"] = "Soldier Unit "..SoldierUnitID,
-				["heading"] = CargoHeading,
-				["playerCanDrive"] = false,
-			}, -- end of [10]
-		}, -- end of ["units"]
-		["y"] = Cargo_Drop_Position.z,
-		["x"] = Cargo_Drop_Position.x,
-		["name"] = "Soldier_Group_"..SoldierGroupID,
-		["start_time"] = 0,
-	}
-	coalition.addGroup(Cargo_Country, Group.Category.GROUND, Herc_Soldier_Spawn)
+-- Zone in which threat will be spawned
+ECS.zoneEcs7769 = ZONE:FindByName("ECS_ZONE_7769")
+
+
+function activateEcsThreat(samTemplate, samZone, activeThreat, isReset)
+
+  -- remove threat selection menu options
+  if not isReset then
+    ECS.menuEscTop:RemoveSubMenus()
+  end
+  
+  -- spawn threat in ECS zone
+  local ecsSpawn = SPAWN:New(samTemplate)
+  ecsSpawn:OnSpawnGroup(
+      function (spawnGroup)
+        MENU_COALITION_COMMAND:New(coalition.side.BLUE, "Deactivate 77-69", ECS.menuEscTop, resetEcsThreat, spawnGroup, ecsSpawn, activeThreat, false)
+        MENU_COALITION_COMMAND:New(coalition.side.BLUE, "Reset 77-69", ECS.menuEscTop, resetEcsThreat, spawnGroup, ecsSpawn, activeThreat, true, samZone)
+        local msg = "All players, EC South is active with " .. activeThreat
+        if MISSIONSRS.Radio then -- if MISSIONSRS radio object has been created, send message via default broadcast.
+          MISSIONSRS:SendRadio(msg)
+        else -- otherwise, send in-game text message
+          MESSAGE:New(msg):ToAll()
+        end
+        --MESSAGE:New("EC South is active with " .. activeThreat):ToAll()
+        ECS.rIADS = SkynetIADS:create("ECSOUTH")
+        ECS.rIADS:setUpdateInterval(5)
+        --ECS.rIADS:addEarlyWarningRadar("GCI2")
+        ECS.rIADS:addSAMSite(spawnGroup.GroupName)
+        ECS.rIADS:getSAMSiteByGroupName(spawnGroup.GroupName):setGoLiveRangeInPercent(80)
+        ECS.rIADS:activate()        
+      end
+      , ECS.menuEscTop, ecsSpawn, activeThreat, samZone --, rangePrefix
+    )
+    :SpawnInZone(samZone, true)
 end
 
-local CargoUnitID = 10000
-local CargoGroupID = 10000
-local CargoStaticGroupID = 11000
+function resetEcsThreat(spawnGroup, ecsSpawn, activeThreat, refreshEcs, samZone)
 
-function Hercules_Cargo.Cargo_SpawnGroup(Cargo_Drop_Position, Cargo_Type_name, CargoHeading, Cargo_Country)
-	CargoUnitID = CargoUnitID + 1
-	CargoGroupID = CargoGroupID + 1
-	local Herc_Cargo_Spawn = 
-	{
-		["visible"] = false,
-		["tasks"] = 
-		{
-		}, -- end of ["tasks"]
-		["uncontrollable"] = false,
-		["task"] = "Ground Nothing",
-		["groupId"] = CargoGroupID,
-		["hidden"] = false,
-		["units"] = 
-		{
-			[1] = 
-			{
-				["type"] = Cargo_Type_name,
-				["transportable"] = 
-				{
-					["randomTransportable"] = false,
-				}, -- end of ["transportable"]
-				["unitId"] = CargoUnitID,
-				["skill"] = "Excellent",
-				["y"] = Cargo_Drop_Position.z,
-				["x"] = Cargo_Drop_Position.x,
-				["name"] = "Cargo Unit "..CargoUnitID,
-				["heading"] = CargoHeading,
-				["playerCanDrive"] = true,
-			}, -- end of [1]
-		}, -- end of ["units"]
-		["y"] = Cargo_Drop_Position.z,
-		["x"] = Cargo_Drop_Position.x,
-		["name"] = "Cargo Group "..CargoUnitID,
-		["start_time"] = 0,
-	}
-	coalition.addGroup(Cargo_Country, Group.Category.GROUND, Herc_Cargo_Spawn)
+  ECS.menuEscTop:RemoveSubMenus()
+  
+  if ECS.rIADS ~= nil then
+    ECS.rIADS:deactivate()
+    ECS.rIADS = nil
+  end
+
+  if spawnGroup:IsAlive() then
+    spawnGroup:Destroy()
+  end
+
+  if refreshEcs then
+    ecsSpawn:SpawnInZone(samZone, true)
+  else
+    addEcsThreatMenu()
+    local msg = "All players, EC South "  .. activeThreat .." has been deactivated."
+    if MISSIONSRS.Radio then -- if MISSIONSRS radio object has been created, send message via default broadcast.
+      MISSIONSRS:SendRadio(msg)
+    else -- otherwise, send in-game text message
+      MESSAGE:New(msg):ToAll()
+    end
+    --MESSAGE:New("EC South "  .. activeThreat .." has been deactived."):ToAll()
+  end    
+
 end
 
-function Hercules_Cargo.Cargo_SpawnStatic(Cargo_Drop_Position, Cargo_Type_name, CargoHeading, dead, Cargo_Country)
-	CargoStaticGroupID = CargoStaticGroupID + 1
-	local Herc_CargoObject_Spawn = 
-	{
-		["type"] = Cargo_Type_name,
-		["y"] = Cargo_Drop_Position.z,
-		["x"] = Cargo_Drop_Position.x,
-		["name"] = "Cargo Static Group "..CargoStaticGroupID,
-		["heading"] = CargoHeading,
-		["dead"] = dead,
-	}
-	coalition.addStaticObject(Cargo_Country, Herc_CargoObject_Spawn)
+function addEcsThreatMenu()
+
+  for i, template in ipairs(ECS.templates) do
+    MENU_COALITION_COMMAND:New(coalition.side.BLUE, "Activate " .. template.threatName, ECS.menuEscTop, activateEcsThreat, template.templateName, ECS.zoneEcs7769, template.threatName)
+  end
+
 end
 
-function Hercules_Cargo.Cargo_SpawnObjects(Cargo_Drop_Direction, Cargo_Content_position, Cargo_Type_name, Cargo_over_water, Container_Enclosed, ParatrooperGroupSpawn, offload_cargo, all_cargo_survive_to_the_ground, all_cargo_gets_destroyed, destroy_cargo_dropped_without_parachute, Cargo_Country)
-	if offload_cargo == true then
-		------------------------------------------------------------------------------
-		if CargoHeading >= 3.14 then
-			CargoHeading = 0
-			Cargo_Drop_Position = {["x"] = Cargo_Content_position.x - (30.0 * math.cos(Cargo_Drop_Direction - 1.0)),
-								   ["z"] = Cargo_Content_position.z - (30.0 * math.sin(Cargo_Drop_Direction - 1.0))}
-		else
-			if CargoHeading >= 1.57 then
-				CargoHeading = 3.14
-				Cargo_Drop_Position = {["x"] = Cargo_Content_position.x - (20.0 * math.cos(Cargo_Drop_Direction + 0.5)),
-									   ["z"] = Cargo_Content_position.z - (20.0 * math.sin(Cargo_Drop_Direction + 0.5))}
-			else
-				if CargoHeading >= 0 then
-					CargoHeading = 1.57
-					Cargo_Drop_Position = {["x"] = Cargo_Content_position.x - (10.0 * math.cos(Cargo_Drop_Direction + 1.5)),
-										   ["z"] = Cargo_Content_position.z - (10.0 * math.sin(Cargo_Drop_Direction + 1.5))}
-				end
-			end
-		end
-		------------------------------------------------------------------------------
-		if ParatrooperGroupSpawn == true then
-			Hercules_Cargo.Soldier_SpawnGroup(Cargo_Drop_Position, Cargo_Type_name, CargoHeading, Cargo_Country, 0)
-			Hercules_Cargo.Soldier_SpawnGroup(Cargo_Drop_Position, Cargo_Type_name, CargoHeading, Cargo_Country, 5)
-			Hercules_Cargo.Soldier_SpawnGroup(Cargo_Drop_Position, Cargo_Type_name, CargoHeading, Cargo_Country, 10)
-		else
-			Hercules_Cargo.Cargo_SpawnGroup(Cargo_Drop_Position, Cargo_Type_name, CargoHeading, Cargo_Country, 0)
-		end
-	else
-		------------------------------------------------------------------------------
-		CargoHeading = 0
-		Cargo_Drop_Position = {["x"] = Cargo_Content_position.x - (20.0 * math.cos(Cargo_Drop_Direction)),
-							   ["z"] = Cargo_Content_position.z - (20.0 * math.cos(Cargo_Drop_Direction))}
-		------------------------------------------------------------------------------
-		if all_cargo_gets_destroyed == true or Cargo_over_water == true then
-			if Container_Enclosed == true then
-				Hercules_Cargo.Cargo_SpawnStatic(Cargo_Drop_Position, Cargo_Type_name, CargoHeading, true, Cargo_Country)
-				if ParatrooperGroupSpawn == false then
-					Hercules_Cargo.Cargo_SpawnStatic(Cargo_Drop_Position, "Hercules_Container_Parachute_Static", CargoHeading, true, Cargo_Country)
-				end
-			else
-				Hercules_Cargo.Cargo_SpawnStatic(Cargo_Drop_Position, Cargo_Type_name, CargoHeading, true, Cargo_Country)
-			end
-		else
-			------------------------------------------------------------------------------
-			if all_cargo_survive_to_the_ground == true then
-				if ParatrooperGroupSpawn == true then
-					Hercules_Cargo.Cargo_SpawnStatic(Cargo_Drop_Position, Cargo_Type_name, CargoHeading, true, Cargo_Country)
-				else
-					Hercules_Cargo.Cargo_SpawnGroup(Cargo_Drop_Position, Cargo_Type_name, CargoHeading, Cargo_Country)
-				end
-				if Container_Enclosed == true then
-					if ParatrooperGroupSpawn == false then
-						Hercules_Cargo.Cargo_SpawnStatic({["z"] = Cargo_Drop_Position.z + 10.0,["x"] = Cargo_Drop_Position.x + 10.0}, "Hercules_Container_Parachute_Static", CargoHeading, false, Cargo_Country)
-					end
-				end
-			end
-			------------------------------------------------------------------------------
-			if destroy_cargo_dropped_without_parachute == true then
-				if Container_Enclosed == true then
-					if ParatrooperGroupSpawn == true then
-						Hercules_Cargo.Soldier_SpawnGroup(Cargo_Drop_Position, Cargo_Type_name, CargoHeading, Cargo_Country, 0)
-					else
-						Hercules_Cargo.Cargo_SpawnGroup(Cargo_Drop_Position, Cargo_Type_name, CargoHeading, Cargo_Country)
-						Hercules_Cargo.Cargo_SpawnStatic({["z"] = Cargo_Drop_Position.z + 10.0,["x"] = Cargo_Drop_Position.x + 10.0}, "Hercules_Container_Parachute_Static", CargoHeading, false, Cargo_Country)
-					end
-				else
-					Hercules_Cargo.Cargo_SpawnStatic(Cargo_Drop_Position, Cargo_Type_name, CargoHeading, true, Cargo_Country)
-				end
-			end
-			------------------------------------------------------------------------------
-		end
-	end
+addEcsThreatMenu()
+
+--- END ELECTRONIC COMBAT SIMULATOR RANGE  
+--------------------------------[bvrgci.lua]-------------------------------- 
+ 
+env.info( "[JTF-1] bvrgci" )
+-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+--- BEGIN BVRGCI SECTION.
+-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+--
+-- Each Menu level has an associated function which;
+-- 1) adds the menu item for the level
+-- 2) calls the function for the next level
+--
+-- Functions fit into the following menu map;
+--
+-- AI BVRGCI (menu root)
+--   |_Group Size (menu level 1)
+--     |_Altitude (menu level 2)
+--       |_Formation (menu level 3)
+--         |_Spacing (menu level 4)
+--           |_Aircraft Type (command level 4) 
+--   |_Remove Adversaries (command level 2)
+
+--- BVRGCI default settings and values.
+-- @type BVRGCI
+-- @field #table Menu root BVRGCI F10 menu
+-- @field #table SubMenu BVRGCI submenus
+-- @field #number headingDefault Default heading for adversary spawns
+-- @field #boolean Destroy When set to true, spawned adversary groups will be removed
+BVRGCI = {
+    Menu            = {},
+    SubMenu         = {},
+    Spawn           = {},
+    headingDefault  = 150,
+    Destroy         = false,
+    defaultRadio = "377.8",
+  }
+   
+BVRGCI.rangeRadio = JTF1.rangeRadio or BVRGCI.defaultRadio
+
+  --- ME Zone object for BVRGCI area boundary
+  -- @field #string ZoneBvr 
+  BVRGCI.ZoneBvr = ZONE:FindByName("ZONE_BVR")
+  --- ME Zone object for adversary spawn point
+  -- @field #string ZoneBvrSpawn 
+  BVRGCI.ZoneBvrSpawn = ZONE:FindByName("ZONE_BVR_SPAWN")
+  --- ME Zone object for adversary spawn waypoint 1
+  -- @field #string ZoneBvrWp1 
+  BVRGCI.ZoneBvrWp1 = ZONE:FindByName("ZONE_BVR_WP1")
+  
+  --- Sizes of adversary groups
+  -- @type BVRGCI.Size
+  -- @field #number Pair Section size group.
+  -- @field #number Four Flight size group.
+  BVRGCI.Size = {
+    Pair = 2,
+    Four = 4,
+  }
+  
+  --- Levels at which adversary groups may be spawned
+  -- @type BVRGCI.Altitude Altitude name, Altitude in metres for adversary spawns.
+  -- @field #number High Altitude, in metres, for High Level spawn.
+  -- @field #number Medium Altitude, in metres, for Medium Level spawns.
+  -- @field #number Low Altitude, in metres, for Low Level spawns.
+  BVRGCI.Altitude = {
+    High    = 9144, -- 30,000ft
+    Medium  = 6096, -- 20,000ft
+    Low     = 3048, -- 10,000ft
+  }
+      
+  --- Adversary types
+  -- @type BVRGCI.Adversary 
+  -- @list <#string> Display name for adversary type.
+  -- @list <#string> Name of spawn template for adversary type.
+  BVRGCI.Adversary = { 
+    {"F-4", "BVR_F4"},
+    {"F-14A", "BVR_F14A" },
+    {"MiG-21", "BVR_MIG21"},
+    {"MiG-23", "BVR_MIG23"},
+    {"MiG-29A", "BVR_MIG29A"},
+    {"Su-25", "BVR_SU25"},
+    {"Su-34", "BVR_SU34"},
+  }
+  
+  -- @field #table BVRGCI.BvrSpawnVec3 Vec3 coordinates for spawnpoint.
+  BVRGCI.BvrSpawnVec3 = COORDINATE:NewFromVec3(BVRGCI.ZoneBvrSpawn:GetPointVec3())
+  -- @field #table BvrWp1Vec3 Vec3 coordintates for wp1.
+  BVRGCI.BvrWp1Vec3 = COORDINATE:NewFromVec3(BVRGCI.ZoneBvrWp1:GetPointVec3())
+  -- @field #number Heading Heading from spawn point to wp1.
+  BVRGCI.Heading = COORDINATE:GetAngleDegrees(BVRGCI.BvrSpawnVec3:GetDirectionVec3(BVRGCI.BvrWp1Vec3))
+  
+  --- Spawn adversary aircraft with menu tree selected parameters.
+  -- @param #string typeName Aircraft type name
+  -- @param #string typeSpawnTemplate Airctraft type spawn template
+  -- @param #number Qty Quantity to spawn
+  -- @param #number Altitude Alititude at which to spawn adversary group
+  -- @param #number Formation ID for Formation, and spacing, in which to spawn adversary group
+  function BVRGCI.SpawnType(typeName, typeSpawnTemplate, Qty, Altitude, Formation) 
+    local spawnHeading = BVRGCI.Heading
+    local spawnVec3 = BVRGCI.BvrSpawnVec3
+    spawnVec3.y = Altitude
+    local spawnAdversary = SPAWN:New(typeSpawnTemplate)
+    spawnAdversary:InitGrouping(Qty) 
+    spawnAdversary:InitHeading(spawnHeading)
+    spawnAdversary:OnSpawnGroup(
+        function ( SpawnGroup, Formation, typeName )
+          -- reset despawn flag
+          BVRGCI.Destroy = false
+          -- set formation for spawned AC
+          SpawnGroup:SetOption(AI.Option.Air.id.FORMATION, Formation)
+          -- add scheduled funtion, 5 sec interval
+          local CheckAdversary = SCHEDULER:New( SpawnGroup, 
+            function (CheckAdversary)
+              if SpawnGroup then
+                -- remove adversary group if it has left the BVR/GCI zone, or the remove all adversaries menu option has been selected
+                if (SpawnGroup:IsNotInZone(BVRGCI.ZoneBvr) or (BVRGCI.Destroy)) then 
+                  local groupName = SpawnGroup.GroupName
+                  local msgDestroy = "All players, BVR adversary group " .. groupName .. " removed."
+                  local msgLeftZone = "All players, BVR adversary group " .. groupName .. " left zone and was removed."
+                  SpawnGroup:Destroy()
+                  SpawnGroup = nil
+                  local msg = (BVRGCI.Destroy and msgDestroy or msgLeftZone)
+                  if MISSIONSRS.Radio then -- if MISSIONSRS radio object has been created, send message via default broadcast.
+                    MISSIONSRS:SendRadio(msg, BVRGCI.rangeRadio)
+                  else -- otherwise, send in-game text message
+                    MESSAGE:New(msg):ToAll()
+                  end
+                  --MESSAGE:New(BVRGCI.Destroy and msgDestroy or msgLeftZone):ToAll()
+                end
+              end
+            end,
+          {}, 0, 5 )
+        end,
+        Formation, typeName
+      )
+    spawnAdversary:SpawnFromVec3(spawnVec3)
+    local msg = "All players, BVR Adversary group spawned."
+    if MISSIONSRS.Radio then -- if MISSIONSRS radio object has been created, send message via default broadcast.
+      MISSIONSRS:SendRadio(msg, BVRGCI.rangeRadio)
+    else -- otherwise, send in-game text message
+      MESSAGE:New(msg):ToAll()
+    end
+    --MESSAGE:New(_msg):ToAll()
+  end
+  
+  --- Remove all spawned BVRGCI adversaries
+  function BVRGCI.RemoveAdversaries()
+    BVRGCI.Destroy = true
+  end
+  
+  --- Add BVR/GCI MENU Adversary Type.
+  -- @param #table ParentMenu Parent menu with which each command should be associated.
+  function BVRGCI.BuildMenuType(ParentMenu)
+    for i, v in ipairs(BVRGCI.Adversary) do
+      local typeName = v[1]
+      local typeSpawnTemplate = v[2]
+      -- add Type spawn commands if spawn template exists, else send message that it doesn't
+      if GROUP:FindByName(typeSpawnTemplate) ~= nil then
+          MENU_COALITION_COMMAND:New(coalition.side.BLUE, typeName, ParentMenu, BVRGCI.SpawnType, typeName, typeSpawnTemplate, BVRGCI.Spawn.Qty, BVRGCI.Spawn.Level, ENUMS.Formation.FixedWing[BVRGCI.Spawn.Formation][BVRGCI.Spawn.Spacing])
+      else
+        _msg = "Spawn template " .. typeName .. " was not found and could not be added to menu."
+        MESSAGE:New(_msg):ToAll()
+      end
+    end
+  end
+  
+  --- Add BVR/GCI MENU Formation Spacing.
+  -- @param #string Spacing Spacing to apply to adversary group formation.
+  -- @param #string MenuText Text to display for menu option.
+  -- @param #object ParentMenu Parent menu with which this menu should be associated.
+  function BVRGCI.BuildMenuSpacing(Spacing, ParentMenu)
+    local MenuName = Spacing
+    local MenuText = Spacing
+    BVRGCI.SubMenu[MenuName] = MENU_COALITION:New(coalition.side.BLUE, MenuText, ParentMenu)
+    BVRGCI.Spawn.Spacing = Spacing
+    -- Build Type menus
+    BVRGCI.BuildMenuType(BVRGCI.SubMenu[MenuName])
+  end
+  
+  --- Add BVR/GCI MENU Formation.
+  -- @param #string Formation Name of formation in which adversary group should fly.
+  -- @param #string MenuText Text to display for menu option.
+  -- @param #object ParentMenu Parent menu with which this menus should be associated.
+  function BVRGCI.BuildMenuFormation(Formation, MenuText, ParentMenu)
+    local MenuName = Formation
+    BVRGCI.SubMenu[MenuName] = MENU_COALITION:New(coalition.side.BLUE, MenuText, ParentMenu)
+    BVRGCI.Spawn.Formation = Formation
+    -- Build formation spacing menus
+    BVRGCI.BuildMenuSpacing("Open", BVRGCI.SubMenu[MenuName])
+    BVRGCI.BuildMenuSpacing("Close", BVRGCI.SubMenu[MenuName])
+    BVRGCI.BuildMenuSpacing("Group", BVRGCI.SubMenu[MenuName])
+  end
+  
+  --- Add BVR/GCI MENU Level.
+  -- @param #number Altitude Altitude, in metres, at which to adversary group should spawn
+  -- @param #string MenuName Text for this item's menu name
+  -- 
+  function BVRGCI.BuildMenuLevel(Altitude, MenuName, MenuText, ParentMenu)
+    BVRGCI.SubMenu[MenuName] = MENU_COALITION:New(coalition.side.BLUE, MenuText, ParentMenu)
+    BVRGCI.Spawn.Level = Altitude
+    --Build Formation menus
+    BVRGCI.BuildMenuFormation("LineAbreast", "Line Abreast", BVRGCI.SubMenu[MenuName])
+    BVRGCI.BuildMenuFormation("Trail", "Trail", BVRGCI.SubMenu[MenuName])
+    BVRGCI.BuildMenuFormation("Wedge", "Wedge", BVRGCI.SubMenu[MenuName])
+    BVRGCI.BuildMenuFormation("EchelonRight", "Echelon Right", BVRGCI.SubMenu[MenuName])
+    BVRGCI.BuildMenuFormation("EchelonLeft", "Echelon Left", BVRGCI.SubMenu[MenuName])
+    BVRGCI.BuildMenuFormation("FingerFour", "Finger Four", BVRGCI.SubMenu[MenuName])
+    BVRGCI.BuildMenuFormation("Spread", "Spread", BVRGCI.SubMenu[MenuName])
+    BVRGCI.BuildMenuFormation("BomberElement", "Diamond", BVRGCI.SubMenu[MenuName])
+  end
+  
+  --- Add BVR/GCI MENU Group Size.
+  -- @param #number Qty Quantity of aircraft in enemy flight.
+  -- @param #string MenuName Text for this item's menu name
+  -- @param #object ParentMenu to which this menu item belongs 
+  function BVRGCI.BuildMenuQty(Qty, MenuName, ParentMenu)
+    MenuText = MenuName
+    BVRGCI.SubMenu[MenuName] = MENU_COALITION:New(coalition.side.BLUE, MenuText, ParentMenu)
+    BVRGCI.Spawn.Qty = Qty
+    -- Build Level menus
+    BVRGCI.BuildMenuLevel(BVRGCI.Altitude.High, "High", "High Level",  BVRGCI.SubMenu[MenuName])
+    BVRGCI.BuildMenuLevel(BVRGCI.Altitude.Medium, "Medium", "Medium Level",  BVRGCI.SubMenu[MenuName])
+    BVRGCI.BuildMenuLevel(BVRGCI.Altitude.Low, "Low", "Low Level",  BVRGCI.SubMenu[MenuName])
+  end
+
+  
+  
+  --- Add BVRGCI MENU Root.
+  function BVRGCI.BuildMenuRoot()
+    BVRGCI.Menu = MENU_COALITION:New(coalition.side.BLUE, "AI BVR/GCI")
+      -- Build group size menus
+      BVRGCI.BuildMenuQty(2, "Pair", BVRGCI.Menu)
+      BVRGCI.BuildMenuQty(4, "Four", BVRGCI.Menu)
+      -- level 2 command
+      BVRGCI.MenuRemoveAdversaries = MENU_COALITION_COMMAND:New(coalition.side.BLUE, "Remove BVR Adversaries", BVRGCI.Menu, BVRGCI.RemoveAdversaries)
+  end
+  
+  BVRGCI.BuildMenuRoot()
+  
+--- END BVRGCI SECTION  
+--------------------------------[missionsrs_data.lua]-------------------------------- 
+ 
+env.info( "[JTF-1] missionsrs_data" )
+-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+--- MISSION TIMER SETTINGS FOR MIZ
+-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+--
+-- This file MUST be loaded AFTER missionsrs.lua
+--
+-- These values are specific to the miz and will override the default values in MISSIONSRS.default
+--
+
+-- Error prevention. Create empty container if module core lua not loaded.
+if not MISSIONSRS then 
+	_msg = "[JTF-1 MISSIONSRS] CORE FILE NOT LOADED!"
+	BASE:E(_msg)
+	MISSIONSRS = {}
 end
 
-function Hercules_Cargo.Calculate_Object_Height_AGL(object)
-	return object:getPosition().p.y - land.getHeight({x = object:getPosition().p.x, y = object:getPosition().p.z})
+-- table of values for missionsrs to use this miz. Overrides default values.
+-- MISSIONSRS.srsPath = "C:/Program Files/DCS-SimpleRadio-Standalone" -- default path to SRS install directory if setting file is not avaialable "C:/Program Files/DCS-SimpleRadio-Standalone"
+-- MISSIONSRS.srsPort = 5002                                          -- default SRS port to use if settings file is not available
+-- MISSIONSRS.msg = "No Message Defined!"                             -- default message if text is nil
+MISSIONSRS.freqs = "243,251,327,377.8,30"                          -- transmit on guard, CTAF, NTTR TWR, NTTR BLACKJACK and 30FM as default frequencies
+-- MISSIONSRS.modulations = "AM,AM,AM,AM,FM"                          -- default modulation (count *must* match qty of freqs)
+-- MISSIONSRS.vol = "1.0"                                             -- default to full volume
+-- MISSIONSRS.name = "Server"                                         -- default to server as sender
+-- MISSIONSRS.coalition = 0                                           -- default to spectators
+-- MISSIONSRS.vec3 = nil                                              -- point from which transmission originates
+-- MISSIONSRS.speed = 2                                               -- speed at which message should be played
+-- MISSIONSRS.gender = "female"                                       -- default gender of sender
+-- MISSIONSRS.culture = "en-US"                                       -- default culture of sender
+-- MISSIONSRS.voice = ""                                              -- default voice to use
+
+if MISSIONSRS.Start then
+	MISSIONSRS:Start()
+end  
+--------------------------------[adminmenu_data.lua]-------------------------------- 
+ 
+env.info( "[JTF-1] adminmenu_data" )
+
+--- MISSION ADMIN MENU SETTINGS FOR MIZ
+--
+-- This file MUST be loaded AFTER adminmenu.lua
+--
+-- These values are specific to the miz and will override the default values in ADMIN
+--
+
+-- Error prevention. Create empty container if module core lua not loaded.
+if not ADMIN then 
+	ADMIN = {}
+	ADMIN.traceTitle = "[JTF-1 ADMIN] "
+	_msg = ADMIN.traceTitle .. "CORE FILE NOT LOADED!"
+	BASE:E(_msg)
 end
 
-function Hercules_Cargo.Check_SurfaceType(object)
-   -- LAND,--1 SHALLOW_WATER,--2 WATER,--3 ROAD,--4 RUNWAY--5
-	return land.getSurfaceType({x = object:getPosition().p.x, y = object:getPosition().p.z})
+-- table of values to override default ADMIN values for this miz
+ADMIN.menuAllSlots = false
+ADMIN.jtfmenu = false
+
+-- start the mission timer
+if ADMIN.Start then
+	_msg = ADMIN.traceTitle .. "Call Start()"
+	BASE:T(_msg)
+	ADMIN:Start()  
+end
+  
+--------------------------------[missiontimer_data.lua]-------------------------------- 
+ 
+env.info( "[JTF-1] missiontimer_data" )
+-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+--- MISSION TIMER SETTINGS FOR MIZ
+-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+--
+-- This file MUST be loaded AFTER missiontimer.lua
+--
+-- These values are specific to the miz and will override the default values in missiontimer.lua
+--
+
+-- Error prevention. Create empty container if module core lua not loaded.
+if not MISSIONTIMER then 
+	_msg = "[JTF-1 MISSIONTIMER] CORE FILE NOT LOADED!"
+	BASE:E(_msg)
+	MISSIONTIMER = {}
 end
 
-function Hercules_Cargo.Cargo_Track(Arg, time)
-	local status, result = pcall(
-		function()
-		local next = next
-		if next(Arg[1].Cargo_Contents) ~= nil then
-			if Hercules_Cargo.Calculate_Object_Height_AGL(Arg[1].Cargo_Contents) < 5.0 then--pallet less than 5m above ground before spawning
-				if Hercules_Cargo.Check_SurfaceType(Arg[1].Cargo_Contents) == 2 or Hercules_Cargo.Check_SurfaceType(Arg[1].Cargo_Contents) == 3 then
-					Arg[1].Cargo_over_water = true--pallets gets destroyed in water
-				end
-				Arg[1].Cargo_Contents:destroy()--remove pallet+parachute before hitting ground and replace with Cargo_SpawnContents
-				Hercules_Cargo.Cargo_SpawnObjects(Arg[1].Cargo_Drop_Direction, Object.getPoint(Arg[1].Cargo_Contents), Arg[1].Cargo_Type_name, Arg[1].Cargo_over_water, Arg[1].Container_Enclosed, Arg[1].ParatrooperGroupSpawn, Arg[1].offload_cargo, Arg[1].all_cargo_survive_to_the_ground, Arg[1].all_cargo_gets_destroyed, Arg[1].destroy_cargo_dropped_without_parachute, Arg[1].Cargo_Country)
-				timer.removeFunction(Arg[1].scheduleFunctionID)
-				Arg[1] = {}
-			end
-			return time + 0.1
-		end
-	end) -- pcall
-	if not status then
-		-- env.error(string.format("Cargo_Spawn: %s", result))
-	else
-		return result
-	end
+-- table of values for timer shedule in this miz
+MISSIONTIMER.durationHrs = 11 -- Mission run time in HOURS. Default 24
+--MISSIONTIMER.msgSchedule = {60, 30, 10, 5} -- Schedule for mission restart warning messages prior to the mission restart. Time in minutes. Default {60, 30, 10, 5}
+--MISSIONTIMER.restartDelay =  4 -- time in minutes to delay restart if active clients are present. Dewfault 10.
+--MISSIONTIMER.useSRS = true -- set to false to disable use of SRS for this module in this miz
+
+-- start the mission timer
+if MISSIONTIMER.Start then
+	MISSIONTIMER:Start()  
+end
+  
+--------------------------------[supportaircraft_data.lua]-------------------------------- 
+ 
+env.info( "[JTF-1] supportaircraft_data" )
+--------------------------------------------
+--- Support Aircraft Defined in this file
+--------------------------------------------
+--
+-- **NOTE**: SUPPORTAIRCRAFT.LUA MUST BE LOADED BEFORE THIS FILE IS LOADED!
+--
+-- This file contains the config data specific to the miz in which it will be used.
+-- All functions and key values are in SUPPORTAIRCRAFT.LUA, which should be loaded first
+--
+-- Load order in miz MUST be;
+--     1. supportaircraft.lua
+--     2. supportaircraft_data.lua
+--
+
+-- Error prevention. Create empty container if SUPPORTAIRCRAFT.LUA is not loaded or has failed.
+if not SUPPORTAC then 
+  _msg = "[JTF-1 SUPPORTAC] CORE FILE NOT LOADED!"
+  BASE:E(_msg)
+  SUPPORTAC = {}
 end
 
-function Hercules_Cargo.Calculate_Cargo_Drop_initiator_NorthCorrection(point)	--correction needed for true north
-	if not point.z then --Vec2; convert to Vec3
-		point.z = point.y
-		point.y = 0
-	end
-	local lat, lon = coord.LOtoLL(point)
-	local north_posit = coord.LLtoLO(lat + 1, lon)
-	return math.atan2(north_posit.z - point.z, north_posit.x - point.x)
+SUPPORTAC.useSRS = true
+
+-- Support aircraft missions. Each mission block defines a support aircraft mission. Each block is processed
+-- and an aircraft will be spawned for the mission. When the mission is cancelled, eg after RTB or if it is destroyed,
+-- a new aircraft will be spawned and a fresh AUFTRAG created.
+SUPPORTAC.mission = {
+    -- {
+    --   name = "ARWK", -- text name for this support mission. Combined with this block's index and the mission type to define the group name on F10 map
+    --   category = SUPPORTAC.category.tanker, -- support mission category. Used to determine the auftrag type. Options are listed in SUPPORTAC.category
+    --   type = SUPPORTAC.type.tankerBoom, -- type defines the spawn template that will be used
+    --   zone = "ARWK", -- ME zone that defines the start waypoint for the spawned aircraft
+    --   callsign = CALLSIGN.Tanker.Arco, -- callsign under which the aircraft will operate
+    --   callsignNumber = 1, -- primary callsign number that will be used for the aircraft
+    --   tacan = 35, -- TACAN channel the ac will use
+    --   tacanid = "ARC", -- TACAN ID the ac will use. Also used for the morse ID
+    --   radio = 276.5, -- freq the ac will use when on mission
+    --   flightLevel = 160, -- flight level at which to spwqan aircraft and at which track will be flown
+    --   speed = 315, -- IAS when on mission
+    --   heading = 94, -- mission outbound leg in degrees
+    --   leg = 40, -- mission leg length in NM
+    --   fuelLowThreshold = 30, -- lowest fuel threshold at which RTB is triggered
+    --   activateDelay = 5, -- delay, after this aircraft has been despawned, before new aircraft is spawned
+    --   despawnDelay = 10, -- delay before this aircraft is despawned
+    -- },
+    {
+    name = "AR641A", -- text name for this support mission. Combined with this block's index and the mission type to define the group name on F10 map
+    category = SUPPORTAC.category.tanker, -- support mission category. Used to determine the auftrag type. Options are listed in SUPPORTAC.categories
+    type =  SUPPORTAC.type.tankerBoom, --"KC-135-TEX1", --SUPPORTAC.type.tankerBoom, -- type defines the spawn template that will be used
+    zone = "AR641A", -- ME zone that defines the start waypoint for the spawned aircraft
+    callsign = CALLSIGN.Tanker.Texaco, -- callsign under which the aircraft will operate
+    callsignNumber = 1, -- primary callsign number that will be used for the aircraft
+    tacan = 31, -- TACAN channel the ac will use
+    tacanid = "TEX", -- TACAN ID the ac will use. Also used for the morse ID
+    radio = 295.4, -- freq the ac will use when on mission
+    flightLevel = 240,
+    speed = 315, -- IAS when on mission
+    heading = 71, -- mission outbound leg in degrees
+    leg = 30, -- mission leg length in NM
+  },
+  {
+    name = "AR641A",
+    category = SUPPORTAC.category.tanker,
+    type = SUPPORTAC.type.tankerProbe,--"KC-135MPRS-SHL1", --
+    zone = "AR641A",
+    callsign = CALLSIGN.Tanker.Shell,
+    callsignNumber = 1,
+    tacan = 35,
+    tacanid = "SHL",
+    radio = 276.1,
+    flightLevel = 200,
+    speed = 315,
+    heading = 71,
+    leg = 30,
+  },
+  {
+    name = "AR635",
+    category = SUPPORTAC.category.tanker,
+    type = SUPPORTAC.type.tankerBoom,--"KC-135-TEX2", --
+    zone = "AR635",
+    callsign = CALLSIGN.Tanker.Texaco,
+    callsignNumber = 2,
+    tacan = 52,
+    tacanid = "TEX",
+    radio = 352.6,
+    flightLevel = 240,
+    speed = 315,
+    heading = 92,
+    leg = 50,
+  },
+  {
+    name = "AR635",
+    category = SUPPORTAC.category.tanker,
+    type = SUPPORTAC.type.tankerProbe,--"KC-135MPRS-SHL2", -- 
+    zone = "AR635",
+    callsign = CALLSIGN.Tanker.Shell,
+    callsignNumber = 2,
+    tacan = 34,
+    tacanid = "SHL",
+    radio = 317.775,
+    flightLevel = 200,
+    speed = 315,
+    heading = 92,
+    leg = 50,
+  },
+  {
+    name = "AR230V",
+    category = SUPPORTAC.category.tanker,
+    type =  SUPPORTAC.type.tankerBoom,--"KC-135-ARC1", --
+    zone = "AR230V",
+    callsign = CALLSIGN.Tanker.Arco,
+    callsignNumber = 1,
+    tacan = 30,
+    tacanid = "ARC",
+    radio = 343.6,
+    flightLevel = 150,
+    speed = 215,
+    heading = 41,
+    leg = 30,
+  },
+  {
+    name = "AR230V",
+    category = SUPPORTAC.category.tanker,
+    type = SUPPORTAC.type.tankerProbeC130,--"KC-130-ARC3", --
+    zone = "AR230V",
+    callsign = CALLSIGN.Tanker.Arco,
+    callsignNumber = 3,
+    tacan = 29,
+    tacanid = "ARC",
+    radio = 323.2,
+    flightLevel = 100,
+    speed = 315,
+    heading = 41,
+    leg = 30,
+  },
+  {
+    name = "ARLNS",
+    category = SUPPORTAC.category.tanker,
+    type = SUPPORTAC.type.tankerBoom,--"KC-135-TEX3", --
+    zone = "ARLNS",
+    callsign = CALLSIGN.Tanker.Texaco,
+    callsignNumber = 3,
+    tacan = 51,
+    tacanid = "TEX",
+    radio = 324.05,
+    flightLevel = 240,
+    speed = 315,
+    heading = 331,
+    leg = 20,
+  },
+  {
+    name = "ARLNS",
+    category = SUPPORTAC.category.tanker,
+    type = SUPPORTAC.type.tankerProbe,--"KC-135MPRS-SHL3", --
+    zone = "ARLNS",
+    callsign = CALLSIGN.Tanker.Shell,
+    callsignNumber = 3,
+    tacan = 33,
+    tacanid = "SHL",
+    radio = 319.8,
+    flightLevel = 200,
+    speed = 315,
+    heading = 331,
+    leg = 20,
+  },
+  {
+    name = "AWACSEAST",
+    category = SUPPORTAC.category.awacs,
+    type = SUPPORTAC.type.awacsE3a,--"AWACS-E3A-DR1", --
+    zone = "AWACS-EAST",
+    callsign = CALLSIGN.AWACS.Darkstar,
+    callsignNumber = 1,
+    tacan = nil,
+    tacanid = nil,
+    radio = 282.025,
+    flightLevel = 300,
+    speed = 400,
+    heading = 210,
+    leg = 43,
+    activateDelay = 5,
+    despawnDelay = 10,
+    fuelLowThreshold = 15,
+  },
+}
+
+-- call the function that initialises the SUPPORTAC module
+if SUPPORTAC.Start ~= nil then
+  _msg = "[JTF-1 SUPPORTAC] SUPPORTAIRCRAFT_DATA - call SUPPORTAC:Start()."
+  BASE:I(_msg)
+  SUPPORTAC:Start()
 end
-
-function Hercules_Cargo.Calculate_Cargo_Drop_initiator_Heading(Cargo_Drop_initiator)
-	local Heading = math.atan2(Cargo_Drop_initiator:getPosition().x.z, Cargo_Drop_initiator:getPosition().x.x)
-	Heading = Heading + Hercules_Cargo.Calculate_Cargo_Drop_initiator_NorthCorrection(Cargo_Drop_initiator:getPosition().p)
-	if Heading < 0 then
-		Heading = Heading + (2 * math.pi)-- put heading in range of 0 to 2*pi
-	end
-	return Heading + 0.06 -- rad
-end
-
-function Hercules_Cargo.Cargo_Initialize(initiator, Cargo_Contents, Cargo_Type_name, Container_Enclosed)
-	local status, result = pcall(
-		function()
-		Cargo_Drop_initiator = Unit.getByName(initiator:getName())
-		local next = next
-		if next(Cargo_Drop_initiator) ~= nil then
-			if ParatrooperGroupSpawnInit == true then
-				if (ParatrooperCount == 1 or ParatrooperCount == 2 or ParatrooperCount == 3) then
-					Herc_j = Herc_j + 1
-					Herc_Cargo[Herc_j] = {}
-					Herc_Cargo[Herc_j].Cargo_Drop_Direction = Hercules_Cargo.Calculate_Cargo_Drop_initiator_Heading(Cargo_Drop_initiator)
-					Herc_Cargo[Herc_j].Cargo_Contents = Cargo_Contents
-					Herc_Cargo[Herc_j].Cargo_Type_name = Cargo_Type_name
-					Herc_Cargo[Herc_j].Container_Enclosed = Container_Enclosed
-					Herc_Cargo[Herc_j].ParatrooperGroupSpawn = ParatrooperGroupSpawnInit
-					Herc_Cargo[Herc_j].Cargo_Country = initiator:getCountry()
-				------------------------------------------------------------------------------
-					if Hercules_Cargo.Calculate_Object_Height_AGL(Cargo_Drop_initiator) < 5.0 then--aircraft on ground
-						Herc_Cargo[Herc_j].offload_cargo = true
-						ParatrooperCount = 0
-						ParatrooperGroupSpawnInit = false
-					else
-				------------------------------------------------------------------------------
-						if Hercules_Cargo.Calculate_Object_Height_AGL(Cargo_Drop_initiator) < 10.0 then--aircraft less than 10m above ground
-							Herc_Cargo[Herc_j].all_cargo_survive_to_the_ground = true
-						else
-				------------------------------------------------------------------------------
-							if Hercules_Cargo.Calculate_Object_Height_AGL(Cargo_Drop_initiator) < 152.4 then--aircraft more than 30ft but less than 500ft above ground
-								Herc_Cargo[Herc_j].all_cargo_gets_destroyed = true
-							else
-				------------------------------------------------------------------------------
-								Herc_Cargo[Herc_j].destroy_cargo_dropped_without_parachute = true--aircraft more than 152.4m (500ft)above ground
-							end
-						end
-					end
-				------------------------------------------------------------------------------
-					Herc_Cargo[Herc_j].scheduleFunctionID = timer.scheduleFunction(Hercules_Cargo.Cargo_Track, {Herc_Cargo[Herc_j]}, timer.getTime() + 0.1)
-					ParatrooperCount = ParatrooperCount + 1.0
-				else
-					if (ParatrooperCount == 30) then
-						ParatrooperGroupSpawnInit = false
-						ParatrooperCount = 1
-					else
-						ParatrooperCount = ParatrooperCount + 1.0
-					end
-				end
-			else
-				Herc_j = Herc_j + 1
-				Herc_Cargo[Herc_j] = {}
-				Herc_Cargo[Herc_j].Cargo_Drop_Direction = Hercules_Cargo.Calculate_Cargo_Drop_initiator_Heading(Cargo_Drop_initiator)
-				Herc_Cargo[Herc_j].Cargo_Contents = Cargo_Contents
-				Herc_Cargo[Herc_j].Cargo_Type_name = Cargo_Type_name
-				Herc_Cargo[Herc_j].Container_Enclosed = Container_Enclosed
-				Herc_Cargo[Herc_j].ParatrooperGroupSpawn = ParatrooperGroupSpawnInit
-				Herc_Cargo[Herc_j].Cargo_Country = initiator:getCountry()
-			------------------------------------------------------------------------------
-				if Hercules_Cargo.Calculate_Object_Height_AGL(Cargo_Drop_initiator) < 5.0 then--aircraft on ground
-					Herc_Cargo[Herc_j].offload_cargo = true
-				else
-			------------------------------------------------------------------------------
-					if Hercules_Cargo.Calculate_Object_Height_AGL(Cargo_Drop_initiator) < 10.0 then--aircraft less than 10m above ground
-						Herc_Cargo[Herc_j].all_cargo_survive_to_the_ground = true
-					else
-			------------------------------------------------------------------------------
-						if Hercules_Cargo.Calculate_Object_Height_AGL(Cargo_Drop_initiator) < 100.0 then--aircraft more than 10m but less than 100m above ground
-							Herc_Cargo[Herc_j].all_cargo_gets_destroyed = true
-						else
-			------------------------------------------------------------------------------
-							Herc_Cargo[Herc_j].destroy_cargo_dropped_without_parachute = true--aircraft more than 100m above ground
-						end
-					end
-				end
-			------------------------------------------------------------------------------
-				Herc_Cargo[Herc_j].scheduleFunctionID = timer.scheduleFunction(Hercules_Cargo.Cargo_Track, {Herc_Cargo[Herc_j]}, timer.getTime() + 0.1)
-			end
-		end
-	end) -- pcall
-	if not status then
-		-- env.error(string.format("Cargo_Initialize: %s", result))
-	else
-		return result
-	end
-end
-
-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-	-- EventHandlers
-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-function Hercules_Cargo.Hercules_Cargo_Drop_Events:onEvent(Cargo_Drop_Event)
-	if Cargo_Drop_Event.id == world.event.S_EVENT_SHOT then
-		GT_DisplayName = Weapon.getDesc(Cargo_Drop_Event.weapon).typeName:sub(15, -1)--Remove "weapons.bombs." from string
-		 -- trigger.action.outTextForCoalition(coalition.side.BLUE, string.format("Cargo_Drop_Event: %s", Weapon.getDesc(Cargo_Drop_Event.weapon).typeName), 10)
-		 -- trigger.action.outTextForCoalition(coalition.side.RED, string.format("Cargo_Drop_Event: %s", Weapon.getDesc(Cargo_Drop_Event.weapon).typeName), 10)
-			 ---------------------------------------------------------------------------------------------------------------------------------
-			if (GT_DisplayName == "Squad 30 x Soldier [7950lb]") then
-				GT_Name = "Soldier M4 GRG"
-				SoldierGroup = true
-				ParatrooperGroupSpawnInit = true
-				Hercules_Cargo.Cargo_Initialize(Cargo_Drop_Event.initiator, Cargo_Drop_Event.weapon, GT_Name, SoldierGroup)
-			end
-			 ---------------------------------------------------------------------------------------------------------------------------------
-			if Hercules_Cargo.types[GT_DisplayName] then
-				local GT_Name = Hercules_Cargo.types[GT_DisplayName]['name']
-				local Cargo_Container_Enclosed = Hercules_Cargo.types[GT_DisplayName]['container']
-				Hercules_Cargo.Cargo_Initialize(Cargo_Drop_Event.initiator, Cargo_Drop_Event.weapon, GT_Name, Cargo_Container_Enclosed)
-			end
-	end
-end
-world.addEventHandler(Hercules_Cargo.Hercules_Cargo_Drop_Events)
-
--- trigger.action.outTextForCoalition(coalition.side.BLUE, string.format("Cargo_Drop_Event.weapon: %s", Weapon.getDesc(Cargo_Drop_Event.weapon).typeName), 10)
--- trigger.action.outTextForCoalition(coalition.side.BLUE, tostring('Calculate_Object_Height_AGL: ' .. aaaaa), 10)
--- trigger.action.outTextForCoalition(coalition.side.BLUE, string.format("Speed: %.2f", Calculate_Object_Speed(Cargo_Drop_initiator)), 10)
--- trigger.action.outTextForCoalition(coalition.side.BLUE, string.format("Russian Interceptor Patrol scrambled from Nalchik"), 10)
-
--- function basicSerialize(var)
-	-- if var == nil then
-		-- return "\"\""
-	-- else
-		-- if ((type(var) == 'number') or
-				-- (type(var) == 'boolean') or
-				-- (type(var) == 'function') or
-				-- (type(var) == 'table') or
-				-- (type(var) == 'userdata') ) then
-			-- return tostring(var)
-		-- else
-			-- if type(var) == 'string' then
-				-- var = string.format('%q', var)
-				-- return var
-			-- end
-		-- end
-	-- end
--- end
-	
--- function tableShow(tbl, loc, indent, tableshow_tbls) --based on serialize_slmod, this is a _G serialization
-	-- tableshow_tbls = tableshow_tbls or {} --create table of tables
-	-- loc = loc or ""
-	-- indent = indent or ""
-	-- if type(tbl) == 'table' then --function only works for tables!
-		-- tableshow_tbls[tbl] = loc
-		-- local tbl_str = {}
-		-- tbl_str[#tbl_str + 1] = indent .. '{\n'
-		-- for ind,val in pairs(tbl) do -- serialize its fields
-			-- if type(ind) == "number" then
-				-- tbl_str[#tbl_str + 1] = indent
-				-- tbl_str[#tbl_str + 1] = loc .. '['
-				-- tbl_str[#tbl_str + 1] = tostring(ind)
-				-- tbl_str[#tbl_str + 1] = '] = '
-			-- else
-				-- tbl_str[#tbl_str + 1] = indent
-				-- tbl_str[#tbl_str + 1] = loc .. '['
-				-- tbl_str[#tbl_str + 1] = basicSerialize(ind)
-				-- tbl_str[#tbl_str + 1] = '] = '
-			-- end
-			-- if ((type(val) == 'number') or (type(val) == 'boolean')) then
-				-- tbl_str[#tbl_str + 1] = tostring(val)
-				-- tbl_str[#tbl_str + 1] = ',\n'
-			-- elseif type(val) == 'string' then
-				-- tbl_str[#tbl_str + 1] = basicSerialize(val)
-				-- tbl_str[#tbl_str + 1] = ',\n'
-			-- elseif type(val) == 'nil' then -- won't ever happen, right?
-				-- tbl_str[#tbl_str + 1] = 'nil,\n'
-			-- elseif type(val) == 'table' then
-				-- if tableshow_tbls[val] then
-					-- tbl_str[#tbl_str + 1] = tostring(val) .. ' already defined: ' .. tableshow_tbls[val] .. ',\n'
-				-- else
-					-- tableshow_tbls[val] = loc ..	'[' .. basicSerialize(ind) .. ']'
-					-- tbl_str[#tbl_str + 1] = tostring(val) .. ' '
-					-- tbl_str[#tbl_str + 1] = tableShow(val,	loc .. '[' .. basicSerialize(ind).. ']', indent .. '		', tableshow_tbls)
-					-- tbl_str[#tbl_str + 1] = ',\n'
-				-- end
-			-- elseif type(val) == 'function' then
-				-- if debug and debug.getinfo then
-					-- local fcnname = tostring(val)
-					-- local info = debug.getinfo(val, "S")
-					-- if info.what == "C" then
-						-- tbl_str[#tbl_str + 1] = string.format('%q', fcnname .. ', C function') .. ',\n'
-					-- else
-						-- if (string.sub(info.source, 1, 2) == [[./]]) then
-							-- tbl_str[#tbl_str + 1] = string.format('%q', fcnname .. ', defined in (' .. info.linedefined .. '-' .. info.lastlinedefined .. ')' .. info.source) ..',\n'
-						-- else
-							-- tbl_str[#tbl_str + 1] = string.format('%q', fcnname .. ', defined in (' .. info.linedefined .. '-' .. info.lastlinedefined .. ')') ..',\n'
-						-- end
-					-- end
-				-- else
-					-- tbl_str[#tbl_str + 1] = 'a function,\n'
-				-- end
-			-- else
-				-- tbl_str[#tbl_str + 1] = 'unable to serialize value type ' .. basicSerialize(type(val)) .. ' at index ' .. tostring(ind)
-			-- end
-		-- end
-		-- tbl_str[#tbl_str + 1] = indent .. '}'
-		-- return table.concat(tbl_str)
-	-- end
--- end
-
-
-
-
--- function F10CargoDrop(GroupId, Unitname)
-	-- local rootPath = missionCommands.addSubMenuForGroup(GroupId, "Cargo Drop")
-	-- missionCommands.addCommandForGroup(GroupId, "Drop direction", rootPath, CruiseMissilesMessage, {GroupId, Unitname})
-	-- missionCommands.addCommandForGroup(GroupId, "Drop distance", rootPath, ForwardConvoy, nil)
-	-- local measurementsSetPath = missionCommands.addSubMenuForGroup(GroupId,"Set measurement units",rootPath)
-	-- missionCommands.addCommandForGroup(GroupId, "Set to Imperial (feet, knts)",measurementsSetPath,setMeasurements,{GroupId, "imperial"})
-	-- missionCommands.addCommandForGroup(GroupId, "Set to Metric (meters, km/h)",measurementsSetPath,setMeasurements,{GroupId, "metric"})
--- end
-
--- function Calculate_Object_Speed(object)
-	-- return math.sqrt(object:getVelocity().x^2 + object:getVelocity().y^2 + object:getVelocity().z^2) * 3600 / 1852 -- knts
--- end
-
--- function vecDotProduct(vec1, vec2)
-	-- return vec1.x*vec2.x + vec1.y*vec2.y + vec1.z*vec2.z
--- end
-
--- function Calculate_Aircraft_ForwardVelocity(Drop_initiator)
-	-- return vecDotProduct(Drop_initiator:getPosition().x, Drop_initiator:getVelocity())
--- end
-
---- END HERCULES CARGO SUPPORT SECTION
 
 
   
+--------------------------------[staticranges_data.lua]-------------------------------- 
+ 
+env.info( "[JTF-1] staticranges_data" )
+-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+--- STATIC RANGES SETTINGS FOR MIZ
+-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+--
+-- This file MUST be loaded AFTER staticranges.lua
+--
+-- These values are specific to the miz and will override the default values in STATICRANGES.default
+--
+
+-- Error prevention. Create empty container if module core lua not loaded.
+if not STATICRANGES then 
+	_msg = "[JTF-1 STATICRANGES] CORE FILE NOT LOADED!"
+	BASE:E(_msg)
+	STATICRANGES = {}
+end
+
+-- These values will overrides the default values in staticranges.lua
+STATICRANGES.strafeMaxAlt             = 1530 -- [5000ft] in metres. Height of strafe box.
+STATICRANGES.strafeBoxLength          = 3000 -- [10000ft] in metres. Length of strafe box.
+STATICRANGES.strafeBoxWidth           = 300 -- [1000ft] in metres. Width of Strafe pit box (from 1st listed lane).
+STATICRANGES.strafeFoullineDistance   = 610 -- [2000ft] in metres. Min distance for from target for rounds to be counted.
+STATICRANGES.strafeGoodPass           = 20 -- Min hits for a good pass.
+
+-- Range targets table
+STATICRANGES.Ranges = {
+    -- { -- SAMPLE RANGE DATA
+    --   rangeId               = "R63", -- unique ID for the range
+    --   rangeName             = "Range 63", -- text used for messages
+    --   rangeZone             = "R63", -- zone object in which range objects are placed
+    --   rangeControlFrequency = 361.6, -- TAC radio frequency for the range
+    --   groups = { -- group objects used as bombing targets
+    --     "63-01", "63-02", "63-03", "63-05", 
+    --     "63-10", "63-12", "63-15", "R-63B Class A Range-01", 
+    --     "R-63B Class A Range-02",    
+    --   },
+    --   units = { -- unit objects used as bombing targets
+    --     "R63BWC", "R63BEC",
+    --   },
+    --   strafepits = { -- unit objects used as strafepits 
+    --     { --West strafepit -- use sub groups for multiple strafepits
+    --       "R63B Strafe Lane L2", 
+    --       "R63B Strafe Lane L1", 
+    --       "R63B Strafe Lane L3",
+    --     },
+    --     { --East strafepit 
+    --       "R63B Strafe Lane R2", 
+    --       "R63B Strafe Lane R1", 
+    --       "R63B Strafe Lane R3",
+    --     },
+    --   },
+    -- },
+    { --R61
+      rangeId               = "R61",
+      rangeName             = "Range 61",
+      rangeZone             = "R61",
+      rangeControlFrequency = 341.925,
+      groups = {
+        "61-01", "61-03",
+      },
+      units = {
+        "61-01 Aircraft #001", "61-01 Aircraft #002", 
+      },
+      strafepits = {
+      },
+    },--R61 END
+    { --R62
+      rangeId               = "R62",
+      rangeName             = "Range 62",
+      rangeZone             = "R62",
+      rangeControlFrequency = 234.250,
+      groups = {
+        "62-01", "62-02", "62-04",
+        "62-03", "62-08", "62-09", "62-11", 
+        "62-12", "62-13", "62-14", "62-21", 
+        "62-21-01", "62-22", "62-31", "62-32",
+        "62-41", "62-42", "62-43", "62-44", 
+        "62-45", "62-51", "62-52", "62-53", 
+        "62-54", "62-55", "62-56", "62-61", 
+        "62-62", "62-63", "62-71", "62-72", 
+        "62-73", "62-74", "62-75", "62-76", 
+        "62-77", "62-78", "62-79", "62-81", 
+        "62-83", "62-91", "62-92", "62-93",
+      },
+      units = {
+        "62-32-01", "62-32-02", "62-32-03", "62-99",  
+      },
+      strafepits = {
+      },
+    },--R62 END
+    { --R63
+      rangeId               = "R63",
+      rangeName             = "Range 63",
+      rangeZone             = "R63",
+      rangeControlFrequency = 361.6,
+      groups = {
+        "63-01", "63-02", "63-03", "63-05", 
+        "63-10", "63-12", "63-15", "R-63B Class A Range-01", 
+        "R-63B Class A Range-02",    
+      },
+      units = {
+        "R63BWC", "R63BEC",
+      },
+      strafepits = {
+        { --West strafepit
+          "R63B Strafe Lane L2", 
+          "R63B Strafe Lane L1", 
+          "R63B Strafe Lane L3",
+        },
+        { --East strafepit 
+          "R63B Strafe Lane R2", 
+          "R63B Strafe Lane R1", 
+          "R63B Strafe Lane R3",
+        },
+      },
+    },--R63 END
+    { --R64
+      rangeId               = "R64",
+      rangeName             = "Range 64",
+      rangeZone             = "R64",
+      rangeControlFrequency = 288.8,
+      groups = {
+        "64-10", "64-11", "64-13", "64-14", 
+        "64-17", "64-19", "64-15", "64-05", 
+        "64-08", "64-09",
+      },
+      units = {
+        "64-12-05", "R64CWC", "R64CEC", "R-64C Class A Range-01", 
+        "R-64C Class A Range-02", 
+      },
+      strafepits = {
+        {-- West strafepit
+          "R64C Strafe Lane L2", 
+          "R64C Strafe Lane L1", 
+          "R64C Strafe Lane L3",
+        },
+        {-- East strafepit
+          "R64C Strafe Lane R2", 
+          "R64C Strafe Lane R1", 
+          "R64C Strafe Lane R3",
+        },
+      },
+    },--R64 END
+    { --R65
+      rangeId               = "R65",
+      rangeName             = "Range 65",
+      rangeZone             = "R65",
+      rangeControlFrequency = 225.450,
+      groups = {
+        "65-01", "65-02", "65-03", "65-04", 
+        "65-05", "65-06", "65-07", "65-08", 
+        "65-11",
+      },
+      units = {
+      },
+      strafepits = {
+      },
+    },--R65 END
+}
+  
+-- Start the STATICRANGES module
+if STATICRANGES.Start then
+	STATICRANGES:Start()
+end  
+--------------------------------[activeranges_data.lua]-------------------------------- 
+ 
+env.info( "[JTF-1] activeranges_data" )
+-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+--- ACTIVE RANGES SETTINGS FOR MIZ
+-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+--
+-- This file MUST be loaded AFTER activeranges.lua
+--
+-- These values are specific to the miz and will override the default values in ACTIVERANGES.default
+--
+
+-- Error prevention. Create empty container if module core lua not loaded.
+if not ACTIVERANGES then 
+	_msg = "[JTF-1 ACTIVERANGES] CORE FILE NOT LOADED!"
+	BASE:E(_msg)
+	ACTIVERANGES = {}
+end
+
+
+--ACTIVERANGES.spawnatstart = false -- if false, do not spawn targets at mission start
+ACTIVERANGES.activeatstart = false -- if true, set AI on for targets spawned at mission start
+ACTIVERANGES.useSRS = true -- set to false to disable use of SRS for this module in this miz
+--ACTIVERANGES.rangeRadio = "377.8" -- radio frequency over which to broadcast Active Range messages
+
+
+-- start the mission timer
+if ACTIVERANGES.Start then
+	ACTIVERANGES:Start()
+end  
+--------------------------------[markspawn_data.lua]-------------------------------- 
+ 
+env.info( "[JTF-1] markspawn_data" )
+--------------------------------------------
+--- Mark Spawn Mission Data Defined in this file
+--------------------------------------------
+--
+-- **NOTE**: MARKSPAWN.LUA MUST BE LOADED BEFORE THIS FILE IS LOADED!
+--
+-- This file contains the config data specific to the miz in which it will be used.
+-- All functions and key values are in MARKSPAWN.LUA, which should be loaded first
+--
+-- Load order in miz MUST be;
+--     1. markspawn.lua
+--     2. markspawn_data.lua
+--
+
+-- Error prevention. Create empty container if SUPPORTAIRCRAFT.LUA is not loaded or has failed.
+if not MARKSPAWN then 
+	MARKSPAWN = {}
+	SUPPORTAC.traceTitle = "[JTF-1 MARKSPAWN] "
+	_msg = MARKSPAWN.traceTitle .. "CORE FILE NOT LOADED!"
+	BASE:E(_msg)
+end
+
+-- UNCOMMENT TO OVERRIDE MARKSPAWN DEFAULT VALUES BELOW
+
+-- MARKSPAWN.DEFAULT_BLUE_COUNTRY = 2 -- USA
+-- MARKSPAWN.DEFAULT_RED_COUNTRY = 0 -- RUSSIA
+-- MARKSPAWN.MLDefaultAirAlt = 200 -- altitude Flight Level
+-- MARKSPAWN.MLDefaultHdg = 000
+-- MARKSPAWN.MLDefaultSkill = "AVERAGE"
+-- MARKSPAWN.MLDefaultDistance = 0
+-- MARKSPAWN.MLDefaultGroundDistance = 0
+-- MARKSPAWN.MLDefaultROE = "FREE"
+-- MARKSPAWN.MLDefaultROT = "EVADE"
+-- MARKSPAWN.MLDefaultFreq = 251
+-- MARKSPAWN.MLDefaultNum = 1
+-- MARKSPAWN.MLDefaultAirSpeed = 425
+-- MARKSPAWN.MLDefaultGroundSpeed = 21
+-- MARKSPAWN.MLDefaultAlert = "RED"
+-- MARKSPAWN.MLDefaultGroundTask = "NOTHING"
+
+
+
+
+-- call the function that initialises the SUPPORTAC module
+if MARKSPAWN.Start ~= nil then
+    _msg = MARKSPAWN.traceTitle .. "MARKSPAWN_DATA - call MARKSPAWN:Start()."
+    BASE:I(_msg)
+    MARKSPAWN:Start()
+  end
+  
+  
+--------------------------------[missiletrainer_data.lua]-------------------------------- 
+ 
+env.info( "[JTF-1] missiletrainer_data" )
+-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+--- MISSILE TRAINER SETTINGS FOR MIZ
+-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+--
+-- This file MUST be loaded AFTER missiletrainer.lua
+--
+-- These values are specific to the miz and will override the default values in missiletrainer.lua
+--
+
+-- Error prevention. Create empty container if module core lua not loaded.
+if not MTRAINER then 
+	_msg = "[JTF-1 MTRAINER] CORE FILE NOT LOADED!"
+	BASE:E(_msg)
+	MTRAINER = {}
+end
+
+-- these values will override those set in the core file
+MTRAINER.safeZone = nil -- safezone to use, otherwise nil for entire map
+MTRAINER.launchZone = nil -- launchzone to use, otherwise nil for entire map
+MTRAINER.DefaultLaunchAlerts = false -- if true, disable launch alerts
+MTRAINER.DefaultMissileDestruction = false -- 
+MTRAINER.DefaultLaunchMarks = false -- if true, enable map marks for launched missiles
+MTRAINER.ExplosionDistance = 300 -- distance from player at which to destroy incoming missiles
+MTRAINER.useSRS = true -- module should use SRS for radio messages
+
+-- Start the MTRAINER module
+if MTRAINER.Start then
+  MTRAINER:Start()
+end
+
+
+  
+--------------------------------[bfmacm_data.lua]-------------------------------- 
+ 
+env.info( "[JTF-1] bfmacm_data" )
+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+--- ACM/BFM
+-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+--
+-- This file MUST be loaded AFTER missiletrainer.lua
+--
+-- These values are specific to the miz and will override the default values in missiletrainer.lua
+--
+
+-- Error prevention. Create empty container if module core lua not loaded.
+if not BFMACM then 
+	_msg = "[JTF-1 BFMACM] CORE FILE NOT LOADED!"
+	BASE:E(_msg)
+	BFMACM = {}
+end
+
+BFMACM.zoneBfmAcmName = "COYOTEABC" -- The BFM/ACM Zone
+BFMACM.zonesNoSpawnName = { -- zones inside BFM/ACM zone within which adversaries may NOT be spawned.
+	"zone_box",
+} 
+
+BFMACM.adversary = {
+	menu = { -- Adversary menu
+		{template = "ADV_F4", menuText = "Adversary A-4"},
+		{template = "ADV_MiG28", menuText = "Adversary MiG-28"},
+		{template = "ADV_Su27", menuText = "Adversary MiG-23"},
+		{template = "ADV_MiG23", menuText = "Adversary Su-27"},
+		{template = "ADV_F16", menuText = "Adversary F-16"},
+		{template = "ADV_F18", menuText = "Adversary F-18"},
+	},
+	range = {5, 10, 20}, -- ranges at which to spawn adversaries in nautical miles
+	spawn = {}, -- container for aversary spawn objects
+	defaultRadio = "377.8",
+}
+
+
+if BFMACM.Start then
+	BFMACM:Start()
+end  
 --------------------------------[core\mission_end.lua]-------------------------------- 
  
 env.info( "*** [JTF-1] MISSION SCRIPTS END ***" )
