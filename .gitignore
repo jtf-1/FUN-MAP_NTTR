@@ -239,6 +239,3 @@ Moose Development/Moose/.vscode/launch.json
 .gitignore
 .gitignore
 /.gitignore
-scripts/static/mist.lua
-scripts/static/Moose_.lua
-scripts/static/skynet-iads-compiled.lua
