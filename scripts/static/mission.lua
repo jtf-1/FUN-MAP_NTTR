@@ -1325,7 +1325,7 @@ function ACTIVERANGES:resetRangeTarget(rangeGroup, rangePrefix, rangeMenu, withS
 			--MESSAGE:New("Target " .. rangePrefix .. " has been deactivated."):ToAll()
 		else
 			local refreshRangeGroup = self:initActiveRange(GROUP:FindByName("ACTIVE_" .. rangePrefix), true)
-			self.activateRangeTarget(refreshRangeGroup, rangePrefix, rangeMenu, withSam, true)      
+			self:activateRangeTarget(refreshRangeGroup, rangePrefix, rangeMenu, withSam, true)      
 		end
 	end
 end
