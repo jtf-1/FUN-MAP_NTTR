@@ -13,9 +13,6 @@ __JTFLoader.Include( 'core/missiontimer.lua' )                  -- core file
 __JTFLoader.Include( 'core/supportaircraft.lua' )               -- core file
 __JTFLoader.Include( 'core/staticranges.lua' )                  -- core file
 __JTFLoader.Include( 'core/activeranges.lua' )                  -- core file
--- __JTFLoader.Include( 'core/missionstrike.lua' )              -- core file
--- __JTFLoader.Include( 'core/cvncontrol.lua' )                 -- core file
--- __JTFLoader.Include( 'core/dynamic_deck.lua' )               -- core file
 __JTFLoader.Include( 'core/missiletrainer.lua' )                -- core file
 __JTFLoader.Include( 'core/markspawn.lua' )                     -- core file
 __JTFLoader.Include( 'core/bfmacm.lua' )                        -- core file
@@ -24,8 +21,7 @@ __JTFLoader.Include( 'core/Hercules_Cargo.lua' )                -- core file
 -- TEMPLATES
 --
 __JTFLoader.Include( 'core/spawntemplates.lua' )                -- core file
---__JTFLoader.Include( 'core/dynamic_deck_templates.lua' )      -- core file
-__JTFLoader.Include( 'core/supportaircraft_templates.lua' )     -- core file
+--__JTFLoader.Include( 'core/supportaircraft_templates.lua' )     -- core file
 
 --
 -- LOCAL MODULES
