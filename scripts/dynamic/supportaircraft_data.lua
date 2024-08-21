@@ -58,6 +58,7 @@ SUPPORTAC.mission = {
     speed = 315, -- IAS when on mission
     heading = 71, -- mission outbound leg in degrees
     leg = 30, -- mission leg length in NM
+    livery = "Metrea KC-135 N569MA",
   },
   {
     name = "AR641A",
@@ -88,6 +89,7 @@ SUPPORTAC.mission = {
     speed = 315,
     heading = 92,
     leg = 50,
+    livery = "Metrea KC-135",
   },
   {
     name = "AR635",
@@ -118,6 +120,7 @@ SUPPORTAC.mission = {
     speed = 215,
     heading = 41,
     leg = 30,
+    livery = "Metrea KC-135",
   },
   {
     name = "AR230V",
@@ -148,6 +151,7 @@ SUPPORTAC.mission = {
     speed = 315,
     heading = 331,
     leg = 20,
+    livery = "Metrea KC-135 N571MA"
   },
   {
     name = "ARLNS",
