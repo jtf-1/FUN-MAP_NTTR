@@ -1,4 +1,4 @@
- env.info("[JTF-1] MISSION BUILD 2024-04-29T18:16:03.91")  
+ env.info("[JTF-1] MISSION BUILD 2024-08-21T15:54:55.03")  
   
 --------------------------------[core\mission_init.lua]-------------------------------- 
  
@@ -11,6 +11,7 @@ BASE:TraceOnOff(false)
 
 JTF1 = {
 	traceTitle = "[JTF-1 MISSIONINIT] ",
+	trace = false,
 	missionRestart = "MISSION_RESTART", -- Message to trigger mission restart via jtf1-hooks
 	flagLoadMission = 9999, -- flag for load misison trigger
 	defaultServerConfigFile = "LocalServerSettings.lua", -- srs server settings file name
@@ -96,7 +97,7 @@ local devFlag = 8888
 -- If missionflag is true, mission file will load from filesystem with an assert
 local devState = trigger.misc.getUserFlag(devFlag)
 
-if devState == 1 or JTF1.trace then
+if devState == 1 and JTF1.trace then
 	
 	local msgLog = "[JTF-1 DEVCHECK] "
 	local msgText = ""
@@ -567,21 +568,21 @@ env.info( "[JTF-1] supportaircraft.lua" )
 -- Available support aircraft categories and types for which predefined templates are available [category] = [template name];
 --
 -- Category: tanker
---    tankerBoom = "KC-135" - SUPPORTAC.template["KC-135"]
---    tankerProbe = KC-135MPRS" - SUPPORTAC.template["KC-135MPRS"]
---    WIP** tankerProbeC130 = "KC-130" - SUPPORTAC.template["KC-130"]
+--    tankerBoom = "KC-135" - SPAWNTEMPLATES.templates["KC-135"]
+--    tankerProbe = KC-135MPRS" - SPAWNTEMPLATES.templates["KC-135MPRS"]
+--    WIP** tankerProbeC130 = "KC-130" - SPAWNTEMPLATES.templates["KC-130"]
 --
 -- Category: awacs
--- awacsE3a = "AWACS-E3A" - SUPPORTAC.template["AWACS-E3A"]
--- awacsE2d = "AWACS-E3A" - SUPPORTAC.template["AWACS-E3A"]
+-- awacsE3a = "AWACS-E3A" - SPAWNTEMPLATES.templates["AWACS-E3A"]
+-- awacsE2d = "AWACS-E3A" - SPAWNTEMPLATES.templates["AWACS-E3A"]
 --
 
 SUPPORTAC = {}
+SUPPORTAC = BASE:Inherit(SUPPORTAC, BASE:New())
 SUPPORTAC.traceTitle = "[JTF-1 SUPPORTAC] "
 SUPPORTAC.ClassName = "SUPPORTAC"
 SUPPORTAC.useSRS = true -- if true, messages will be sent over SRS using the MISSIONSRS module. If false, messages will be sent as in-game text.
 SUPPORTAC.trace = false -- tracing off by default if false
-SUPPORTAC = BASE:Inherit(SUPPORTAC, BASE:New())
 
 local _msg -- used for debug messages only
 local useSRS
@@ -598,16 +599,13 @@ function SUPPORTAC:Start()
 	-- set tracing on or off
 	self:TraceOnOff(self.trace)
 	self:TraceAll(self.trace)
-	local traceState = tostring(self.trace)
-	_msg = string.format("%sModule Tracing is %s.", self.traceTitle, traceState)
-	self:I(_msg)
 
 	-- default to not using SRS unless both the server AND the module request it AND MISSIONSRS.Radio.active is true
 	useSRS = (JTF1.useSRS and self.useSRS) and MISSIONSRS.Radio.active 
 	self:I({self.traceTitle .. "useSRS", self.useSRS})
 
 	for index, mission in ipairs(SUPPORTAC.mission) do -- FOR-DO LOOP
-		_msg = string.format(self.traceTitle .. "Start - mission %s", mission.name)
+		_msg = string.format("%sStart - mission %s", self.traceTitle, mission.name)
 		SUPPORTAC:T(_msg)
 
 		local skip = false -- check value to exit early from the current for/do iteration
@@ -617,7 +615,7 @@ function SUPPORTAC:Start()
 		if missionZone then -- CHECK MISSION ZONE
 		
 			-- if trace is on, draw the zone on the map
-			if self:IsTrace() then 
+			if self.trace then 
 				-- draw mission zone on map
 				missionZone:DrawZone()
 			end
@@ -629,10 +627,10 @@ function SUPPORTAC:Start()
 			local missionHomeAirbase = SUPPORTAC.homeAirbase["Nevada"]--mission.homeAirbase or SUPPORTAC.homeAirbase[missionTheatre]
 			_msg = SUPPORTAC.traceTitle .. tostring(missionHomeAirbase)
 			self:T(_msg)
-			_msg = string.format(self.traceTitle .. "start - Mission %s set to use %s as home base.", mission.name, missionHomeAirbase)
+			_msg = string.format("%sstart - Mission %s set to use %s as home base.", self.traceTitle, mission.name, missionHomeAirbase)
 			SUPPORTAC:T(_msg)
 			if missionHomeAirbase then -- CHECK HOME AIRBASE
-				_msg = string.format(self.traceTitle .. "start - Mission %s using %s as home base.", mission.name, missionHomeAirbase)
+				_msg = string.format("%sStart - Mission %s using %s as home base.", self.traceTitle, mission.name, missionHomeAirbase)
 				SUPPORTAC:T(_msg)
 
 				-- set home airbase in mission
@@ -672,17 +670,17 @@ function SUPPORTAC:Start()
 				mission.waypointCoordinate = waypointCoordinate
 
 				if GROUP:FindByName(missionSpawnType) then -- FIND MISSION SPAWN TEMPLATE - use from mission block
-					_msg = string.format(self.traceTitle .. "start - Using spawn template from miz for %s.", missionSpawnType)
+					_msg = string.format("%sStart - Using spawn template from miz for %s.", self.traceTitle, missionSpawnType)
 					SUPPORTAC:T(_msg)
 
 					-- add mission spawn object using template in miz
 					mission.missionSpawnTemplate = SPAWN:NewWithAlias(missionSpawnType, missionSpawnAlias)
-				elseif SUPPORTAC.template[missionSpawnType] then -- ELSEIF FIND MISSION SPAWN TEMPLATE-- Use predfined template from SUPPORTAC.template[missionSpawnType]
-					_msg = string.format(self.traceTitle .. "start - Using spawn template from SUPPORTAC.template for %s.", missionSpawnType)
+				elseif SPAWNTEMPLATES.templates[missionSpawnType] then -- ELSEIF FIND MISSION SPAWN TEMPLATE-- Use predfined template from SPAWNTEMPLATES.templates[missionSpawnType]
+					_msg = string.format("%sStart - Using spawn template from SPAWNTEMPLATES.templates for %s.", self.traceTitle, missionSpawnType)
 					SUPPORTAC:T(_msg)
 
 					-- get template to use for spawn
-					local spawnTemplate = SUPPORTAC.template[missionSpawnType]
+					local spawnTemplate = SPAWNTEMPLATES.templates[missionSpawnType]
 
 					-- check "category" has been set in template
 					-- if not spawnTemplate["category"] then
@@ -731,7 +729,7 @@ function SUPPORTAC:Start()
 					local missionCoalition = mission.coalition or SUPPORTAC.missionDefault.coalition
 					local missionGroupCategory = mission.groupCategory or SUPPORTAC.missionDefault.groupCategory
 
-					-- add mission spawn object using template in SUPPORTAC.template[missionSpawnType]
+					-- add mission spawn object using template in SPAWNTEMPLATES.templates[missionSpawnType]
 					mission.missionSpawnTemplate = SPAWN:NewFromTemplate(spawnTemplate, missionSpawnType, missionSpawnAlias)
 						:InitCountry(missionCountryid) -- set spawn countryid
 						:InitCoalition(missionCoalition) -- set spawn coalition
@@ -749,6 +747,9 @@ function SUPPORTAC:Start()
 					mission.missionSpawnTemplate:InitLateActivated() -- set template to late activated
 					mission.missionSpawnTemplate:InitPositionCoordinate(mission.spawnCoordinate) -- set the default location at which the template is created
 					mission.missionSpawnTemplate:InitHeading(mission.heading) -- set the default heading for the spawn template
+					if mission.livery then
+						mission.missionSpawnTemplate:InitLivery(mission.livery)
+					end
 					mission.missionSpawnTemplate:OnSpawnGroup(
 						function(spawngroup)
 							local spawnGroupName = spawngroup:GetName()
@@ -761,8 +762,8 @@ function SUPPORTAC:Start()
 						,mission
 					)
 
-					_msg = string.format(self.traceTitle .. "New late activated mission spawn template added for %s", missionSpawnAlias)
-					SUPPORTAC:T(_msg)
+					--_msg = string.format(self.traceTitle .. "New late activated mission spawn template added for %s", missionSpawnAlias)
+					--SUPPORTAC:T(_msg)
 					
 					-- call NewMission() to create the initial mission for the support aircraft
 					-- subsequent mission restarts will be called after the mission's AUFTRAG is cancelled
@@ -861,7 +862,7 @@ function SUPPORTAC:NewMission(mission, initDelay)
 	-- function call after flightGroup is spawned
 	-- assign mission to new ac
 	function flightGroup:OnAfterSpawned()
-		_msg = string.format(SUPPORTAC.traceTitle .. "Flightgroup %s activated.", self:GetName())
+		_msg = string.format("%sFlightgroup %s activated.", SUPPORTAC.traceTitle, self:GetName())
 		SUPPORTAC:T(_msg)
 		-- assign mission to flightGroup
 		self:AddMission(newMission)
@@ -874,7 +875,7 @@ function SUPPORTAC:NewMission(mission, initDelay)
 		local flightGroupName = self:GetName()
 		local flightGroupCallSign = SUPPORTAC:GetCallSign(self)
 
-		_msg = string.format(SUPPORTAC.traceTitle .. "Mission %s for Flightgroup %s, %s has started.", missionName, flightGroupName, flightGroupCallSign) -- self:GetCallsignName(true)
+		_msg = string.format("%sMission %s for Flightgroup %s, %s has started.", SUPPORTAC.traceTitle, missionName, flightGroupName, flightGroupCallSign) -- self:GetCallsignName(true)
 		SUPPORTAC:T(_msg)
 
 		self:SetFuelLowRefuel(false)
@@ -897,7 +898,7 @@ function SUPPORTAC:NewMission(mission, initDelay)
 			local flightGroupName = flightGroup:GetName()
 			local flightGroupCallSign = SUPPORTAC:GetCallSign(flightGroup)
 		
-			_msg = string.format(SUPPORTAC.traceTitle .. "newMission OnAfterDone - Mission %s for Flightgroup %s is done.", missionName, flightGroupName)
+			_msg = string.format("%snewMission OnAfterDone - Mission %s for Flightgroup %s is done.", SUPPORTAC.traceTitle, missionName, flightGroupName)
 			SUPPORTAC:T(_msg)
 
 			-- prepare off-station advisory message
@@ -909,7 +910,7 @@ function SUPPORTAC:NewMission(mission, initDelay)
 
 			-- despawn this flightgroup, if it's still alive
 			if flightGroup:IsAlive() and missionDespawn then
-				_msg = string.format(SUPPORTAC.traceTitle .. "newMission OnAfterDone - Flightgroup %s will be despawned after %d seconds.", flightGroupName, despawnDelay)
+				_msg = string.format("%snewMission OnAfterDone - Flightgroup %s will be despawned after %d seconds.", SUPPORTAC.traceTitle, flightGroupName, despawnDelay)
 				SUPPORTAC:T(_msg)
 
 				flightGroup:Despawn(despawnDelay)
@@ -956,14 +957,14 @@ SUPPORTAC.category = {
 
 -- Support aircraft types. Used to define the late activated group to be used as the spawn template
 -- for the type. A check is made to ensure the template exists in the miz or that the value is the
--- same as the ID in the SUPPORTAC.template block (see supportaircraft.lua)
+-- same as the ID in the SPAWNTEMPLATES.templates block (see supportaircraft.lua)
 SUPPORTAC.type = {
-	tankerBoom = "KC-135", -- template to be used for type = "tankerBoom" OR SUPPORTAC.template["KC-135"]
-	tankerProbe = "KC-135MPRS", -- template to be used for type = "tankerProbe" OR SUPPORTAC.template["KC-135MPRS"]
-	tankerProbeC130 = "KC-130", -- template for type = "tankerProbeC130" OR SUPPORTAC.template["KC-130"]
-	awacsE3a = "AWACS-E3A", -- template to be used for type = "awacsE3a" OR SUPPORTAC.template["AWACS-E3A"]
-	awacsE2d = "AWACS-E2D", -- template to be used for type = "awacsE2d" OR SUPPORTAC.template["AWACS-E2D"]
-	awacsA50 = "AWACS-A50", -- template to be used for type = "awacsA50" OR SUPPORTAC.template["AWACS-A50"]
+	tankerBoom = "KC-135", -- template to be used for type = "tankerBoom" OR SPAWNTEMPLATES.templates["KC-135"]
+	tankerProbe = "KC-135MPRS", -- template to be used for type = "tankerProbe" OR SPAWNTEMPLATES.templates["KC-135MPRS"]
+	tankerProbeC130 = "KC-130", -- template for type = "tankerProbeC130" OR SPAWNTEMPLATES.templates["KC-130"]
+	awacsE3a = "AWACS-E3A", -- template to be used for type = "awacsE3a" OR SPAWNTEMPLATES.templates["AWACS-E3A"]
+	awacsE2d = "AWACS-E2D", -- template to be used for type = "awacsE2d" OR SPAWNTEMPLATES.templates["AWACS-E2D"]
+	awacsA50 = "AWACS-A50", -- template to be used for type = "awacsA50" OR SPAWNTEMPLATES.templates["AWACS-A50"]
 } -- end SUPPORTAC.type
 
 -- Default home airbase. Added to the mission spawn template if not defined in
@@ -975,6 +976,7 @@ SUPPORTAC.homeAirbase = {
 	["Syria"] = AIRBASE.Syria.Incirlik,
 	["Sinai"] = AIRBASE.Sinai.Cairo_International_Airport,
 	["MarianaIslands"] = AIRBASE.MarianaIslands.Andersen_AFB,
+	["Afghanistan"] = "Kandahar",
 } -- end SUPPORTAC.homeAirbase
 
 -- default mission values to be used if not specified in the flight's mission data block
@@ -1151,7 +1153,9 @@ env.info( "[JTF-1] activeranges.lua" )
 
 ACTIVERANGES = {}
 
-ACTIVERANGES.traceTitle = "[JTF-1] "
+ACTIVERANGES = BASE:Inherit(ACTIVERANGES, BASE:New())
+
+ACTIVERANGES.traceTitle = "[JTF-1 ACTIVERANGES] "
 ACTIVERANGES.version = "0.1"
 ACTIVERANGES.ClassName = "ACTIVERANGES"
 
@@ -1171,7 +1175,7 @@ ACTIVERANGES.activeatstart = false -- default to inactive AI if spawned at missi
   
 function ACTIVERANGES:Start()	
 	_msg = "[JTF-1 ACTIVERANGES] Start()."
-	BASE:T(_msg)
+	self:T(_msg)
 	self.rangeRadio = self.rangeRadio or self.default.rangeRadio
 	self.SetInitActiveRangeGroups = SET_GROUP:New():FilterPrefixes("ACTIVE_"):FilterOnce() -- create list of group objects with prefix "ACTIVE_"
 	self.SetInitActiveRangeGroups:ForEachGroup(
@@ -1189,8 +1193,11 @@ end
 -- @param #string refreshRange If false, turn off target AI and add menu option to activate the target
 function ACTIVERANGES:initActiveRange(rangeTemplateGroup, refreshRange)
 	local initGroupName = rangeTemplateGroup:GetName()
-	_msg = "[JTF-1 ACTIVERANGES] initActiveRange()."
-	BASE:T({_msg, initGroupName, refreshRange})
+	_msg = string.format("%sinitActiveRange %s.", 
+		self.traceTitle,
+		initGroupName
+	)
+	self:T({_msg, initGroupName, refreshRange})
 	local rangeTemplate = rangeTemplateGroup.GroupName
 	local activeRange = SPAWN:New(rangeTemplate)
 	if refreshRange == false then 
@@ -1222,8 +1229,11 @@ end
 -- @param #table rangeGroup Target group object
 -- @param #string rangePrefix Range prefix
 function ACTIVERANGES:addActiveRangeMenu(rangeGroup, rangePrefix)
-	_msg = "[JTF-1 ACTIVERANGES] addActiveRangeMenu()."
-	BASE:T(_msg)
+	_msg = string.format("%saddActiveRangeMenu %s.", 
+		self.traceTitle, 
+		rangePrefix
+	)
+	self:T(_msg)
 	local rangeIdent = string.sub(rangePrefix, 1, 2)
 	if ACTIVERANGES.menu["rangeMenuSub_" .. rangeIdent] == nil then
 		ACTIVERANGES.menu["rangeMenuSub_" .. rangeIdent] = MENU_COALITION:New(coalition.side.BLUE, "R" .. rangeIdent, ACTIVERANGES.menu.menuTop)
@@ -1245,25 +1255,34 @@ end
 -- @param #boolean withSam Spawn and activate associated SAM target
 -- @param #boolean refreshRange True if target is to being refreshed. False if it is being deactivated.
 function ACTIVERANGES:activateRangeTarget(rangeGroup, rangePrefix, rangeMenu, withSam, refreshRange)
-	_msg = "[JTF-1 ACTIVERANGES] activateRangeTarget()."
-	BASE:T(_msg)
+	_msg = string.format("%sactivateRangeTarget %s.", 
+		self.traceTitle, 
+		rangePrefix
+	)
+	self:T(_msg)
+	local deactivateText = "Deactivate " .. rangePrefix
+	local refreshText = "Refresh " .. rangePrefix
+	local samTemplate = "SAM_" .. rangePrefix
+	local menuName = "rangeMenu_" .. rangePrefix
+
 	if refreshRange == nil then
 		rangeMenu:Remove()
-	ACTIVERANGES.menu["rangeMenu_" .. rangePrefix] = MENU_COALITION:New(coalition.side.BLUE, "Reset " .. rangePrefix, ACTIVERANGES.menu.menuTop)
+		_msg = string.format("%sRemove menu %s", self.traceTitle, menuName)
+		self:T(_msg)
+		ACTIVERANGES.menu[menuName] = MENU_COALITION:New(coalition.side.BLUE, "Reset " .. rangePrefix, ACTIVERANGES.menu.menuTop)
 	end
+
 	rangeGroup:OptionROE(ENUMS.ROE.WeaponFree)
 	rangeGroup:OptionROTEvadeFire()
 	rangeGroup:OptionAlarmStateRed()
 	rangeGroup:SetAIOnOff(true)
-	local deactivateText = "Deactivate " .. rangePrefix
-	local refreshText = "Refresh " .. rangePrefix
-	local samTemplate = "SAM_" .. rangePrefix
+
 	if withSam then
 		local activateSam = SPAWN:New(samTemplate)
 		activateSam:OnSpawnGroup(
 			function (spawnGroup)
-			MENU_COALITION_COMMAND:New(coalition.side.BLUE, deactivateText , ACTIVERANGES.menu["rangeMenu_" .. rangePrefix], ACTIVERANGES.resetRangeTarget, ACTIVERANGES, rangeGroup, rangePrefix, ACTIVERANGES.menu["rangeMenu_" .. rangePrefix], spawnGroup, false)
-			MENU_COALITION_COMMAND:New(coalition.side.BLUE, refreshText .. " with SAM" , ACTIVERANGES.menu["rangeMenu_" .. rangePrefix], ACTIVERANGES.resetRangeTarget, ACTIVERANGES, rangeGroup, rangePrefix, ACTIVERANGES.menu["rangeMenu_" .. rangePrefix], spawnGroup, true)
+			MENU_COALITION_COMMAND:New(coalition.side.BLUE, deactivateText , ACTIVERANGES.menu[menuName], ACTIVERANGES.resetRangeTarget, ACTIVERANGES, rangeGroup, rangePrefix, ACTIVERANGES.menu[menuName], spawnGroup, false)
+			MENU_COALITION_COMMAND:New(coalition.side.BLUE, refreshText .. " with SAM" , ACTIVERANGES.menu[menuName], ACTIVERANGES.resetRangeTarget, ACTIVERANGES, rangeGroup, rangePrefix, ACTIVERANGES.menu[menuName], spawnGroup, true)
 			local msg = "All players, dynamic target " .. rangePrefix .. " is active, with SAM."
 			if MISSIONSRS.Radio then -- if MISSIONSRS radio object has been created, send message via default broadcast.
 				MISSIONSRS:SendRadio(msg, ACTIVERANGES.rangeRadio)
@@ -1279,11 +1298,11 @@ function ACTIVERANGES:activateRangeTarget(rangeGroup, rangePrefix, rangeMenu, wi
 		)
 	:Spawn()
 	else
-		MENU_COALITION_COMMAND:New(coalition.side.BLUE, deactivateText , ACTIVERANGES.menu["rangeMenu_" .. rangePrefix], ACTIVERANGES.resetRangeTarget, ACTIVERANGES, rangeGroup, rangePrefix, ACTIVERANGES.menu["rangeMenu_" .. rangePrefix], withSam, false)
+		MENU_COALITION_COMMAND:New(coalition.side.BLUE, deactivateText , ACTIVERANGES.menu[menuName], ACTIVERANGES.resetRangeTarget, ACTIVERANGES, rangeGroup, rangePrefix, ACTIVERANGES.menu[menuName], withSam, false)
 	if GROUP:FindByName(samTemplate) ~= nil then
-		MENU_COALITION_COMMAND:New(coalition.side.BLUE, refreshText .. " NO SAM" , ACTIVERANGES.menu["rangeMenu_" .. rangePrefix], ACTIVERANGES.resetRangeTarget, ACTIVERANGES, rangeGroup, rangePrefix, ACTIVERANGES.menu["rangeMenu_" .. rangePrefix], withSam, true)
+		MENU_COALITION_COMMAND:New(coalition.side.BLUE, refreshText .. " NO SAM" , ACTIVERANGES.menu[menuName], ACTIVERANGES.resetRangeTarget, ACTIVERANGES, rangeGroup, rangePrefix, ACTIVERANGES.menu[menuName], withSam, true)
 	else
-		MENU_COALITION_COMMAND:New(coalition.side.BLUE, refreshText , ACTIVERANGES.menu["rangeMenu_" .. rangePrefix], ACTIVERANGES.resetRangeTarget, ACTIVERANGES, rangeGroup, rangePrefix, ACTIVERANGES.menu["rangeMenu_" .. rangePrefix], withSam, true)
+		MENU_COALITION_COMMAND:New(coalition.side.BLUE, refreshText , ACTIVERANGES.menu[menuName], ACTIVERANGES.resetRangeTarget, ACTIVERANGES, rangeGroup, rangePrefix, ACTIVERANGES.menu[menuName], withSam, true)
 	end
 	local msg = "All players, dynamic target " .. rangePrefix .. " is active."
 	if MISSIONSRS.Radio then -- if MISSIONSRS radio object has been created, send message via default broadcast.
@@ -1303,8 +1322,12 @@ end
 -- @param #bool withSam Find and destroy associated SAM group.
 -- @param #bool refreshRange True if target is to be refreshed. False if it is to be deactivated. 
 function ACTIVERANGES:resetRangeTarget(rangeGroup, rangePrefix, rangeMenu, withSam, refreshRange)
-	_msg = "[JTF-1 ACTIVERANGES] resetRangeTarget()."
-	BASE:T(_msg)
+	_msg = string.format("%sresetRangeTarget %s.", 
+		self.traceTitle, 
+		rangePrefix
+	)
+	self:T(_msg)
+	local rangeName  = "ACTIVE_" .. rangePrefix
 	if rangeGroup:IsActive() then
 		rangeGroup:Destroy(false)
 		if withSam then
@@ -1312,7 +1335,7 @@ function ACTIVERANGES:resetRangeTarget(rangeGroup, rangePrefix, rangeMenu, withS
 		end
 		if refreshRange == false then
 			rangeMenu:Remove()
-			local reactivateRangeGroup = self:initActiveRange(GROUP:FindByName("ACTIVE_" .. rangePrefix), false )
+			local reactivateRangeGroup = self:initActiveRange(GROUP:FindByName(rangeName), false )
 			reactivateRangeGroup:OptionROE(ENUMS.ROE.WeaponHold)
 			reactivateRangeGroup:OptionROTEvadeFire()
 			reactivateRangeGroup:OptionAlarmStateGreen()
@@ -1324,10 +1347,47 @@ function ACTIVERANGES:resetRangeTarget(rangeGroup, rangePrefix, rangeMenu, withS
 			end
 			--MESSAGE:New("Target " .. rangePrefix .. " has been deactivated."):ToAll()
 		else
-			local refreshRangeGroup = self:initActiveRange(GROUP:FindByName("ACTIVE_" .. rangePrefix), true)
+			local refreshRangeGroup = self:initActiveRange(GROUP:FindByName(rangeName), true)
 			self:activateRangeTarget(refreshRangeGroup, rangePrefix, rangeMenu, withSam, true)      
 		end
+		local zoneName = "ACTIVE_"
+		self:removeJunk(rangeName)
 	end
+end
+
+function ACTIVERANGES:removeJunk(_zoneName)
+	_msg = string.format("%sremoveJunk for zone %s.", 
+		self.traceTitle, 
+		_zoneName
+	)
+	self:T(_msg)
+
+	if _zoneName then
+		if ZONE:FindByName(_zoneName) then
+			local cleanup = trigger.misc.getZone(_zoneName)
+			cleanup.point.y = land.getHeight({x = cleanup.point.x, y = cleanup.point.z})
+			local volS = {
+				id = world.VolumeType.SPHERE,
+				params= {
+					point = cleanup.point,
+					radius = cleanup.radius
+				}
+			}
+			world.removeJunk(volS)
+		else
+			_msg = string.format("%sError! Zone %s cannot be found.",
+				self.traceTitle,
+				_zoneName
+			)
+			self:E(_msg)
+		end
+	else
+		_msg = string.format("%sError! No zone defined for cleanup.",
+			self.traceTitle
+		)
+		self:E(_msg)
+	end
+
 end
 
 ACTIVERANGES:Start()
@@ -4790,11 +4850,11 @@ SPAWNTEMPLATES.templates = {
 	}, -- end of ["BVR_SU27"]
 	["BVR_F4"] = {
 		["category"] = Group.Category.AIRPLANE,
+		["dynSpawnTemplate"] = false,
 		["lateActivation"] = true,
 		["tasks"] = 
 		{
 		}, -- end of ["tasks"]
-		["radioSet"] = false,
 		["task"] = "CAP",
 		["uncontrolled"] = false,
 		["route"] = 
@@ -4804,10 +4864,10 @@ SPAWNTEMPLATES.templates = {
 			{
 				[1] = 
 				{
-					["alt"] = 85,
+					["alt"] = 2000,
 					["action"] = "Turning Point",
 					["alt_type"] = "BARO",
-					["speed"] = 5.5555555555556,
+					["speed"] = 256.94444444444,
 					["task"] = 
 					{
 						["id"] = "ComboTask",
@@ -4818,9 +4878,25 @@ SPAWNTEMPLATES.templates = {
 								[1] = 
 								{
 									["enabled"] = true,
-									["auto"] = false,
-									["id"] = "WrappedAction",
+									["key"] = "CAP",
+									["id"] = "EngageTargets",
 									["number"] = 1,
+									["auto"] = true,
+									["params"] = 
+									{
+										["targetTypes"] = 
+										{
+											[1] = "Air",
+										}, -- end of ["targetTypes"]
+										["priority"] = 0,
+									}, -- end of ["params"]
+								}, -- end of [1]
+								[2] = 
+								{
+									["enabled"] = true,
+									["auto"] = true,
+									["id"] = "WrappedAction",
+									["number"] = 2,
 									["params"] = 
 									{
 										["action"] = 
@@ -4828,101 +4904,202 @@ SPAWNTEMPLATES.templates = {
 											["id"] = "Option",
 											["params"] = 
 											{
-												["value"] = 0,
-												["name"] = 0,
+												["value"] = true,
+												["name"] = 17,
 											}, -- end of ["params"]
 										}, -- end of ["action"]
 									}, -- end of ["params"]
-								}, -- end of [1]
+								}, -- end of [2]
+								[3] = 
+								{
+									["enabled"] = true,
+									["auto"] = true,
+									["id"] = "WrappedAction",
+									["number"] = 3,
+									["params"] = 
+									{
+										["action"] = 
+										{
+											["id"] = "Option",
+											["params"] = 
+											{
+												["value"] = 4,
+												["name"] = 18,
+											}, -- end of ["params"]
+										}, -- end of ["action"]
+									}, -- end of ["params"]
+								}, -- end of [3]
+								[4] = 
+								{
+									["enabled"] = true,
+									["auto"] = true,
+									["id"] = "WrappedAction",
+									["number"] = 4,
+									["params"] = 
+									{
+										["action"] = 
+										{
+											["id"] = "Option",
+											["params"] = 
+											{
+												["value"] = true,
+												["name"] = 19,
+											}, -- end of ["params"]
+										}, -- end of ["action"]
+									}, -- end of ["params"]
+								}, -- end of [4]
+								[5] = 
+								{
+									["enabled"] = true,
+									["auto"] = true,
+									["id"] = "WrappedAction",
+									["number"] = 5,
+									["params"] = 
+									{
+										["action"] = 
+										{
+											["id"] = "Option",
+											["params"] = 
+											{
+												["targetTypes"] = 
+												{
+												}, -- end of ["targetTypes"]
+												["name"] = 21,
+												["value"] = "none;",
+												["noTargetTypes"] = 
+												{
+													[1] = "Fighters",
+													[2] = "Multirole fighters",
+													[3] = "Bombers",
+													[4] = "Helicopters",
+													[5] = "UAVs",
+													[6] = "Infantry",
+													[7] = "Fortifications",
+													[8] = "Tanks",
+													[9] = "IFV",
+													[10] = "APC",
+													[11] = "Artillery",
+													[12] = "Unarmed vehicles",
+													[13] = "AAA",
+													[14] = "SR SAM",
+													[15] = "MR SAM",
+													[16] = "LR SAM",
+													[17] = "Aircraft Carriers",
+													[18] = "Cruisers",
+													[19] = "Destroyers",
+													[20] = "Frigates",
+													[21] = "Corvettes",
+													[22] = "Light armed ships",
+													[23] = "Unarmed ships",
+													[24] = "Submarines",
+													[25] = "Cruise missiles",
+													[26] = "Antiship Missiles",
+													[27] = "AA Missiles",
+													[28] = "AG Missiles",
+													[29] = "SA Missiles",
+												}, -- end of ["noTargetTypes"]
+											}, -- end of ["params"]
+										}, -- end of ["action"]
+									}, -- end of ["params"]
+								}, -- end of [5]
 							}, -- end of ["tasks"]
 						}, -- end of ["params"]
 					}, -- end of ["task"]
 					["type"] = "Turning Point",
 					["ETA"] = 0,
 					["ETA_locked"] = true,
-					["y"] = 550833.11560466,
-					["x"] = 154539.36809252,
-					["formation_template"] = "",
+					["y"] = 435467.56959117,
+					["x"] = 30613.207113639,
 					["speed_locked"] = true,
+					["formation_template"] = "",
 				}, -- end of [1]
 			}, -- end of ["points"]
 		}, -- end of ["route"]
-		["groupId"] = 581,
+		["groupId"] = 332,
 		["hidden"] = false,
 		["units"] = 
 		{
 			[1] = 
 			{
-				["alt"] = 85,
+				["alt"] = 2000,
+				["hardpoint_racks"] = true,
 				["alt_type"] = "BARO",
+				["livery_id"] = "iriaf-3-6564",
 				["skill"] = "Random",
-				["speed"] = 5.5555555555556,
-				["type"] = "F-4E",
-				["unitId"] = 1570,
+				["speed"] = 256.94444444444,
+				["type"] = "F-4E-45MC",
+				["unitId"] = 3236,
 				["psi"] = 0,
-				["y"] = 550833.11560466,
-				["x"] = 154539.36809252,
-				["name"] = "Aerial-5-1",
+				["onboard_num"] = "010",
+				["y"] = 435467.56959117,
+				["x"] = 30613.207113639,
+				["name"] = "BVR_F4-1",
 				["payload"] = 
 				{
 					["pylons"] = 
 					{
 						[1] = 
 						{
-							["CLSID"] = "{7B4B122D-C12C-4DB4-834E-4D8BB4D863A8}",
+							["CLSID"] = "{F4_SARGENT_TANK_370_GAL}",
 						}, -- end of [1]
 						[2] = 
 						{
-							["CLSID"] = "{9DDF5297-94B9-42FC-A45E-6E316121CD85}",
+							["CLSID"] = "{AIM-9M}",
 						}, -- end of [2]
-						[3] = 
-						{
-							["CLSID"] = "{8D399DDA-FF81-4F14-904D-099B34FE7918}",
-						}, -- end of [3]
 						[4] = 
 						{
-							["CLSID"] = "{8D399DDA-FF81-4F14-904D-099B34FE7918}",
+							["CLSID"] = "{AIM-9M}",
 						}, -- end of [4]
+						[5] = 
+						{
+							["CLSID"] = "{HB_F4E_AIM-7M}",
+						}, -- end of [5]
 						[6] = 
 						{
-							["CLSID"] = "{8D399DDA-FF81-4F14-904D-099B34FE7918}",
+							["CLSID"] = "{HB_F4E_AIM-7M}",
 						}, -- end of [6]
-						[7] = 
-						{
-							["CLSID"] = "{8D399DDA-FF81-4F14-904D-099B34FE7918}",
-						}, -- end of [7]
 						[8] = 
 						{
-							["CLSID"] = "{9DDF5297-94B9-42FC-A45E-6E316121CD85}",
+							["CLSID"] = "{HB_F4E_AIM-7M}",
 						}, -- end of [8]
 						[9] = 
 						{
-							["CLSID"] = "{7B4B122D-C12C-4DB4-834E-4D8BB4D863A8}",
+							["CLSID"] = "{HB_F4E_AIM-7M}",
 						}, -- end of [9]
+						[10] = 
+						{
+							["CLSID"] = "{AIM-9M}",
+						}, -- end of [10]
+						[12] = 
+						{
+							["CLSID"] = "{AIM-9M}",
+						}, -- end of [12]
+						[13] = 
+						{
+							["CLSID"] = "{F4_SARGENT_TANK_370_GAL_R}",
+						}, -- end of [13]
+						[14] = 
+						{
+							["CLSID"] = "{HB_ALE_40_30_60}",
+						}, -- end of [14]
 					}, -- end of ["pylons"]
-					["fuel"] = "4864",
+					["fuel"] = 5510.5,
 					["flare"] = 30,
-					["chaff"] = 60,
+					["ammo_type"] = 1,
+					["chaff"] = 120,
 					["gun"] = 100,
 				}, -- end of ["payload"]
-				["heading"] = 2.6231431729977,
-				["callsign"] = 
-				{
-					[1] = 5,
-					[2] = 1,
-					["name"] = "Dodge11",
-					[3] = 1,
-				}, -- end of ["callsign"]
-				["onboard_num"] = "014",
+				["heading"] = 0,
+				["callsign"] = 100,
 			}, -- end of [1]
 		}, -- end of ["units"]
-		["y"] = 550833.11560466,
-		["x"] = 154539.36809252,
+		["y"] = 435467.56959117,
+		["x"] = 30613.207113639,
 		["name"] = "BVR_F4",
 		["communication"] = true,
 		["start_time"] = 0,
 		["modulation"] = 0,
-		["frequency"] = 251,
+		["frequency"] = 305,
 	}, -- end of ["BVR_F4"]
 	["BVR_F16"] = {
 		["category"] = Group.Category.AIRPLANE,
@@ -13646,1082 +13823,6 @@ SPAWNTEMPLATES.templates = {
 
 }  
   
---------------------------------[core\supportaircraft_templates.lua]-------------------------------- 
- 
-env.info( "[JTF-1] supportaircraft_templates" )
---------------------------------------------
---- SUPPORTAIRCRAFT Spawn Spawn Templates Defined in this file
---------------------------------------------
---
--- **NOTE**
--- SUPPORTAIRCRAFT.LUA MUST BE LOADED *BEFORE* THIS FILE IS LOADED!
--- THIS FILE MUST BE LOADED *BEFORE* SUPPORTAIRCRAFT_DATA.LUA IS LOADED!
---
--- This file contains the built-in templates used for spawning support aircraft 
---
--- All functions and key values are in SUPPORTAIRCRAFT.LUA, which should be loaded first.
---
--- Load order in miz MUST be;
---     1. supportaircraft.lua
---     2. supportaircraft_templates.lua
---     3. supportaircraft_data.lua
---
-
--- Error prevention. Create empty container if SUPPORTAIRCRAFT.LUA is not loaded or has failed.
-if not SUPPORTAC then 
-	SUPPORTAC = {}
-	SUPPORTAC.traceTitle = "[JTF-1 SUPPORTAC] "
-	_msg = SUPPORTAC.traceTitle .. "CORE FILE NOT LOADED!"
-	BASE:E(_msg)
-end
-
--- pre-defined spawn templates to be used as an alternative to placing late activated templates in the miz
-SUPPORTAC.template = {
-	["KC-135"] = {
-		["category"] = Group.Category.AIRPLANE,
-		["lateActivation"] = true,
-		["tasks"] = 
-		{
-		}, -- end of ["tasks"]
-		["radioSet"] = false,
-		["task"] = "Refueling",
-		["uncontrolled"] = false,
-		["route"] = 
-		{
-			["routeRelativeTOT"] = true,
-			["points"] = 
-			{
-				[1] = 
-				{
-					["alt"] = 2000,
-					["action"] = "Turning Point",
-					["alt_type"] = "BARO",
-					["speed"] = 220.97222222222,
-					["task"] = 
-					{
-						["id"] = "ComboTask",
-						["params"] = 
-						{
-							["tasks"] = 
-							{
-								[1] = 
-								{
-									["enabled"] = true,
-									["auto"] = false,
-									["id"] = "WrappedAction",
-									["number"] = 1,
-									["params"] = 
-									{
-										["action"] = 
-										{
-											["id"] = "SetUnlimitedFuel",
-											["params"] = 
-											{
-												["value"] = true,
-											}, -- end of ["params"]
-										}, -- end of ["action"]
-									}, -- end of ["params"]
-								}, -- end of [1]
-								[2] = 
-								{
-									["enabled"] = true,
-									["auto"] = false,
-									["id"] = "WrappedAction",
-									["number"] = 2,
-									["params"] = 
-									{
-										["action"] = 
-										{
-											["id"] = "SetInvisible",
-											["params"] = 
-											{
-												["value"] = true,
-											}, -- end of ["params"]
-										}, -- end of ["action"]
-									}, -- end of ["params"]
-								}, -- end of [2]
-								[3] = 
-								{
-									["number"] = 3,
-									["auto"] = true,
-									["id"] = "Tanker",
-									["enabled"] = true,
-									["params"] = 
-									{
-									}, -- end of ["params"]
-								}, -- end of [3]
-								[4] = 
-								{
-									["number"] = 4,
-									["auto"] = true,
-									["id"] = "WrappedAction",
-									["enabled"] = true,
-									["params"] = 
-									{
-										["action"] = 
-										{
-											["id"] = "ActivateBeacon",
-											["params"] = 
-											{
-												["type"] = 4,
-												["AA"] = false,
-												["callsign"] = "TKR",
-												["system"] = 4,
-												["channel"] = 1,
-												["modeChannel"] = "X",
-												["bearing"] = true,
-												["frequency"] = 962000000,
-											}, -- end of ["params"]
-										}, -- end of ["action"]
-									}, -- end of ["params"]
-								}, -- end of [4]
-								[5] = 
-								{
-									["number"] = 5,
-									["auto"] = true,
-									["id"] = "WrappedAction",
-									["enabled"] = true,
-									["params"] = 
-									{
-										["action"] = 
-										{
-											["id"] = "EPLRS",
-											["params"] = 
-											{
-												["value"] = true,
-												["groupId"] = 1,
-											}, -- end of ["params"]
-										}, -- end of ["action"]
-									}, -- end of ["params"]
-								}, -- end of [5]
-							}, -- end of ["tasks"]
-						}, -- end of ["params"]
-					}, -- end of ["task"]
-					["type"] = "Turning Point",
-					["ETA"] = 0,
-					["ETA_locked"] = true,
-					["y"] = -8563.6832781353,
-					["x"] = -395281.46534495,
-					["speed_locked"] = true,
-					["formation_template"] = "",
-				}, -- end of [1]
-			}, -- end of ["points"]
-		}, -- end of ["route"]
-		["groupId"] = 1,
-		["hidden"] = false,
-		["units"] = 
-		{
-			[1] = 
-			{
-				["alt"] = 2000,
-				["alt_type"] = "BARO",
-				["livery_id"] = "Standard USAF",
-				["skill"] = "High",
-				["speed"] = 220.97222222222,
-				["AddPropAircraft"] = 
-				{
-					["VoiceCallsignLabel"] = "TO",
-					["VoiceCallsignNumber"] = "11",
-					["STN_L16"] = "07101",
-				}, -- end of ["AddPropAircraft"]
-				["type"] = "KC-135",
-				["unitId"] = 1,
-				["psi"] = 0,
-				["onboard_num"] = "010",
-				["y"] = -8563.6832781353,
-				["x"] = -395281.46534495,
-				["name"] = "KC-135-1",
-				["payload"] = 
-				{
-					["pylons"] = 
-					{
-					}, -- end of ["pylons"]
-					["fuel"] = 90700,
-					["flare"] = 0,
-					["chaff"] = 0,
-					["gun"] = 100,
-				}, -- end of ["payload"]
-				["heading"] = 0,
-				["callsign"] = 
-				{
-					[1] = 1,
-					[2] = 1,
-					["name"] = "Texaco11",
-					[3] = 1,
-				}, -- end of ["callsign"]
-			}, -- end of [1]
-		}, -- end of ["units"]
-		["y"] = -8563.6832781353,
-		["x"] = -395281.46534495,
-		["name"] = "KC-135",
-		["communication"] = true,
-		["start_time"] = 0,
-		["modulation"] = 0,
-		["frequency"] = 251,
-	}, -- end of [KC-135]
-	["KC-135MPRS"] = {
-		["category"] = Group.Category.AIRPLANE,
-		["lateActivation"] = true,
-		["tasks"] = 
-		{
-		}, -- end of ["tasks"]
-		["radioSet"] = true,
-		["task"] = "Refueling",
-		["uncontrolled"] = false,
-		["route"] = 
-		{
-			["routeRelativeTOT"] = true,
-			["points"] = 
-			{
-				[1] = 
-				{
-					["alt"] = 6096,
-					["action"] = "Fly Over Point",
-					["alt_type"] = "BARO",
-					["speed"] = 164.44444444444,
-					["task"] = 
-					{
-						["id"] = "ComboTask",
-						["params"] = 
-						{
-							["tasks"] = 
-							{
-								[1] = 
-								{
-									["enabled"] = true,
-									["auto"] = true,
-									["id"] = "Tanker",
-									["number"] = 1,
-									["params"] = 
-									{
-									}, -- end of ["params"]
-								}, -- end of [1]
-								[2] = 
-								{
-									["enabled"] = true,
-									["auto"] = true,
-									["id"] = "WrappedAction",
-									["number"] = 2,
-									["params"] = 
-									{
-										["action"] = 
-										{
-											["id"] = "ActivateBeacon",
-											["params"] = 
-											{
-												["type"] = 4,
-												["AA"] = false,
-												["callsign"] = "RTB",
-												["modeChannel"] = "Y",
-												["channel"] = 60,
-												["system"] = 5,
-												["unitId"] = 20565,
-												["bearing"] = true,
-												["frequency"] = 1147000000,
-											}, -- end of ["params"]
-										}, -- end of ["action"]
-									}, -- end of ["params"]
-								}, -- end of [2]
-								[3] = 
-								{
-									["number"] = 3,
-									["auto"] = false,
-									["id"] = "WrappedAction",
-									["enabled"] = true,
-									["params"] = 
-									{
-										["action"] = 
-										{
-											["id"] = "SetInvisible",
-											["params"] = 
-											{
-												["value"] = true,
-											}, -- end of ["params"]
-										}, -- end of ["action"]
-									}, -- end of ["params"]
-								}, -- end of [3]
-								[4] = 
-								{
-									["number"] = 4,
-									["auto"] = false,
-									["id"] = "WrappedAction",
-									["enabled"] = true,
-									["params"] = 
-									{
-										["action"] = 
-										{
-											["id"] = "Option",
-											["params"] = 
-											{
-												["value"] = true,
-												["name"] = 6,
-											}, -- end of ["params"]
-										}, -- end of ["action"]
-									}, -- end of ["params"]
-								}, -- end of [4]
-							}, -- end of ["tasks"]
-						}, -- end of ["params"]
-					}, -- end of ["task"]
-					["type"] = "Turning Point",
-					["ETA"] = 0,
-					["ETA_locked"] = true,
-					["y"] = -87560.730212787,
-					["x"] = -129296.58141675,
-					["name"] = "",
-					["formation_template"] = "",
-					["speed_locked"] = true,
-				}, -- end of [1]
-			}, -- end of ["points"]
-		}, -- end of ["route"]
-		["groupId"] = 1,
-		["hidden"] = false,
-		["units"] = 
-		{
-			[1] = 
-			{
-				["alt"] = 6096,
-				["alt_type"] = "BARO",
-				["livery_id"] = "22nd ARW",
-				["skill"] = "Excellent",
-				["speed"] = 164.44444444444,
-				["type"] = "KC135MPRS",
-				["unitId"] = 1,
-				["psi"] = 1.0660373467781,
-				["y"] = -87560.730212787,
-				["x"] = -129296.58141675,
-				["name"] = "KC-135MPRS",
-				["payload"] = 
-				{
-					["pylons"] = 
-					{
-					}, -- end of ["pylons"]
-					["fuel"] = 90700,
-					["flare"] = 60,
-					["chaff"] = 120,
-					["gun"] = 100,
-				}, -- end of ["payload"]
-				["heading"] = -1.0660373467782,
-				["callsign"] = 
-				{
-					[1] = 3,
-					[2] = 1,
-					["name"] = "Shell11",
-					[3] = 1,
-				}, -- end of ["callsign"]
-				["onboard_num"] = "089",
-			}, -- end of [1]
-		}, -- end of ["units"]
-		["y"] = -87560.730212787,
-		["x"] = -129296.58141675,
-		["name"] = "KC-135MPRS",
-		["communication"] = true,
-		["start_time"] = 0,
-		["modulation"] = 0,
-		["frequency"] = 251,
-	}, -- end of [KC-135MPRS]
-	["KC-130"] = {
-		["category"] = Group.Category.AIRPLANE,
-		["lateActivation"] = true,
-		["tasks"] = 
-		{
-		}, -- end of ["tasks"]
-		["radioSet"] = true,
-		["task"] = "Refueling",
-		["uncontrolled"] = false,
-		["route"] = 
-		{
-			["routeRelativeTOT"] = true,
-			["points"] = 
-			{
-				[1] = 
-				{
-					["alt"] = 2438.4,
-					["action"] = "Turning Point",
-					["alt_type"] = "BARO",
-					["speed"] = 172.5,
-					["task"] = 
-					{
-						["id"] = "ComboTask",
-						["params"] = 
-						{
-							["tasks"] = 
-							{
-								[1] = 
-								{
-									["number"] = 1,
-									["auto"] = true,
-									["id"] = "Tanker",
-									["enabled"] = true,
-									["params"] = 
-									{
-									}, -- end of ["params"]
-								}, -- end of [1]
-								[2] = 
-								{
-									["number"] = 2,
-									["auto"] = true,
-									["id"] = "WrappedAction",
-									["enabled"] = true,
-									["params"] = 
-									{
-										["action"] = 
-										{
-											["id"] = "ActivateBeacon",
-											["params"] = 
-											{
-												["type"] = 4,
-												["AA"] = false,
-												["unitId"] = 16683,
-												["modeChannel"] = "Y",
-												["channel"] = 60,
-												["system"] = 5,
-												["callsign"] = "ARC",
-												["bearing"] = true,
-												["frequency"] = 1147000000,
-											}, -- end of ["params"]
-										}, -- end of ["action"]
-									}, -- end of ["params"]
-								}, -- end of [2]
-								[3] = 
-								{
-									["enabled"] = true,
-									["auto"] = false,
-									["id"] = "WrappedAction",
-									["number"] = 3,
-									["params"] = 
-									{
-										["action"] = 
-										{
-											["id"] = "SetInvisible",
-											["params"] = 
-											{
-												["value"] = true,
-											}, -- end of ["params"]
-										}, -- end of ["action"]
-									}, -- end of ["params"]
-								}, -- end of [3]
-							}, -- end of ["tasks"]
-						}, -- end of ["params"]
-					}, -- end of ["task"]
-					["type"] = "Turning Point",
-					["ETA"] = 0,
-					["ETA_locked"] = true,
-					["y"] = -11585.313345172,
-					["x"] = -399323.02717468,
-					["name"] = "",
-					["formation_template"] = "",
-					["speed_locked"] = true,
-				}, -- end of [1]
-			}, -- end of ["points"]
-		}, -- end of ["route"]
-		["groupId"] = 2447,
-		["hidden"] = false,
-		["units"] = 
-		{
-			[1] = 
-			{
-				["alt"] = 2438.4,
-				["alt_type"] = "BARO",
-				["livery_id"] = "default",
-				["skill"] = "Excellent",
-				["speed"] = 172.5,
-				["type"] = "KC130",
-				["unitId"] = 16683,
-				["psi"] = 1.4236457627903,
-				["y"] = -11585.313345172,
-				["x"] = -399323.02717468,
-				["name"] = "KC-130",
-				["payload"] = 
-				{
-					["pylons"] = 
-					{
-					}, -- end of ["pylons"]
-					["fuel"] = 30000,
-					["flare"] = 60,
-					["chaff"] = 120,
-					["gun"] = 100,
-				}, -- end of ["payload"]
-				["heading"] = -1.4236457627903,
-				["callsign"] = 
-				{
-					[1] = 2,
-					[2] = 1,
-					["name"] = "Arco11",
-					[3] = 1,
-				}, -- end of ["callsign"]
-				["onboard_num"] = "139",
-			}, -- end of [1]
-		}, -- end of ["units"]
-		["y"] = -11585.313345172,
-		["x"] = -399323.02717468,
-		["name"] = "KC-130",
-		["communication"] = true,
-		["start_time"] = 0,
-		["modulation"] = 0,
-		["frequency"] = 251,		
-	}, -- end of ["KC-130"]
-	["AWACS-E3A"] = {
-		["category"] = Group.Category.AIRPLANE,
-		["lateActivation"] = true,
-		["tasks"] = 
-		{
-		}, -- end of ["tasks"]
-		["radioSet"] = true,
-		["task"] = "AWACS",
-		["uncontrolled"] = false,
-		["route"] = 
-		{
-			["routeRelativeTOT"] = true,
-			["points"] = 
-			{
-				[1] = 
-				{
-					["alt"] = 6096,
-					["action"] = "Fly Over Point",
-					["alt_type"] = "BARO",
-					["speed"] = 164.44444444444,
-					["task"] = 
-					{
-						["id"] = "ComboTask",
-						["params"] = 
-						{
-							["tasks"] = 
-							{
-								[1] = 
-								{
-									["number"] = 1,
-									["auto"] = true,
-									["id"] = "AWACS",
-									["enabled"] = true,
-									["params"] = 
-									{
-									}, -- end of ["params"]
-								}, -- end of [1]
-								[2] = 
-								{
-									["enabled"] = true,
-									["auto"] = false,
-									["id"] = "WrappedAction",
-									["number"] = 2,
-									["params"] = 
-									{
-										["action"] = 
-										{
-											["id"] = "SetInvisible",
-											["params"] = 
-											{
-												["value"] = true,
-											}, -- end of ["params"]
-										}, -- end of ["action"]
-									}, -- end of ["params"]
-								}, -- end of [2]
-								[3] = 
-								{
-									["number"] = 3,
-									["auto"] = false,
-									["id"] = "WrappedAction",
-									["enabled"] = true,
-									["params"] = 
-									{
-										["action"] = 
-										{
-											["id"] = "EPLRS",
-											["params"] = 
-											{
-												["value"] = true,
-												["groupId"] = 46,
-											}, -- end of ["params"]
-										}, -- end of ["action"]
-									}, -- end of ["params"]
-								}, -- end of [3]
-							}, -- end of ["tasks"]
-						}, -- end of ["params"]
-					}, -- end of ["task"]
-					["type"] = "Turning Point",
-					["ETA"] = 0,
-					["ETA_locked"] = true,
-					["y"] = -88627.624510964,
-					["x"] = -129296.58141675,
-					["name"] = "",
-					["formation_template"] = "",
-					["speed_locked"] = true,
-				}, -- end of [1]
-			}, -- end of ["points"]
-		}, -- end of ["route"]
-		["groupId"] = 17446,
-		["hidden"] = false,
-		["units"] = 
-		{
-			[1] = 
-			{
-				["alt"] = 6096,
-				["alt_type"] = "BARO",
-				["livery_id"] = "nato",
-				["skill"] = "Excellent",
-				["speed"] = 164.44444444444,
-				["type"] = "E-3A",
-				["unitId"] = 20566,
-				["psi"] = 1.1124120783257,
-				["y"] = -88627.624510964,
-				["x"] = -129296.58141675,
-				["name"] = "AWACS-E3A",
-				["payload"] = 
-				{
-					["pylons"] = 
-					{
-					}, -- end of ["pylons"]
-					["fuel"] = 65000,
-					["flare"] = 60,
-					["chaff"] = 120,
-					["gun"] = 100,
-				}, -- end of ["payload"]
-				["heading"] = -1.1124120783257,
-				["callsign"] = 
-				{
-					[1] = 1,
-					[2] = 1,
-					["name"] = "Overlord11",
-					[3] = 1,
-				}, -- end of ["callsign"]
-				["onboard_num"] = "090",
-			}, -- end of [1]
-		}, -- end of ["units"]
-		["y"] = -88627.624510964,
-		["x"] = -129296.58141675,
-		["name"] = "AWACS-E3A",
-		["communication"] = true,
-		["start_time"] = 0,
-		["modulation"] = 0,
-		["frequency"] = 251,
-	}, -- end of [AWACS-E3A]
-  	["AWACS-E2D"] = {
-		["category"] = Group.Category.AIRPLANE,
-		["lateActivation"] = true,
-		["tasks"] = 
-		{
-		}, -- end of ["tasks"]
-		["radioSet"] = true,
-		["task"] = "AWACS",
-		["uncontrolled"] = false,
-		["route"] = 
-		{
-			["routeRelativeTOT"] = true,
-			["points"] = 
-			{
-				[1] = 
-				{
-					["alt"] = 9144,
-					["action"] = "Turning Point",
-					["alt_type"] = "BARO",
-					["speed"] = 133.61111111111,
-					["task"] = 
-					{
-						["id"] = "ComboTask",
-						["params"] = 
-						{
-							["tasks"] = 
-							{
-								[1] = 
-								{
-									["enabled"] = true,
-									["auto"] = true,
-									["id"] = "AWACS",
-									["number"] = 1,
-									["params"] = 
-									{
-									}, -- end of ["params"]
-								}, -- end of [1]
-								[2] = 
-								{
-									["enabled"] = true,
-									["auto"] = true,
-									["id"] = "WrappedAction",
-									["number"] = 2,
-									["params"] = 
-									{
-										["action"] = 
-										{
-											["id"] = "EPLRS",
-											["params"] = 
-											{
-												["value"] = true,
-												["groupId"] = 38,
-											}, -- end of ["params"]
-										}, -- end of ["action"]
-									}, -- end of ["params"]
-								}, -- end of [2]
-								[3] = 
-								{
-									["enabled"] = true,
-									["auto"] = false,
-									["id"] = "WrappedAction",
-									["number"] = 3,
-									["params"] = 
-									{
-										["action"] = 
-										{
-											["id"] = "SetInvisible",
-											["params"] = 
-											{
-												["value"] = true,
-											}, -- end of ["params"]
-										}, -- end of ["action"]
-									}, -- end of ["params"]
-								}, -- end of [3]
-							}, -- end of ["tasks"]
-						}, -- end of ["params"]
-					}, -- end of ["task"]
-					["type"] = "Turning Point",
-					["ETA"] = 0,
-					["ETA_locked"] = true,
-					["y"] = -12187.736469214,
-					["x"] = -399320.85899169,
-					["name"] = "",
-					["formation_template"] = "",
-					["speed_locked"] = true,
-				}, -- end of [1]
-			}, -- end of ["points"]
-		}, -- end of ["route"]
-		["groupId"] = 2452,
-		["hidden"] = false,
-		["units"] = 
-		{
-			[1] = 
-			{
-				["alt"] = 9144,
-				["alt_type"] = "BARO",
-				["livery_id"] = "E-2D Demo",
-				["skill"] = "High",
-				["speed"] = 133.61111111111,
-				["type"] = "E-2C",
-				["unitId"] = 16697,
-				["psi"] = 1.3887207292845,
-				["y"] = -12187.736469214,
-				["x"] = -399320.85899169,
-				["name"] = "AWACS-E2D-1",
-				["payload"] = 
-				{
-					["pylons"] = 
-					{
-					}, -- end of ["pylons"]
-					["fuel"] = "5624",
-					["flare"] = 60,
-					["chaff"] = 120,
-					["gun"] = 100,
-				}, -- end of ["payload"]
-				["heading"] = -1.3887207292845,
-				["callsign"] = 
-				{
-					[1] = 1,
-					[2] = 1,
-					["name"] = "Overlord11",
-					[3] = 1,
-				}, -- end of ["callsign"]
-				["onboard_num"] = "143",
-			}, -- end of [1]
-		}, -- end of ["units"]
-		["y"] = -12187.736469214,
-		["x"] = -399320.85899169,
-		["name"] = "AWACS-E2D",
-		["communication"] = true,
-		["start_time"] = 0,
-		["modulation"] = 0,
-		["frequency"] = 251,		
-	}, -- end of ["AWACS-E2D"]
-	["AWACS-A50"] = {
-		["category"] = Group.Category.AIRPLANE,
-		["lateActivation"] = true,
-		["tasks"] = 
-		{
-		}, -- end of ["tasks"]
-		["radioSet"] = false,
-		["task"] = "AWACS",
-		["uncontrolled"] = false,
-		["taskSelected"] = true,
-		["route"] = 
-		{
-			["routeRelativeTOT"] = true,
-			["points"] = 
-			{
-				[1] = 
-				{
-					["alt"] = 10972.8,
-					["action"] = "Turning Point",
-					["alt_type"] = "BARO",
-					["speed"] = 220.97222222222,
-					["task"] = 
-					{
-						["id"] = "ComboTask",
-						["params"] = 
-						{
-							["tasks"] = 
-							{
-								[1] = 
-								{
-									["enabled"] = true,
-									["auto"] = true,
-									["id"] = "AWACS",
-									["number"] = 1,
-									["params"] = 
-									{
-									}, -- end of ["params"]
-								}, -- end of [1]
-								[2] = 
-								{
-									["enabled"] = true,
-									["auto"] = false,
-									["id"] = "WrappedAction",
-									["number"] = 2,
-									["params"] = 
-									{
-										["action"] = 
-										{
-											["id"] = "SetInvisible",
-											["params"] = 
-											{
-												["value"] = true,
-											}, -- end of ["params"]
-										}, -- end of ["action"]
-									}, -- end of ["params"]
-								}, -- end of [2]
-								[3] = 
-								{
-									["enabled"] = true,
-									["auto"] = false,
-									["id"] = "WrappedAction",
-									["number"] = 3,
-									["params"] = 
-									{
-										["action"] = 
-										{
-											["id"] = "Option",
-											["params"] = 
-											{
-												["value"] = 0,
-												["name"] = 1,
-											}, -- end of ["params"]
-										}, -- end of ["action"]
-									}, -- end of ["params"]
-								}, -- end of [3]
-								[4] = 
-								{
-									["enabled"] = true,
-									["auto"] = false,
-									["id"] = "WrappedAction",
-									["number"] = 4,
-									["params"] = 
-									{
-										["action"] = 
-										{
-											["id"] = "Option",
-											["params"] = 
-											{
-												["value"] = false,
-												["name"] = 19,
-											}, -- end of ["params"]
-										}, -- end of ["action"]
-									}, -- end of ["params"]
-								}, -- end of [4]
-							}, -- end of ["tasks"]
-						}, -- end of ["params"]
-					}, -- end of ["task"]
-					["type"] = "Turning Point",
-					["ETA"] = 0,
-					["ETA_locked"] = true,
-					["y"] = 315953.41096792,
-					["x"] = 63905.857563882,
-					["name"] = "",
-					["formation_template"] = "",
-					["speed_locked"] = true,
-				}, -- end of [1]
-			}, -- end of ["points"]
-		}, -- end of ["route"]
-		["groupId"] = 588,
-		["hidden"] = false,
-		["units"] = 
-		{
-			[1] = 
-			{
-				["alt"] = 10972.8,
-				["alt_type"] = "BARO",
-				["livery_id"] = "RF Air Force new",
-				["skill"] = "High",
-				["speed"] = 220.97222222222,
-				["AddPropAircraft"] = 
-				{
-					["PropellorType"] = 0,
-					["SoloFlight"] = false,
-				}, -- end of ["AddPropAircraft"]
-				["type"] = "A-50",
-				["unitId"] = 1595,
-				["psi"] = -1.7947587772958,
-				["y"] = 315953.41096792,
-				["x"] = 63905.857563882,
-				["name"] = "RED_AWACS",
-				["payload"] = 
-				{
-					["pylons"] = 
-					{
-					}, -- end of ["pylons"]
-					["fuel"] = "70000",
-					["flare"] = 192,
-					["chaff"] = 192,
-					["gun"] = 100,
-				}, -- end of ["payload"]
-				["heading"] = 1.7947587772958,
-				["callsign"] = 666,
-				["onboard_num"] = "027",
-			}, -- end of [1]
-		}, -- end of ["units"]
-		["y"] = 315953.41096792,
-		["x"] = 63905.857563882,
-		["name"] = "RED_AWACS",
-		["communication"] = true,
-		["start_time"] = 0,
-		["modulation"] = 0,
-		["frequency"] = 251,
-	}, -- end of ["AWACS-RED"]
-	["S3BTANKER"] = {
-		["category"] = Group.Category.AIRPLANE,
-		["lateActivation"] = true,
-		["tasks"] = 
-		{
-		}, -- end of ["tasks"]
-		["radioSet"] = false,
-		["task"] = "Refueling",
-		["uncontrolled"] = false,
-		["route"] = 
-		{
-			["routeRelativeTOT"] = true,
-			["points"] = 
-			{
-				[1] = 
-				{
-					["alt"] = 1828.8,
-					["action"] = "Turning Point",
-					["alt_type"] = "BARO",
-					["speed"] = 141.31944444444,
-					["task"] = 
-					{
-						["id"] = "ComboTask",
-						["params"] = 
-						{
-							["tasks"] = 
-							{
-								[1] = 
-								{
-									["number"] = 1,
-									["auto"] = true,
-									["id"] = "Tanker",
-									["enabled"] = true,
-									["params"] = 
-									{
-									}, -- end of ["params"]
-								}, -- end of [1]
-								[2] = 
-								{
-									["number"] = 2,
-									["auto"] = true,
-									["id"] = "WrappedAction",
-									["enabled"] = true,
-									["params"] = 
-									{
-										["action"] = 
-										{
-											["id"] = "ActivateBeacon",
-											["params"] = 
-											{
-												["type"] = 4,
-												["AA"] = false,
-												["callsign"] = "TKR",
-												["system"] = 4,
-												["channel"] = 1,
-												["modeChannel"] = "X",
-												["bearing"] = true,
-												["frequency"] = 962000000,
-											}, -- end of ["params"]
-										}, -- end of ["action"]
-									}, -- end of ["params"]
-								}, -- end of [2]
-								[3] = 
-								{
-									["number"] = 3,
-									["auto"] = false,
-									["id"] = "WrappedAction",
-									["enabled"] = true,
-									["params"] = 
-									{
-										["action"] = 
-										{
-											["id"] = "SetInvisible",
-											["params"] = 
-											{
-												["value"] = true,
-											}, -- end of ["params"]
-										}, -- end of ["action"]
-									}, -- end of ["params"]
-								}, -- end of [3]
-							}, -- end of ["tasks"]
-						}, -- end of ["params"]
-					}, -- end of ["task"]
-					["type"] = "Turning Point",
-					["ETA"] = 0,
-					["ETA_locked"] = true,
-					["y"] = 606748.96393416,
-					["x"] = -358539.84033849,
-					["formation_template"] = "",
-					["speed_locked"] = true,
-				}, -- end of [1]
-			}, -- end of ["points"]
-		}, -- end of ["route"]
-		["groupId"] = 1,
-		["hidden"] = false,
-		["units"] = 
-		{
-			[1] = 
-			{
-				["alt"] = 1828.8,
-				["alt_type"] = "BARO",
-				["livery_id"] = "usaf standard",
-				["skill"] = "High",
-				["speed"] = 141.31944444444,
-				["type"] = "S-3B Tanker",
-				["unitId"] = 1,
-				["psi"] = 0,
-				["y"] = 606748.96393416,
-				["x"] = -358539.84033849,
-				["name"] = "Aerial-1-1",
-				["payload"] = 
-				{
-					["pylons"] = 
-					{
-					}, -- end of ["pylons"]
-					["fuel"] = "7813",
-					["flare"] = 30,
-					["chaff"] = 30,
-					["gun"] = 100,
-				}, -- end of ["payload"]
-				["heading"] = 0,
-				["callsign"] = 
-				{
-					[1] = 1,
-					[2] = 1,
-					["name"] = "Texaco11",
-					[3] = 1,
-				}, -- end of ["callsign"]
-				["onboard_num"] = "010",
-			}, -- end of [1]
-		}, -- end of ["units"]
-		["y"] = 606748.96393416,
-		["x"] = -358539.84033849,
-		["name"] = "S3BTANKER",
-		["communication"] = true,
-		["start_time"] = 0,
-		["modulation"] = 0,
-		["frequency"] = 251,
-	}, -- end of ["S3BTANKER"]
-} -- end SUPPORTAC.template
-  
 --------------------------------[disableai.lua]-------------------------------- 
  
 env.info( "[JTF-1] disableai.lua" )
@@ -15299,6 +14400,7 @@ SUPPORTAC.mission = {
     speed = 315, -- IAS when on mission
     heading = 71, -- mission outbound leg in degrees
     leg = 30, -- mission leg length in NM
+    livery = "Metrea KC-135 N569MA",
   },
   {
     name = "AR641A",
@@ -15329,6 +14431,7 @@ SUPPORTAC.mission = {
     speed = 315,
     heading = 92,
     leg = 50,
+    livery = "Metrea KC-135",
   },
   {
     name = "AR635",
@@ -15359,6 +14462,7 @@ SUPPORTAC.mission = {
     speed = 215,
     heading = 41,
     leg = 30,
+    livery = "Metrea KC-135",
   },
   {
     name = "AR230V",
@@ -15389,6 +14493,7 @@ SUPPORTAC.mission = {
     speed = 315,
     heading = 331,
     leg = 20,
+    livery = "Metrea KC-135 N571MA"
   },
   {
     name = "ARLNS",
