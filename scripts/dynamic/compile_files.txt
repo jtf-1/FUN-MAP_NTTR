@@ -12,7 +12,6 @@ core\markspawn.lua
 core\bfmacm.lua
 core\Hercules_Cargo.lua
 core\spawntemplates.lua
-core\supportaircraft_templates.lua
 disableai.lua
 movingtargets.lua
 ecs.lua
