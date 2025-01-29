@@ -1,0 +1,22 @@
+{
+    "Lua.diagnostics.globals": [
+        "Unit",
+        "zoneNoSpawnName",
+        "_zone",
+        "_msg",
+        "_adv",
+        "env",
+        "coalition",
+        "Group",
+        "trigger",
+        "BASE",
+        "EVENTS",
+        "UNIT",
+        "ZONE",
+        "COORDINATE",
+        "ZONE_POLYGON",
+        "AI",
+        "country",
+        "lfs"
+    ]
+}
