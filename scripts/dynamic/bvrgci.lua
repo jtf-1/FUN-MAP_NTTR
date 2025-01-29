@@ -32,7 +32,7 @@ BVRGCI = {
     defaultRadio = "377.8",
   }
    
-BVRGCI.rangeRadio = JTF1.rangeRadio or BVRGCI.defaultRadio
+BVRGCI.rangeRadio = MISSIONINIT.rangeRadio or BVRGCI.defaultRadio
 
   --- ME Zone object for BVRGCI area boundary
   -- @field #string ZoneBvr 

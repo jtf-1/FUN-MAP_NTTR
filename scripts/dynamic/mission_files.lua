@@ -8,7 +8,8 @@ __JTFLoader.Include( 'core/mission_init.lua' )                  -- core file
 __JTFLoader.Include( 'mission_init_data.lua' )          
 __JTFLoader.Include( 'core/devcheck.lua' )                      -- core file
 __JTFLoader.Include( 'core/missionsrs.lua' )                    -- core file
-__JTFLoader.Include( 'core/adminmenu.lua' )                     -- core file
+--__JTFLoader.Include( 'core/adminmenu.lua' )                     -- core file
+__JTFLoader.Include( 'core/mission_menu.lua' )                  -- core file
 __JTFLoader.Include( 'core/missiontimer.lua' )                  -- core file
 __JTFLoader.Include( 'core/supportaircraft.lua' )               -- core file
 __JTFLoader.Include( 'core/staticranges.lua' )                  -- core file
@@ -34,7 +35,7 @@ __JTFLoader.Include( 'bvrgci.lua' )
 -- DATA
 --
 __JTFLoader.Include( 'missionsrs_data.lua' )            
-__JTFLoader.Include( 'adminmenu_data.lua' )             
+--__JTFLoader.Include( 'adminmenu_data.lua' )             
 __JTFLoader.Include( 'missiontimer_data.lua' )
 __JTFLoader.Include( 'supportaircraft_data.lua' )
 __JTFLoader.Include( 'staticranges_data.lua' )
